@@ -1,0 +1,11 @@
+{
+  "": {
+    "swift-dependencies": "/Users/ST22956/work-vscode/XcodeBuildServer/.index-build/arm64-apple-macosx/debug/XcodeBuildServerCLI.build/master.swiftdeps"
+  },
+  "/Users/ST22956/work-vscode/XcodeBuildServer/Sources/XcodeBuildServerCLI/main.swift": {
+    "dependencies": "/Users/ST22956/work-vscode/XcodeBuildServer/.index-build/arm64-apple-macosx/debug/XcodeBuildServerCLI.build/main.d",
+    "object": "/Users/ST22956/work-vscode/XcodeBuildServer/.index-build/arm64-apple-macosx/debug/XcodeBuildServerCLI.build/main.swift.o",
+    "swiftmodule": "/Users/ST22956/work-vscode/XcodeBuildServer/.index-build/arm64-apple-macosx/debug/XcodeBuildServerCLI.build/main~partial.swiftmodule",
+    "swift-dependencies": "/Users/ST22956/work-vscode/XcodeBuildServer/.index-build/arm64-apple-macosx/debug/XcodeBuildServerCLI.build/main.swiftdeps"
+  }
+}

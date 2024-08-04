@@ -1,0 +1,17 @@
+{
+  "": {
+    "swift-dependencies": "/Users/ST22956/work-vscode/XcodeBuildServer/.index-build/arm64-apple-macosx/debug/XcodeBuildServerTests.build/master.swiftdeps"
+  },
+  "/Users/ST22956/work-vscode/XcodeBuildServer/Tests/XcodeBuildServerTests/BSPMessageTests.swift": {
+    "dependencies": "/Users/ST22956/work-vscode/XcodeBuildServer/.index-build/arm64-apple-macosx/debug/XcodeBuildServerTests.build/BSPMessageTests.d",
+    "object": "/Users/ST22956/work-vscode/XcodeBuildServer/.index-build/arm64-apple-macosx/debug/XcodeBuildServerTests.build/BSPMessageTests.swift.o",
+    "swiftmodule": "/Users/ST22956/work-vscode/XcodeBuildServer/.index-build/arm64-apple-macosx/debug/XcodeBuildServerTests.build/BSPMessageTests~partial.swiftmodule",
+    "swift-dependencies": "/Users/ST22956/work-vscode/XcodeBuildServer/.index-build/arm64-apple-macosx/debug/XcodeBuildServerTests.build/BSPMessageTests.swiftdeps"
+  },
+  "/Users/ST22956/work-vscode/XcodeBuildServer/Tests/XcodeBuildServerTests/XcodeBuildServerTests.swift": {
+    "dependencies": "/Users/ST22956/work-vscode/XcodeBuildServer/.index-build/arm64-apple-macosx/debug/XcodeBuildServerTests.build/XcodeBuildServerTests.d",
+    "object": "/Users/ST22956/work-vscode/XcodeBuildServer/.index-build/arm64-apple-macosx/debug/XcodeBuildServerTests.build/XcodeBuildServerTests.swift.o",
+    "swiftmodule": "/Users/ST22956/work-vscode/XcodeBuildServer/.index-build/arm64-apple-macosx/debug/XcodeBuildServerTests.build/XcodeBuildServerTests~partial.swiftmodule",
+    "swift-dependencies": "/Users/ST22956/work-vscode/XcodeBuildServer/.index-build/arm64-apple-macosx/debug/XcodeBuildServerTests.build/XcodeBuildServerTests.swiftdeps"
+  }
+}

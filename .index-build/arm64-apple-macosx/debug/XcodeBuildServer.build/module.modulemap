@@ -1,0 +1,4 @@
+module XcodeBuildServer {
+    header "/Users/ST22956/work-vscode/XcodeBuildServer/.index-build/arm64-apple-macosx/debug/XcodeBuildServer.build/XcodeBuildServer-Swift.h"
+    requires objc
+}
