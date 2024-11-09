@@ -1,0 +1,22 @@
+{
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:XcodeBuildServer}",
+            "name": "Debug XcodeBuildServerCLI",
+            "program": "${workspaceFolder:XcodeBuildServer}/.build/debug/XcodeBuildServerCLI",
+            "preLaunchTask": "swift: Build Debug XcodeBuildServerCLI"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:XcodeBuildServer}",
+            "name": "Release XcodeBuildServerCLI",
+            "program": "${workspaceFolder:XcodeBuildServer}/.build/release/XcodeBuildServerCLI",
+            "preLaunchTask": "swift: Build Release XcodeBuildServerCLI"
+        }
+    ]
+}

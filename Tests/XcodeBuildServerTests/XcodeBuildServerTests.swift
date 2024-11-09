@@ -1,5 +1,5 @@
-import XCTest
 @testable import XcodeBuildServer
+import XCTest
 
 final class XcodeBuildServerTests: XCTestCase {
     func testExample() throws {
