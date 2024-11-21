@@ -1,11 +1,6 @@
 import Foundation
 import OSLog
 
-private let privacy: OSLogPrivacy = .public
-private let logger = Logger(
-  subsystem: "XocdeBuildServer.JSONRPCServer",
-  category: "main"
-)
 
 public final actor JSONRPCServer {
     private let transport: JSONRPCServerTransport
@@ -23,36 +18,43 @@ public final actor JSONRPCServer {
         self.messageRegistry = messageRegistry
         self.messageHandler = messageHandler
     }
-    
+
     public func listen() {
-        transport.requestHandler = onReceivedMesssage
+        transport.requestHandler = { [weak self] request, requestData in
+            Task {
+                await self?.onReceivedMesssage(request: request, requestData: requestData)
+            }
+        }
         transport.listen()
     }
 
     func close() {
     }
-    
-    private func onReceivedMesssage(request: JSONRPCRequest) {
-        logger.debug("Received request: \(request.method, privacy: .public)")
+
+    private func onReceivedMesssage(request: JSONRPCRequest, requestData: Data) async {
+        logger.debug("Received method: \(request.method, privacy: .public)")
+        logger.debug("Received method 2: \(request.method, privacy: .public)")
         if let requestType = messageRegistry.requestType(for: request.method) {
-            if let typedRequest = requestType.init(rawRequest: request), let requestID = request.id {
-                logger.debug("Received request: \(type(of: typedRequest), privacy: .public)")
-                Task {
-                    guard let response = try await typedRequest.handle(messageHandler, id: requestID) else { return }
-                    try? send(JSONRPCResponse: response)
+            logger.debug("Received method 3: \(type(of: requestType), privacy: .public)")
+            if let requestID = request.id {
+                let typedRequest = try! jsonDecoder.decode(requestType, from: requestData)
+                logger.debug("Received method 5: \(type(of: typedRequest), privacy: .public)")
+                logger.debug("Received typedRequest: \(request.method, privacy: .public)")
+                guard let response = await typedRequest.handle(messageHandler, id: requestID) else {
+                    return
                 }
+                try? send(response: response)
             }
         } else if let notificationType = messageRegistry.notificationType(for: request.method) {
-            logger.debug("Received notification: \(request.method, privacy: .public)")
-            if let typedNotification = notificationType.init(rawRequest: request) {
-                Task {
-                    try await typedNotification.handle(messageHandler)
-                }
+            if let typedNotification = try? jsonDecoder.decode(notificationType, from: requestData)
+            {
+                logger.debug("Received typedNotification: \(request.method, privacy: .public)")
+                try? await typedNotification.handle(messageHandler)
             }
         }
     }
-    
-    private func send(JSONRPCResponse response: JSONRPCResponse) throws {
+
+    private func send(response: ResponseType) throws {
         try transport.send(response: response)
     }
 }

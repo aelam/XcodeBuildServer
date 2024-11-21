@@ -8,12 +8,6 @@
 import Foundation
 import OSLog
 
-private let privacy: OSLogPrivacy = .public
-private let logger = Logger(
-  subsystem: "StdioJSONRPCServerTransport",
-  category: "main"
-)
-
 final public class StdioJSONRPCServerTransport: JSONRPCServerTransport {
     private let input: FileHandle
     private let output: FileHandle
@@ -25,18 +19,18 @@ final public class StdioJSONRPCServerTransport: JSONRPCServerTransport {
         self.input = .standardInput
         self.output = .standardOutput
     }
-    
+
     public func listen() {
         input.waitForDataInBackgroundAndNotify()
         input.readabilityHandler = { handle in
             try? self.handleData(fileHandle: handle)
         }
-        
+
         logger.debug("==> Start XcodeBuildServer")
 
         RunLoop.current.run()
     }
-    
+
     private func handleData(fileHandle: FileHandle) throws {
         let data = fileHandle.availableData
         guard
@@ -52,28 +46,32 @@ final public class StdioJSONRPCServerTransport: JSONRPCServerTransport {
         else {
             return
         }
-        logger.debug("components[1]: + \(components[1], privacy: .public)")
+        // logger.debug("components[0]: + \(components[0], privacy: .public)")
+        // logger.debug("components[1]: + \(components[1], privacy: .public)")
         let content = components[1].replacing("\\/", with: "/")
-        guard let raw = content.data(using: .utf8) else {
+        guard let rawData = content.data(using: .utf8) else {
             return
         }
-        guard let message = String(data: raw, encoding: .utf8) else {
+        guard let message = String(data: rawData, encoding: .utf8) else {
             throw JSONRPCTransportError.invalidMessage
         }
-        
-        logger.debug("Message: + \(message, privacy: .public)")
-        
-        guard let request = try? jsonDecoder.decode(JSONRPCRequest.self, from: raw) else {
+
+        logger.debug("received: + \(message, privacy: .public)")
+
+        guard let request = try? jsonDecoder.decode(JSONRPCRequest.self, from: rawData) else {
             throw JSONRPCTransportError.invalidMessage
         }
-        requestHandler?(request)
+        requestHandler?(request, rawData)
     }
-    
-    public func send(response: JSONRPCResponse) throws {
+
+    public func send(response: ResponseType) throws {
         let data = try jsonEncoder.encode(response)
         let header = "Content-Length: \(data.count)\r\n\r\n"
         let headerData = header.data(using: .utf8)!
         output.write(headerData)
         output.write(data)
+
+        logger.debug(
+            "Response: + \(header + String(data: data, encoding: .utf8)!, privacy: .public)")
     }
 }

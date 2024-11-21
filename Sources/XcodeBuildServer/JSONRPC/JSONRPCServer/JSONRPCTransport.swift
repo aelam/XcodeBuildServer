@@ -17,10 +17,10 @@ public enum JSONRPCTransportError: Error {
     case invalidMessage
 }
 
-public typealias RequestHandler = @Sendable (_ request: JSONRPCRequest) -> Void
+public typealias RequestHandler = @Sendable (_ request: JSONRPCRequest, _ requestData: Data) -> Void
 
 public protocol JSONRPCServerTransport: AnyObject, Sendable {
     func listen()
     var requestHandler: RequestHandler? { get set }
-    func send(response: JSONRPCResponse) throws
+    func send(response: ResponseType) throws
 }

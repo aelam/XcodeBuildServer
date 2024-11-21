@@ -1,0 +1,12 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Wait and Attach to XcodeBuildServerCLI",
+            "type": "shell",
+            "command": "${workspaceFolder}/attach_to_xcodebuildserver.sh",
+            "isBackground": true,
+            "problemMatcher": []
+        }
+    ]
+}

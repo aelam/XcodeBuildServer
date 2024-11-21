@@ -6,14 +6,10 @@ public protocol MessageType: Codable, Sendable {}
 
 public protocol RequestType: Codable, Sendable {
     static var method: String { get }
-    var rawRequest: JSONRPCRequest { get }
-    
-    init?(rawRequest: JSONRPCRequest)
-    
     func handle(
         _ handler: MessageHandler,
         id: RequestID
-    ) async -> JSONRPCResponse?
+    ) async -> ResponseType?
 }
 
 open class Request: RequestType, @unchecked Sendable {
@@ -27,21 +23,21 @@ open class Request: RequestType, @unchecked Sendable {
     public func handle(
         _ handler: MessageHandler,
         id: RequestID
-    ) async -> JSONRPCResponse? {
+    ) async -> ResponseType? {
         fatalError("implement in the RequestType: \(self)")
     }
 }
 
-public protocol ResponseType: MessageType {}
+public protocol ResponseType: MessageType {
+    var jsonrpc: String { get }
+    var id: JSONRPCID? { get }
+}
 
 /// A notification, which must have a unique `method` name.
 public protocol NotificationType: MessageType {
     /// The name of the request.
     static var method: String { get }
     
-    var rawRequest: JSONRPCRequest { get }
-    init?(rawRequest: JSONRPCRequest)
-
     func handle(_ handler: MessageHandler) async throws
 }
 
@@ -61,5 +57,6 @@ open class Notification: NotificationType, @unchecked Sendable {
 }
 
 public struct VoidResponse: ResponseType, Hashable {
-    public init() {}
+    public let id: JSONRPCID?
+    public let jsonrpc: String
 }

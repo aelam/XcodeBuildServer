@@ -40,13 +40,13 @@ public struct JSONRPCRequest: Codable, Sendable {
     let params: JSONValue?
 }
 
-public struct JSONRPCError: Codable {
+public struct JSONRPCError: Codable, Sendable {
     let code: Int
     let message: String
     let data: JSONValue?
 }
 
-public enum JSONRPCResult: Codable {
+public enum JSONRPCResult: Codable, Sendable {
     case result(JSONValue)
     case error(JSONRPCError)
     
@@ -78,9 +78,9 @@ public enum JSONRPCResult: Codable {
     }
 }
 
-public struct JSONRPCResponse: Codable {
-    let jsonrpc: String
-    let id: JSONRPCID?
+public struct JSONRPCResponse: ResponseType {
+    public let id: JSONRPCID?
+    public let jsonrpc: String
     let response: JSONRPCResult
 }
 

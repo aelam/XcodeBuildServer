@@ -2,27 +2,32 @@
 import XCTest
 
 final class BSPMessageTests: XCTestCase {
-    func testExample() throws {
+    func testBuildInitialize() throws {
         let message = """
-Content-Length: 100\r\n\
 {
   "jsonrpc": "2.0",
-  "method": "exampleMethod",
-  "params": {
-    "key": "value"
+  "method": "build/initialize",
+  "capabilities": {
+    "languageIds": [
+      "c",
+      "cpp",
+      "objective-c",
+      "objective-cpp",
+      "swift"
+    ]
   },
   "id": 1
 }
-
 """
-
-        let message = JSONRPCMessage(
-            id: 1,
-            method: "build/shutdown",
-            params: nil
-        )
-        /*
-
-         */
+        
+        let data = message.data(using: .utf8)!
+        let request = try JSONDecoder().decode(JSONRPCRequest.self, from: data)
+        if let requestType: RequestType.Type = bspRegistry.requestType(for: request.method) {
+            let typedRequest = try JSONDecoder().decode(requestType.self, from: data)
+            print(typedRequest)
+        }
+        
+        XCTAssertEqual(request.method, "build/initialize")
     }
+
 }
