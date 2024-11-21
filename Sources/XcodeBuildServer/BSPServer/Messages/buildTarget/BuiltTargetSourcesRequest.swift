@@ -7,8 +7,6 @@
 
 import Foundation
 
-typealias LanguageId = String
-
 struct BuiltTargetSourcesRequest: RequestType, Sendable {
     struct Params {
         let language: LanguageId?
@@ -17,8 +15,7 @@ struct BuiltTargetSourcesRequest: RequestType, Sendable {
     
     static var method: String { "buildTarget/sources" }
     
-    func handle(_ handler: MessageHandler, id: RequestID) async throws -> ResponseType {
-        let sources = try handler.buildServerContext.builtTargetSources()
-        return BuiltTargetSourcesResponse(sources: sources)
-    }
+    func handle(_ handler: any MessageHandler, id: RequestID) async -> (any ResponseType)? {
+        nil
+    }    
 }

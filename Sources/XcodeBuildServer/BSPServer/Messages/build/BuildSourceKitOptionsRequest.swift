@@ -152,7 +152,7 @@ public struct BuildSourceKitOptionsRequest: RequestType, @unchecked Sendable {
         public var language: Language
     }
 
-    public static let method: String = "textDocument/sourceKitOptions"
+    public static let method: String = "build/sourceKitOptions"
     
     public let id: JSONRPCID
     public let jsonrpc: String
@@ -169,7 +169,8 @@ public struct BuildSourceKitOptionsRequest: RequestType, @unchecked Sendable {
     }
 }
 
-public struct TextDocumentSourceKitOptionsResponse: ResponseType, Hashable {
+public struct BuildSourceKitOptionsResponse: ResponseType, Hashable {
+    
     public struct Result: Codable, Hashable, Sendable {
         /// The compiler options required for the requested file.
         public let compilerArguments: [String]
@@ -178,6 +179,7 @@ public struct TextDocumentSourceKitOptionsResponse: ResponseType, Hashable {
         public let workingDirectory: String?
     }
     
-    public let id: JSONRPCID
+    public var jsonrpc: String
+    public let id: JSONRPCID?
     public let result: Result?
 }
