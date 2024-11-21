@@ -1,8 +1,7 @@
 //
-//  TextDocumentRegisterForChangeRequest.swift
-//  XcodeBuildServer
+//  TextDocumentSourceKitOptionsRequest.swift
 //
-//  Created by ST22956 on 2024/11/18.
+//  Copyright © 2024 Wang Lun.
 //
 
 /**
@@ -123,7 +122,7 @@
          "uri": "file:\/\/\/Users\/ST22956\/work-vscode\/Hello\/Hello\/World\/World.swift"
      }
  }
-*/
+ */
 
 /**
  export interface TextDocumentSourceKitOptionsRequest {
@@ -175,14 +174,14 @@ public struct TextDocumentSourceKitOptionsRequest: RequestType, @unchecked Senda
     }
 
     public static let method: String = "textDocument/sourceKitOptions"
-    
+
     public let id: JSONRPCID
     public let jsonrpc: String
     public let params: Params
 
     public func handle(
         _ handler: any MessageHandler,
-        id: RequestID
+        id _: RequestID
     ) async -> ResponseType? {
         guard handler is XcodeBSPMessageHandler else {
             return nil
@@ -199,7 +198,7 @@ public struct TextDocumentSourceKitOptionsResponse: ResponseType, Hashable {
         /// The working directory for the compile command.
         public let workingDirectory: String?
     }
-    
+
     public let id: JSONRPCID?
     public let jsonrpc: String
     public let result: Result?

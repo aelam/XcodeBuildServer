@@ -1,8 +1,7 @@
 //
 //  BuiltTargetSourcesRequest.swift
-//  XcodeBuildServer
 //
-//  Created by ST22956 on 2024/11/22.
+//  Copyright © 2024 Wang Lun.
 //
 
 import Foundation
@@ -12,10 +11,10 @@ struct BuiltTargetSourcesRequest: RequestType, Sendable {
         let language: LanguageId?
         let isHeader: Bool?
     }
-    
+
     static var method: String { "buildTarget/sources" }
-    
-    func handle(_ handler: any MessageHandler, id: RequestID) async -> (any ResponseType)? {
+
+    func handle(_: any MessageHandler, id _: RequestID) async -> (any ResponseType)? {
         nil
-    }    
+    }
 }

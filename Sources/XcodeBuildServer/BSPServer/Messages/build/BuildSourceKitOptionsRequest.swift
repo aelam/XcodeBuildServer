@@ -1,8 +1,7 @@
 //
-//  TextDocumentRegisterForChangeRequest.swift
-//  XcodeBuildServer
+//  BuildSourceKitOptionsRequest.swift
 //
-//  Created by ST22956 on 2024/11/18.
+//  Copyright © 2024 Wang Lun.
 //
 
 /**
@@ -123,7 +122,7 @@
          "uri": "file:\/\/\/Users\/ST22956\/work-vscode\/Hello\/Hello\/World\/World.swift"
      }
  }
-*/
+ */
 
 /// The `TextDocumentSourceKitOptionsRequest` request is sent from the client to the server to query for the list of
 /// compiler options necessary to compile this file in the given target.
@@ -138,7 +137,7 @@ public struct BuildSourceKitOptionsRequest: RequestType, @unchecked Sendable {
             public let options: [String]
             public let workingDirectory: String?
         }
-        
+
         /// The URI of the document to get options for
         public var textDocument: String // TextDocumentIdentifier
 
@@ -153,14 +152,14 @@ public struct BuildSourceKitOptionsRequest: RequestType, @unchecked Sendable {
     }
 
     public static let method: String = "build/sourceKitOptions"
-    
+
     public let id: JSONRPCID
     public let jsonrpc: String
     public let params: Params
 
     public func handle(
         _ handler: any MessageHandler,
-        id: RequestID
+        id _: RequestID
     ) async -> ResponseType? {
         guard handler is XcodeBSPMessageHandler else {
             return nil
@@ -170,7 +169,6 @@ public struct BuildSourceKitOptionsRequest: RequestType, @unchecked Sendable {
 }
 
 public struct BuildSourceKitOptionsResponse: ResponseType, Hashable {
-    
     public struct Result: Codable, Hashable, Sendable {
         /// The compiler options required for the requested file.
         public let compilerArguments: [String]
@@ -178,7 +176,7 @@ public struct BuildSourceKitOptionsResponse: ResponseType, Hashable {
         /// The working directory for the compile command.
         public let workingDirectory: String?
     }
-    
+
     public var jsonrpc: String
     public let id: JSONRPCID?
     public let result: Result?

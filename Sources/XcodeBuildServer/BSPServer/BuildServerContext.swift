@@ -1,8 +1,7 @@
 //
-//  BuildServerSettings.swift
-//  XcodeBuildServer
+//  BuildServerContext.swift
 //
-//  Created by ST22956 on 2024/11/17.
+//  Copyright © 2024 Wang Lun.
 //
 
 import Foundation
@@ -41,7 +40,7 @@ final class BuildServerContext: Sendable {
     private(set) var indexDatabaseURL: URL?
 
     private let jsonDecoder = JSONDecoder()
-    
+
     func loadProject(rootURL: URL) async throws {
         logger.debug("Loading project at \(rootURL)")
         self.rootURL = rootURL
@@ -50,11 +49,11 @@ final class BuildServerContext: Sendable {
         }
         self.config = try loadConfig(configFileURL: configFileURL)
         logger.debug("Config loaded: \(String(describing: self.config))")
-        
+
         guard let config else {
             throw BuildServerError.missingConfigFile
         }
-        
+
         logger.debug("Loading Xcode project")
         xcodeProject = XcodeProject(
             workspace: config.workspace,
@@ -68,7 +67,7 @@ final class BuildServerContext: Sendable {
         try await loadIndexingPaths()
         logger.debug("Build settings loaded: \(String(describing: self.buildSettings))")
     }
-    
+
     private func loadXcodeBuildSettings() async throws {
         // xcodebuild -showBuildSettings -json
         // Load the index store
@@ -97,7 +96,7 @@ final class BuildServerContext: Sendable {
         buildSettingsForIndex = try jsonDecoder.decode(BuildSettingsForIndex.self, from: data)
         logger.debug("Build settings for index: \(String(describing: self.buildSettingsForIndex), privacy: .public)")
     }
-    
+
     private func loadIndexingPaths() async throws {
         guard
             let scheme = xcodeProject?.scheme,
@@ -106,24 +105,24 @@ final class BuildServerContext: Sendable {
         else {
             throw BuildServerError.buildSettingsLoadFailed
         }
-        
+
         let outputFolder = URL(fileURLWithPath: buildFolderPath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
 
         indexStoreURL = outputFolder.appendingPathComponent("Index.noIndex/DataStore")
         let indexDatabaseURL = outputFolder.appendingPathComponent("IndexDatabase.noIndex")
-        
+
         if !FileManager.default.fileExists(atPath: indexDatabaseURL.path) {
             try FileManager.default.createDirectory(at: indexDatabaseURL, withIntermediateDirectories: true)
         }
-        
+
         self.indexDatabaseURL = indexDatabaseURL
         logger.debug("Index store: \(String(describing: self.indexStoreURL), privacy: .public)")
     }
 
     private func getXcodeBuildBasicArguments() -> [String] {
-        guard let xcodeProject = xcodeProject else {
+        guard let xcodeProject else {
             fatalError("Xcode project not loaded")
         }
 
@@ -135,43 +134,43 @@ final class BuildServerContext: Sendable {
         } else {
             fatalError("No workspace or project found")
         }
-        
+
         if let scheme = xcodeProject.scheme {
             arguments.append(contentsOf: ["-scheme", scheme])
         }
-        
+
         if let configuration = xcodeProject.configuration {
             arguments.append(contentsOf: ["-configuration", configuration])
         }
         return arguments
     }
-    
+
     // MARK: - Private
+
     private func getConfigPath(for workspaceFolder: URL? = nil) -> URL? {
         guard let workspaceFolder else {
             return nil
         }
-        
+
         let buildServerConfigLocation: URL = workspaceFolder.appending(component: ".bsp")
-        
+
         let jsonFiles =
-        try? FileManager.default.contentsOfDirectory(at: buildServerConfigLocation, includingPropertiesForKeys: nil)
-            .filter { $0.pathExtension == "json" }
-        
+            try? FileManager.default.contentsOfDirectory(at: buildServerConfigLocation, includingPropertiesForKeys: nil)
+                .filter { $0.pathExtension == "json" }
+
         if let configFileURL = jsonFiles?.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }).first,
            FileManager.default.fileExists(atPath: configFileURL.path)
         {
             return configFileURL
         }
-        
+
         // Pre Swift 6.1 SourceKit-LSP looked for `buildServer.json` in the project root. Maintain this search location for
         // compatibility even though it's not a standard BSP search location.
         let rootBuildServerJSONFile = workspaceFolder.appending(component: "buildServer.json")
-        if FileManager.default.fileExists(atPath: rootBuildServerJSONFile.path)
-        {
+        if FileManager.default.fileExists(atPath: rootBuildServerJSONFile.path) {
             return rootBuildServerJSONFile
         }
-        
+
         return nil
     }
 

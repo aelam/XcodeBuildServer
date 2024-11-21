@@ -1,8 +1,7 @@
 //
 //  MessageRegistry.swift
-//  XcodeBuildServer
 //
-//  Created by ST22956 on 2024/11/09.
+//  Copyright © 2024 Wang Lun.
 //
 
 public final class MessageRegistry: Sendable {
@@ -16,11 +15,11 @@ public final class MessageRegistry: Sendable {
 
     /// Returns the type of the message named `method`, or nil if it is unknown.
     public func requestType(for method: String) -> (any RequestType.Type)? {
-        return methodToRequest[method]
+        methodToRequest[method]
     }
 
     /// Returns the type of the message named `method`, or nil if it is unknown.
     public func notificationType(for method: String) -> NotificationType.Type? {
-        return methodToNotification[method]
+        methodToNotification[method]
     }
 }

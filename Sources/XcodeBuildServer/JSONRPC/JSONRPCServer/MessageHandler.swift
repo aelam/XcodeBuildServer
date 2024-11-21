@@ -1,10 +1,8 @@
 //
-//  Connection.swift
-//  XcodeBuildServer
+//  MessageHandler.swift
 //
-//  Created by ST22956 on 2024/11/09.
+//  Copyright © 2024 Wang Lun.
 //
 
 /// An abstract message handler, such as a language server or client.
-public protocol MessageHandler: AnyObject, Sendable {
-}
+public protocol MessageHandler: AnyObject, Sendable {}

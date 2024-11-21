@@ -1,6 +1,11 @@
+//
+//  JSONRPCServer.swift
+//
+//  Copyright © 2024 Wang Lun.
+//
+
 import Foundation
 import OSLog
-
 
 public final actor JSONRPCServer {
     private let transport: JSONRPCServerTransport
@@ -28,8 +33,7 @@ public final actor JSONRPCServer {
         transport.listen()
     }
 
-    func close() {
-    }
+    func close() {}
 
     private func onReceivedMesssage(request: JSONRPCRequest, requestData: Data) async {
         logger.debug("Received method: \(request.method, privacy: .public)")
@@ -46,8 +50,7 @@ public final actor JSONRPCServer {
                 try? send(response: response)
             }
         } else if let notificationType = messageRegistry.notificationType(for: request.method) {
-            if let typedNotification = try? jsonDecoder.decode(notificationType, from: requestData)
-            {
+            if let typedNotification = try? jsonDecoder.decode(notificationType, from: requestData) {
                 logger.debug("Received typedNotification: \(request.method, privacy: .public)")
                 try? await typedNotification.handle(messageHandler)
             }

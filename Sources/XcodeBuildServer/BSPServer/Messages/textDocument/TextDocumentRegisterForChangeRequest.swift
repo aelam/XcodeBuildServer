@@ -1,21 +1,20 @@
 //
 //  TextDocumentRegisterForChangeRequest.swift
-//  XcodeBuildServer
 //
-//  Created by ST22956 on 2024/11/18.
+//  Copyright © 2024 Wang Lun.
 //
 
 /**
- {
-    "params": {
-        "uri" : "file:///Users/ST22956/work-vscode/Hello/Hello/World/World.swift",
-        "action" : "register"
-    },
-    "method":"textDocument/registerForChanges",
-    "id":3,
-    "jsonrpc":"2.0"
-}
-*/
+  {
+     "params": {
+         "uri" : "file:///Users/ST22956/work-vscode/Hello/Hello/World/World.swift",
+         "action" : "register"
+     },
+     "method":"textDocument/registerForChanges",
+     "id":3,
+     "jsonrpc":"2.0"
+ }
+ */
 
 public struct TextDocumentRegisterForChangeRequest: RequestType, @unchecked Sendable {
     struct Params: Codable {
@@ -24,18 +23,18 @@ public struct TextDocumentRegisterForChangeRequest: RequestType, @unchecked Send
     }
 
     public enum RegisterAction: String, Hashable, Codable, Sendable {
-      case register = "register"
-      case unregister = "unregister"
+        case register
+        case unregister
     }
 
     public static var method: String { "textDocument/registerForChanges" }
-    
+
     public let id: JSONRPCID
     public let jsonrpc: String
 
     public func handle(
         _ handler: any MessageHandler,
-        id: RequestID
+        id _: RequestID
     ) async -> ResponseType? {
         guard handler is XcodeBSPMessageHandler else {
             return nil
@@ -52,9 +51,8 @@ public struct TextDocumentRegisterForChangeResponse: ResponseType, Hashable {
         /// The working directory for the compile command.
         public let workingDirectory: String?
     }
-    
+
     public let id: JSONRPCID?
     public let result: Result?
     public let jsonrpc: String
 }
-

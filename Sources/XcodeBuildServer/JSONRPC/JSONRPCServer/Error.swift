@@ -1,5 +1,11 @@
 //
 //  Error.swift
+//
+//  Copyright © 2024 Wang Lun.
+//
+
+//
+//  Error.swift
 //  XcodeBuildServer
 //
 //  Created by ST22956 on 2024/11/09.
@@ -99,7 +105,7 @@ public extension MessageDecodingError {
         id: RequestID? = nil,
         messageKind: MessageKind = .unknown
     ) -> MessageDecodingError {
-        return MessageDecodingError(
+        MessageDecodingError(
             code: .methodNotFound,
             message: "method not found: \(method)",
             id: id,
@@ -112,7 +118,7 @@ public extension MessageDecodingError {
         id: RequestID? = nil,
         messageKind: MessageKind = .unknown
     ) -> MessageDecodingError {
-        return MessageDecodingError(code: .invalidRequest, message: reason, id: id, messageKind: messageKind)
+        MessageDecodingError(code: .invalidRequest, message: reason, id: id, messageKind: messageKind)
     }
 
     static func invalidParams(
@@ -120,7 +126,7 @@ public extension MessageDecodingError {
         id: RequestID? = nil,
         messageKind: MessageKind = .unknown
     ) -> MessageDecodingError {
-        return MessageDecodingError(code: .invalidParams, message: reason, id: id, messageKind: messageKind)
+        MessageDecodingError(code: .invalidParams, message: reason, id: id, messageKind: messageKind)
     }
 
     static func parseError(
@@ -128,7 +134,7 @@ public extension MessageDecodingError {
         id: RequestID? = nil,
         messageKind: MessageKind = .unknown
     ) -> MessageDecodingError {
-        return MessageDecodingError(code: .parseError, message: reason, id: id, messageKind: messageKind)
+        MessageDecodingError(code: .parseError, message: reason, id: id, messageKind: messageKind)
     }
 }
 

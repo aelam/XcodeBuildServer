@@ -1,4 +1,8 @@
 //
+//  Message.swift
+//
+//  Copyright © 2024 Wang Lun.
+//
 
 public typealias RequestID = JSONRPCID
 
@@ -15,14 +19,14 @@ public protocol RequestType: Codable, Sendable {
 open class Request: RequestType, @unchecked Sendable {
     public class var method: String { fatalError("implement in the RequestType: \(self)") }
     public let rawRequest: JSONRPCRequest
-    
+
     public required init?(rawRequest: JSONRPCRequest) {
         self.rawRequest = rawRequest
     }
-    
+
     public func handle(
-        _ handler: MessageHandler,
-        id: RequestID
+        _: MessageHandler,
+        id _: RequestID
     ) async -> ResponseType? {
         fatalError("implement in the RequestType: \(self)")
     }
@@ -37,20 +41,20 @@ public protocol ResponseType: MessageType {
 public protocol NotificationType: MessageType {
     /// The name of the request.
     static var method: String { get }
-    
+
     func handle(_ handler: MessageHandler) async throws
 }
 
 open class Notification: NotificationType, @unchecked Sendable {
     public class var method: String { fatalError("implement in the RequestType: \(self)") }
     public let rawRequest: JSONRPCRequest
-    
+
     public required init?(rawRequest: JSONRPCRequest) {
         self.rawRequest = rawRequest
     }
 
     public func handle(
-        _ handler: MessageHandler
+        _: MessageHandler
     ) async {
         fatalError("implement in the RequestType: \(self)")
     }

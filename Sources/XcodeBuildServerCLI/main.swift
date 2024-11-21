@@ -1,7 +1,11 @@
+//
+//  main.swift
+//
+//  Copyright © 2024 Wang Lun.
+//
 
-import XcodeBuildServer
 import Foundation
-
+import XcodeBuildServer
 
 func run() {
     let server = JSONRPCServer(

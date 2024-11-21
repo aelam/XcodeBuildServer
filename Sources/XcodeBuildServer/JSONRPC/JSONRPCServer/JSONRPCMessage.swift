@@ -1,8 +1,7 @@
 //
 //  JSONRPCMessage.swift
-//  XcodeBuildServer
 //
-//  Created by ST22956 on 2024/11/09.
+//  Copyright © 2024 Wang Lun.
 //
 
 import Foundation
@@ -10,17 +9,17 @@ import Foundation
 public enum JSONRPCID: Codable, Equatable, Hashable, Sendable {
     case int(Int)
     case string(String)
-    
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         switch self {
-        case .int(let intValue):
+        case let .int(intValue):
             try container.encode(intValue)
-        case .string(let stringValue):
+        case let .string(stringValue):
             try container.encode(stringValue)
         }
     }
-    
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         if let intValue = try? container.decode(Int.self) {
@@ -49,10 +48,10 @@ public struct JSONRPCError: Codable, Sendable {
 public enum JSONRPCResult: Codable, Sendable {
     case result(JSONValue)
     case error(JSONRPCError)
-    
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        
+
         if let result = try? container.decode(JSONValue.self, forKey: .result) {
             self = .result(result)
         } else if let error = try? container.decode(JSONRPCError.self, forKey: .error) {
@@ -61,17 +60,17 @@ public enum JSONRPCResult: Codable, Sendable {
             throw DecodingError.dataCorruptedError(forKey: .result, in: container, debugDescription: "Response must have either result or error")
         }
     }
-    
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         switch self {
-        case .result(let result):
+        case let .result(result):
             try container.encode(result, forKey: .result)
-        case .error(let error):
+        case let .error(error):
             try container.encode(error, forKey: .error)
         }
     }
-    
+
     enum CodingKeys: String, CodingKey {
         case result
         case error
@@ -95,7 +94,7 @@ public enum JSONValue: Codable, Sendable {
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
-        
+
         if let intValue = try? container.decode(Int.self) {
             self = .int(intValue)
         } else if let doubleValue = try? container.decode(Double.self) {
@@ -117,19 +116,19 @@ public enum JSONValue: Codable, Sendable {
 
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
-        
+
         switch self {
-        case .int(let intValue):
+        case let .int(intValue):
             try container.encode(intValue)
-        case .double(let doubleValue):
+        case let .double(doubleValue):
             try container.encode(doubleValue)
-        case .string(let stringValue):
+        case let .string(stringValue):
             try container.encode(stringValue)
-        case .bool(let boolValue):
+        case let .bool(boolValue):
             try container.encode(boolValue)
-        case .array(let arrayValue):
+        case let .array(arrayValue):
             try container.encode(arrayValue)
-        case .dictionary(let dictionaryValue):
+        case let .dictionary(dictionaryValue):
             try container.encode(dictionaryValue)
         case .null:
             try container.encodeNil()

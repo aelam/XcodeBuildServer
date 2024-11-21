@@ -1,8 +1,7 @@
 //
-//  WorkspaceBuildTargets.swift
-//  XcodeBuildServer
+//  WorkspaceBuildTargetsRequest.swift
 //
-//  Created by ST22956 on 2024/11/17.
+//  Copyright © 2024 Wang Lun.
 //
 
 /**
@@ -22,17 +21,15 @@
 
 public struct WorkspaceBuildTargetsRequest: RequestType, @unchecked Sendable {
     public static var method: String { "workspace/buildTargets" }
-    
+
     public struct Params: Codable {
         public var targets: [String]
     }
-    
+
     public func handle(
-        _ handler: MessageHandler,
-        id: RequestID
+        _: MessageHandler,
+        id _: RequestID
     ) async -> ResponseType? {
         fatalError()
     }
 }
-
-

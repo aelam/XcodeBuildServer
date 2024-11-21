@@ -1,14 +1,13 @@
 //
-//  StdioJSONRPCTransport.swift
-//  XcodeBuildServer
+//  StdioJSONRPCServerTransport.swift
 //
-//  Created by ST22956 on 2024/11/09.
+//  Copyright © 2024 Wang Lun.
 //
 
 import Foundation
 import OSLog
 
-final public class StdioJSONRPCServerTransport: JSONRPCServerTransport {
+public final class StdioJSONRPCServerTransport: JSONRPCServerTransport {
     private let input: FileHandle
     private let output: FileHandle
     private let jsonDecoder = JSONDecoder()
@@ -16,8 +15,8 @@ final public class StdioJSONRPCServerTransport: JSONRPCServerTransport {
     public var requestHandler: RequestHandler?
 
     public init() {
-        self.input = .standardInput
-        self.output = .standardOutput
+        input = .standardInput
+        output = .standardOutput
     }
 
     public func listen() {
@@ -41,7 +40,8 @@ final public class StdioJSONRPCServerTransport: JSONRPCServerTransport {
 
         guard
             let components = String(data: data, encoding: .utf8)?.split(
-                separator: "\r\n", omittingEmptySubsequences: true),
+                separator: "\r\n", omittingEmptySubsequences: true
+            ),
             components.count >= 2
         else {
             return

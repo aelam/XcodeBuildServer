@@ -1,3 +1,9 @@
+//
+//  XcodeBuildServerTests.swift
+//
+//  Copyright © 2024 Wang Lun.
+//
+
 @testable import XcodeBuildServer
 import XCTest
 

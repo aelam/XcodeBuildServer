@@ -1,19 +1,16 @@
 //
-//  DefaultMessageHandler.swift
-//  XcodeBuildServer
+//  XcodeBSPMessageHandler.swift
 //
-//  Created by ST22956 on 2024/11/09.
+//  Copyright © 2024 Wang Lun.
 //
 
 import Foundation
 
 public final class XcodeBSPMessageHandler: MessageHandler, Sendable {
     let buildServerContext = BuildServerContext()
-    
-    public init() {
 
-    }
-    
+    public init() {}
+
     public func initialize(rootURL: URL) async throws {
         try await buildServerContext.loadProject(rootURL: rootURL)
     }
