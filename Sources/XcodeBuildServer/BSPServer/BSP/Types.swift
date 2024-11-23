@@ -4,6 +4,6 @@
 //  Copyright © 2024 Wang Lun.
 //
 
-public typealias TextDocumentIdentifier = String
-public typealias BuildTargetIdentifier = String
 public typealias LanguageId = String
+public typealias OriginId = String
+public typealias URI = DocumentURI

@@ -46,8 +46,6 @@ public final class StdioJSONRPCServerTransport: JSONRPCServerTransport {
         else {
             return
         }
-        // logger.debug("components[0]: + \(components[0], privacy: .public)")
-        // logger.debug("components[1]: + \(components[1], privacy: .public)")
         let content = components[1].replacing("\\/", with: "/")
         guard let rawData = content.data(using: .utf8) else {
             return

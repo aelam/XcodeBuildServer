@@ -180,3 +180,18 @@ final class BuildServerContext: Sendable {
         return config
     }
 }
+
+extension BuildServerContext {
+    func getCompileArguments(fileURI: String) -> [String] {
+        let filePath = URL(filePath: fileURI).path
+        guard
+            let buildSettingsForIndex,
+            let scheme = xcodeProject?.scheme
+        else {
+            return []
+        }
+
+        let fileBuildSettings = buildSettingsForIndex[scheme]?[filePath]
+        return fileBuildSettings?.swiftASTCommandArguments ?? []
+    }
+}

@@ -32,10 +32,7 @@ open class Request: RequestType, @unchecked Sendable {
     }
 }
 
-public protocol ResponseType: MessageType {
-    var jsonrpc: String { get }
-    var id: JSONRPCID? { get }
-}
+public protocol ResponseType: MessageType {}
 
 /// A notification, which must have a unique `method` name.
 public protocol NotificationType: MessageType {

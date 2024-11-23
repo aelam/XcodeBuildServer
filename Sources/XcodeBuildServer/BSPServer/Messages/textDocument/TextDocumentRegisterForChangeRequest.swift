@@ -4,6 +4,8 @@
 //  Copyright © 2024 Wang Lun.
 //
 
+import Foundation
+
 /**
   {
      "params": {
@@ -17,7 +19,7 @@
  */
 
 public struct TextDocumentRegisterForChangeRequest: RequestType, @unchecked Sendable {
-    struct Params: Codable {
+    public struct Params: Codable {
         let uri: String
         let action: RegisterAction
     }
@@ -31,14 +33,33 @@ public struct TextDocumentRegisterForChangeRequest: RequestType, @unchecked Send
 
     public let id: JSONRPCID
     public let jsonrpc: String
+    public let params: Params
 
     public func handle(
         _ handler: any MessageHandler,
         id _: RequestID
     ) async -> ResponseType? {
-        guard handler is XcodeBSPMessageHandler else {
+        guard let handler = handler as? XcodeBSPMessageHandler else {
             return nil
         }
+
+        guard let fileURL = URL(string: params.uri) else {
+            return nil
+        }
+
+        if params.action == .register {
+            let arguments = handler.buildServerContext.getCompileArguments(fileURI: fileURL.path)
+            let workingDirectory = handler.buildServerContext.rootURL?.path
+            return TextDocumentRegisterForChangeResponse(
+                jsonrpc: jsonrpc,
+                id: id,
+                result:
+                TextDocumentRegisterForChangeResponse.Result(
+                    compilerArguments: arguments,
+                    workingDirectory: workingDirectory
+                )
+            )
+        } else {}
         return nil
     }
 }
@@ -52,7 +73,7 @@ public struct TextDocumentRegisterForChangeResponse: ResponseType, Hashable {
         public let workingDirectory: String?
     }
 
+    public let jsonrpc: String
     public let id: JSONRPCID?
     public let result: Result?
-    public let jsonrpc: String
 }

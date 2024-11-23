@@ -1,5 +1,5 @@
 //
-//  BuildSourceKitOptionsRequest.swift
+//  BuildSourceKitOptionsChangedNotification.swift
 //
 //  Copyright © 2024 Wang Lun.
 //
@@ -131,7 +131,9 @@
 /// `DidChangeBuildTargetNotification` is sent for the requested target.
 ///
 /// The request may return `nil` if it doesn't have any build settings for this file in the given target.
-public struct BuildSourceKitOptionsRequest: RequestType, @unchecked Sendable {
+/// server --> client
+/// Deprecated
+public struct BuildSourceKitOptionsChangedNotification: NotificationType, Sendable {
     public struct Params: Codable, Sendable {
         public struct UpdateOptions: Codable, Sendable {
             public let options: [String]
@@ -145,39 +147,17 @@ public struct BuildSourceKitOptionsRequest: RequestType, @unchecked Sendable {
         ///
         /// A source file might be part of multiple targets and might have different compiler arguments in those two targets,
         /// thus the target is necessary in this request.
-        public var target: String // BuildTargetIdentifier
+        public var target: BuildTargetIdentifier
 
         /// The language with which the document was opened in the editor.
         public var language: Language
     }
 
-    public static let method: String = "build/sourceKitOptions"
+    public static let method: String = "build/sourceKitOptionsChanged"
 
     public let id: JSONRPCID
     public let jsonrpc: String
     public let params: Params
 
-    public func handle(
-        _ handler: any MessageHandler,
-        id _: RequestID
-    ) async -> ResponseType? {
-        guard handler is XcodeBSPMessageHandler else {
-            return nil
-        }
-        return nil
-    }
-}
-
-public struct BuildSourceKitOptionsResponse: ResponseType, Hashable {
-    public struct Result: Codable, Hashable, Sendable {
-        /// The compiler options required for the requested file.
-        public let compilerArguments: [String]
-
-        /// The working directory for the compile command.
-        public let workingDirectory: String?
-    }
-
-    public var jsonrpc: String
-    public let id: JSONRPCID?
-    public let result: Result?
+    public func handle(_: MessageHandler) async throws {}
 }

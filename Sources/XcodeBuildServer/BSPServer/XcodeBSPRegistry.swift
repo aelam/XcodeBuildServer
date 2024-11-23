@@ -8,7 +8,6 @@ private let requestTypes: [any RequestType.Type] = [
     // build
     BuildInitializeRequest.self,
     BuildShutdownRequest.self,
-    BuildSourceKitOptionsRequest.self,
 
     // buildTarget
     BuildTargetPrepareRequest.self,
@@ -30,6 +29,9 @@ private let notificationTypes: [NotificationType.Type] = [
     OnBuildExitNotification.self,
     // workspace
     WorkspaceDidChangeWatchedFilesNotification.self,
+
+    // build
+    BuildSourceKitOptionsChangedNotification.self,
 ]
 
 public let bspRegistry = MessageRegistry(requests: requestTypes, notifications: notificationTypes)
