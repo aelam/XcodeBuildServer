@@ -135,23 +135,16 @@ public struct BuildTargetTag: Codable, Hashable, RawRepresentable, Sendable {
 /// Clients can use these capabilities to notify users what BSP endpoints can and cannot be used and why.
 public struct BuildTargetCapabilities: Codable, Hashable, Sendable {
     /// This target can be compiled by the BSP server.
-    public var canCompile: Bool?
+    public let canCompile: Bool?
 
     /// This target can be tested by the BSP server.
-    public var canTest: Bool?
+    public let canTest: Bool?
 
     /// This target can be run by the BSP server.
-    public var canRun: Bool?
+    public let canRun: Bool?
 
     /// This target can be debugged by the BSP server.
-    public var canDebug: Bool?
-
-    public init(canCompile: Bool? = nil, canTest: Bool? = nil, canRun: Bool? = nil, canDebug: Bool? = nil) {
-        self.canCompile = canCompile
-        self.canTest = canTest
-        self.canRun = canRun
-        self.canDebug = canDebug
-    }
+    public let canDebug: Bool?
 }
 
 public struct BuildTargetDataKind: RawRepresentable, Codable, Hashable, Sendable {

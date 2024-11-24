@@ -141,7 +141,7 @@ public struct BuildSourceKitOptionsChangedNotification: NotificationType, Sendab
         }
 
         /// The URI of the document to get options for
-        public var textDocument: String // TextDocumentIdentifier
+        public var textDocument: TextDocumentIdentifier
 
         /// The target for which the build setting should be returned.
         ///
