@@ -31,7 +31,7 @@ This project adheres to a [Code of Conduct](CODE_OF_CONDUCT.md). By participatin
 
 - macOS 12.0 or later
 - Xcode 14.0 or later
-- Swift 5.9 or later
+- Swift 6.1 or later
 - Familiarity with Build Server Protocol (BSP)
 
 #### Development Setup

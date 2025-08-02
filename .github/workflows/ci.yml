@@ -16,7 +16,7 @@ jobs:
     
     strategy:
       matrix:
-        swift-version: ['5.9', '5.10']
+        swift-version: ['6.1']
     
     steps:
     - name: Checkout
@@ -64,10 +64,13 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
       
-    - name: SwiftLint
-      uses: norio-nomura/action-swiftlint@3.2.1
-      with:
-        args: --strict --reporter github-actions-logging
+    - name: Install SwiftLint
+      run: |
+        brew install swiftlint
+        
+    - name: Run SwiftLint
+      run: |
+        swiftlint --strict --reporter github-actions-logging
         
   security-audit:
     name: Security Audit

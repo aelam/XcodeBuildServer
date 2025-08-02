@@ -4,9 +4,9 @@
 //  Copyright © 2024 Wang Lun.
 //
 
-import OSLog
+@preconcurrency import OSLog
 
-let privacy: OSLogPrivacy = .public
+nonisolated(unsafe) let privacy: OSLogPrivacy = .public
 let logger = Logger(
     subsystem: "XocdeBuildServer",
     category: "main"

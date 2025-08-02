@@ -12,7 +12,21 @@ public final class StdioJSONRPCServerTransport: JSONRPCServerTransport {
     private let output: FileHandle
     private let jsonDecoder = JSONDecoder()
     private let jsonEncoder = JSONEncoder()
-    public var requestHandler: RequestHandler?
+    private let requestHandlerLock = NSLock()
+    nonisolated(unsafe) private var _requestHandler: RequestHandler?
+    
+    public var requestHandler: RequestHandler? {
+        get {
+            requestHandlerLock.lock()
+            defer { requestHandlerLock.unlock() }
+            return _requestHandler
+        }
+        set {
+            requestHandlerLock.lock()
+            defer { requestHandlerLock.unlock() }
+            _requestHandler = newValue
+        }
+    }
 
     public init() {
         input = .standardInput

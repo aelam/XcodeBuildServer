@@ -27,7 +27,13 @@ public enum JSONRPCID: Codable, Equatable, Hashable, Sendable {
         } else if let stringValue = try? container.decode(String.self) {
             self = .string(stringValue)
         } else {
-            throw DecodingError.typeMismatch(JSONRPCID.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "ID is not a valid type"))
+            throw DecodingError.typeMismatch(
+                JSONRPCID.self, 
+                DecodingError.Context(
+                    codingPath: decoder.codingPath, 
+                    debugDescription: "ID is not a valid type"
+                    )
+                    )
         }
     }
 }
@@ -84,7 +90,11 @@ public enum JSONRPCResult: Codable, Sendable {
         } else if let error = try? container.decode(JSONRPCError.self, forKey: .error) {
             self = .error(error)
         } else {
-            throw DecodingError.dataCorruptedError(forKey: .result, in: container, debugDescription: "Response must have either result or error")
+            throw DecodingError.dataCorruptedError(
+                forKey: .result, 
+                in: container, 
+                debugDescription: "Response must have either result or error"
+                )
         }
     }
 

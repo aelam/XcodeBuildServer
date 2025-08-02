@@ -4,23 +4,31 @@ This directory contains all the GitHub Actions workflows for XcodeBuildServer. E
 
 ## Workflows Overview
 
-### 🏗️ CI Pipeline (`ci.yml`)
+### 🏗️ CI Pipeline (`ci.yml` & `basic-ci.yml`)
+
+**Main CI (`ci.yml`):**
+- Advanced CI with full feature set
+- Requires external service tokens (Codecov, etc.)
+
+**Basic CI (`basic-ci.yml`):**
+- Simplified CI that works without external dependencies
+- Recommended for getting started
 
 **Triggers:**
 - Push to `main` and `develop` branches
 - Pull requests to `main` branch
 
 **Jobs:**
-- **Build and Test**: Builds the project and runs tests on multiple Swift versions
-- **SwiftLint**: Enforces Swift coding standards
-- **Security Audit**: Basic security scanning of dependencies
+- **Build and Test**: Builds the project and runs tests
+- **SwiftLint**: Enforces Swift coding standards (via Homebrew)
+- **Basic Security**: Simple security pattern scanning
 - **Build Release**: Creates release binaries (main branch only)
 
 **Key Features:**
-- Matrix builds across Swift 5.9 and 5.10
-- Code coverage reporting via Codecov
-- Artifact uploads for release binaries
+- Native macOS tools (no container dependencies)
 - SPM dependency caching
+- Artifact uploads for release binaries
+- Works out of the box without tokens
 
 ### 🔍 Code Quality (`code-quality.yml`)
 
