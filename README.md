@@ -1,9 +1,9 @@
 # XcodeBuildServer
 
-[![CI](https://github.com/wang.lun/XcodeBuildServer/workflows/CI/badge.svg)](https://github.com/wang.lun/XcodeBuildServer/actions/workflows/ci.yml)
-[![Release](https://github.com/wang.lun/XcodeBuildServer/workflows/Release/badge.svg)](https://github.com/wang.lun/XcodeBuildServer/actions/workflows/release.yml)
-[![Code Quality](https://github.com/wang.lun/XcodeBuildServer/workflows/Code%20Quality/badge.svg)](https://github.com/wang.lun/XcodeBuildServer/actions/workflows/code-quality.yml)
-[![Security](https://github.com/wang.lun/XcodeBuildServer/workflows/Security/badge.svg)](https://github.com/wang.lun/XcodeBuildServer/actions/workflows/security.yml)
+[![CI](https://github.com/wang.lun/XcodeBuildServer/actions/workflows/ci.yml/badge.svg)](https://github.com/wang.lun/XcodeBuildServer/actions/workflows/ci.yml)
+[![Release](https://github.com/wang.lun/XcodeBuildServer/actions/workflows/release.yml/badge.svg)](https://github.com/wang.lun/XcodeBuildServer/actions/workflows/release.yml)
+[![Code Quality](https://github.com/wang.lun/XcodeBuildServer/actions/workflows/code-quality.yml/badge.svg)](https://github.com/wang.lun/XcodeBuildServer/actions/workflows/code-quality.yml)
+[![Security](https://github.com/wang.lun/XcodeBuildServer/actions/workflows/security.yml/badge.svg)](https://github.com/wang.lun/XcodeBuildServer/actions/workflows/security.yml)
 [![Swift](https://img.shields.io/badge/swift-6.1+-orange.svg)](https://swift.org)
 [![Platform](https://img.shields.io/badge/platform-macOS-lightgrey.svg)](https://developer.apple.com/macos/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
