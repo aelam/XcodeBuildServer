@@ -12,6 +12,6 @@ public final class BuildShutdownRequest: Request, @unchecked Sendable {
         _: MessageHandler,
         id _: RequestID
     ) async -> ResponseType {
-        fatalError()
+        fatalError("BuildShutdownRequest not implemented")
     }
 }

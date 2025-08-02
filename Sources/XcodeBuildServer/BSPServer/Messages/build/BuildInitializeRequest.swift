@@ -9,26 +9,26 @@ import Foundation
 
 /**
  {
-     "params": {
-         "rootUri": "file:///Users/ST22956/work-vscode/Hello/",
-         "capabilities": {
-             "languageIds": [
-                 "c",
-                 "cpp",
-                 "objective-c",
-                 "objective-cpp",
-                 "swift"
-             ]
-         },
-         "version": "1.0",
-         "displayName": "SourceKit-LSP",
-         "bspVersion": "2.0"
-     },
-     "method": "build/initialize",
-     "jsonrpc": "2.0",
-     "id": 1
+ "params": {
+ "rootUri": "file:///Users/ST22956/work-vscode/Hello/",
+ "capabilities": {
+ "languageIds": [
+ "c",
+ "cpp",
+ "objective-c",
+ "objective-cpp",
+ "swift"
+ ]
+ },
+ "version": "1.0",
+ "displayName": "SourceKit-LSP",
+ "bspVersion": "2.0"
+ },
+ "method": "build/initialize",
+ "jsonrpc": "2.0",
+ "id": 1
  }
-  */
+ */
 
 public struct BuildInitializeRequest: RequestType, @unchecked Sendable {
     struct Params: Codable {
@@ -109,53 +109,53 @@ public struct BuildInitializeRequest: RequestType, @unchecked Sendable {
 
 /**
  {
-     "id": 1,
-     "result": {
-         "capabilities": {
-             "languageIds": [
-                 "c",
-                 "cpp",
-                 "objective-c",
-                 "objective-cpp",
-                 "swift"
-             ]
-         },
-         "data": {
-             "indexDatabasePath": "/Users/ST22956/Library/Caches/xcode-build-server/Users-ST22956-work-vscode-Hello/indexDatabasePath",
-             "indexStorePath": "/Users/ST22956/Library/Developer/Xcode/DerivedData/Hello-fcuisfeafkcytvbjerdcxvnpmzxn/Index.noindex/DataStore"
-         },
-         "version": "0.1",
-         "displayName": "xcode build server",
-         "bspVersion": "2.0",
-         "rootUri": "/Users/ST22956/work-vscode/Hello"
-     },
-     "jsonrpc": "2.0"
+ "id": 1,
+ "result": {
+ "capabilities": {
+ "languageIds": [
+ "c",
+ "cpp",
+ "objective-c",
+ "objective-cpp",
+ "swift"
+ ]
+ },
+ "data": {
+ "indexDatabasePath": "/Users/ST22956/Library/Caches/xcode-build-server/Users-ST22956-work-vscode-Hello/indexDatabasePath",
+ "indexStorePath": "/Users/ST22956/Library/Developer/Xcode/DerivedData/Hello-fcuisfeafkcytvbjerdcxvnpmzxn/Index.noindex/DataStore"
+ },
+ "version": "0.1",
+ "displayName": "xcode build server",
+ "bspVersion": "2.0",
+ "rootUri": "/Users/ST22956/work-vscode/Hello"
+ },
+ "jsonrpc": "2.0"
  }
  */
 
 /**
  {
-     "result": {
-         "data": {
-             "indexStorePath": "/Users/ST22956/Library/Developer/Xcode/DerivedData/Hello-fcuisfeafkcytvbjerdcxvnpmzxn/Index.noIndex/DataStore",
-             "indexDatabasePath": "/Users/ST22956/Library/Developer/Xcode/DerivedData/Hello-fcuisfeafkcytvbjerdcxvnpmzxn/IndexDatabase.noIndex"
-         },
-         "bspVersion": "2.0",
-         "rootUri": "file:///Users/ST22956/work-vscode/Hello/",
-         "displayName": "xcode build server",
-         "capabilities": {
-             "languageIds": [
-                 "c",
-                 "cpp",
-                 "objective-c",
-                 "objective-cpp",
-                 "swift"
-             ]
-         },
-         "version": "0.1"
-     },
-     "jsonrpc": "2.0",
-     "id": 1
+ "result": {
+ "data": {
+ "indexStorePath": "/Users/ST22956/Library/Developer/Xcode/DerivedData/Hello-fcuisfeafkcytvbjerdcxvnpmzxn/Index.noIndex/DataStore",
+ "indexDatabasePath": "/Users/ST22956/Library/Developer/Xcode/DerivedData/Hello-fcuisfeafkcytvbjerdcxvnpmzxn/IndexDatabase.noIndex"
+ },
+ "bspVersion": "2.0",
+ "rootUri": "file:///Users/ST22956/work-vscode/Hello/",
+ "displayName": "xcode build server",
+ "capabilities": {
+ "languageIds": [
+ "c",
+ "cpp",
+ "objective-c",
+ "objective-cpp",
+ "swift"
+ ]
+ },
+ "version": "0.1"
+ },
+ "jsonrpc": "2.0",
+ "id": 1
  }
  */
 

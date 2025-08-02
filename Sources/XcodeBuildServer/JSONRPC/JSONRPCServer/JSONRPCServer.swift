@@ -41,7 +41,7 @@ public final actor JSONRPCServer {
 
     private func onReceivedMesssage(request: JSONRPCRequest, requestData: Data) async {
         logger.debug("Received method: \(request.method, privacy: .public)")
-        
+
         if let requestType = messageRegistry.requestType(for: request.method) {
             await handleRequest(request: request, requestData: requestData, requestType: requestType)
         } else if let notificationType = messageRegistry.notificationType(for: request.method) {
@@ -53,16 +53,16 @@ public final actor JSONRPCServer {
             }
         }
     }
-    
+
     private func handleRequest(request: JSONRPCRequest, requestData: Data, requestType: any RequestType.Type) async {
         guard let requestID = request.id else {
             logger.error("Request missing ID for method: \(request.method)")
             return
         }
-        
+
         do {
             let typedRequest = try jsonDecoder.decode(requestType, from: requestData)
-            
+
             if let response = await typedRequest.handle(messageHandler, id: requestID) {
                 do {
                     try send(response: response)
@@ -78,7 +78,7 @@ public final actor JSONRPCServer {
             await sendErrorResponse(id: requestID, error: .parseError("Invalid request format"))
         }
     }
-    
+
     private func handleNotification(requestData: Data, notificationType: NotificationType.Type) async {
         do {
             let typedNotification = try jsonDecoder.decode(notificationType, from: requestData)
@@ -88,14 +88,14 @@ public final actor JSONRPCServer {
             // Notifications don't have responses, so we can only log the error
         }
     }
-    
+
     private func sendErrorResponse(id: RequestID, error: JSONRPCError) async {
         let errorResponse = JSONRPCErrorResponse(
             jsonrpc: "2.0",
             id: id,
             error: error
         )
-        
+
         do {
             try send(response: errorResponse)
         } catch {

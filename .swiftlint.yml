@@ -94,6 +94,10 @@ identifier_name:
     - x
     - y
     - z
+    - git_commit
+    - git_rebase
+    - objective_c
+    - objective_cpp
 
 type_name:
   min_length:

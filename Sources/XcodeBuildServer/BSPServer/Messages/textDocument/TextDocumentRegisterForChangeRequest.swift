@@ -7,14 +7,14 @@
 import Foundation
 
 /**
-  {
-     "params": {
-         "uri" : "file:///Users/ST22956/work-vscode/Hello/Hello/World/World.swift",
-         "action" : "register"
-     },
-     "method":"textDocument/registerForChanges",
-     "id":3,
-     "jsonrpc":"2.0"
+ {
+ "params": {
+ "uri" : "file:///Users/ST22956/work-vscode/Hello/Hello/World/World.swift",
+ "action" : "register"
+ },
+ "method":"textDocument/registerForChanges",
+ "id":3,
+ "jsonrpc":"2.0"
  }
  */
 
@@ -54,10 +54,10 @@ public struct TextDocumentRegisterForChangeRequest: RequestType, @unchecked Send
                 jsonrpc: jsonrpc,
                 id: id,
                 result:
-                TextDocumentRegisterForChangeResponse.Result(
-                    compilerArguments: arguments,
-                    workingDirectory: workingDirectory
-                )
+                    TextDocumentRegisterForChangeResponse.Result(
+                        compilerArguments: arguments,
+                        workingDirectory: workingDirectory
+                    )
             )
         } else {}
         return nil

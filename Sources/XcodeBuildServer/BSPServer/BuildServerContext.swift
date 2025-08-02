@@ -15,7 +15,7 @@ enum BuildServerError: Error, CustomStringConvertible {
     case invalidConfiguration(String)
     case xcodebuildExecutionFailed(String)
     case indexingPathsLoadFailed
-    
+
     var description: String {
         switch self {
         case .missingConfigFile:
@@ -136,11 +136,11 @@ actor BuildServerContext {
         guard let scheme = xcodeProject?.scheme else {
             throw BuildServerError.invalidConfiguration("No scheme available for indexing paths")
         }
-        
+
         guard let buildSettings = buildSettings?.first(where: { $0.target == scheme && $0.action == "build" })?.buildSettings else {
             throw BuildServerError.invalidConfiguration("No build settings found for scheme: \(scheme)")
         }
-        
+
         guard let buildFolderPath = buildSettings["BUILD_DIR"] else {
             throw BuildServerError.invalidConfiguration("BUILD_DIR not found in build settings")
         }
@@ -195,14 +195,14 @@ actor BuildServerContext {
         guard let workspaceFolder else {
             return nil
         }
-        
+
         let configSearchPaths = [
             // Standard BSP config location
             workspaceFolder.appendingPathComponent(".bsp"),
             // Legacy location for compatibility
             workspaceFolder.appendingPathComponent("buildServer.json", isDirectory: false)
         ]
-        
+
         // First try standard BSP .bsp directory
         if let bspDir = configSearchPaths.first,
            FileManager.default.fileExists(atPath: bspDir.path) {
@@ -211,7 +211,7 @@ actor BuildServerContext {
                     .contentsOfDirectory(at: bspDir, includingPropertiesForKeys: nil)
                     .filter { $0.pathExtension == "json" }
                     .sorted { $0.lastPathComponent < $1.lastPathComponent }
-                
+
                 if let firstConfig = jsonFiles.first {
                     logger.debug("Found BSP config at: \(firstConfig.path)")
                     return firstConfig
@@ -220,28 +220,28 @@ actor BuildServerContext {
                 logger.debug("Failed to read .bsp directory: \(error)")
             }
         }
-        
+
         // Fallback to legacy location
         if let legacyConfig = configSearchPaths.last,
            FileManager.default.fileExists(atPath: legacyConfig.path) {
             logger.debug("Found legacy config at: \(legacyConfig.path)")
             return legacyConfig
         }
-        
+
         logger.debug("No BSP configuration file found in workspace")
         return nil
     }
 
     private func loadConfig(configFileURL: URL) throws -> BuildServerConfig? {
         logger.debug("Loading config from: \(configFileURL.path)")
-        
+
         do {
             let data = try Data(contentsOf: configFileURL)
             var config = try JSONDecoder().decode(BuildServerConfig.self, from: data)
-            
+
             // Validate and provide defaults
             config = validateAndNormalizeConfig(config, rootURL: rootURL)
-            
+
             logger.debug("Config loaded successfully: \(String(describing: config))")
             return config
         } catch {
@@ -249,16 +249,16 @@ actor BuildServerContext {
             throw BuildServerError.invalidConfiguration("Failed to parse config file: \(error.localizedDescription)")
         }
     }
-    
+
     private func validateAndNormalizeConfig(_ config: BuildServerConfig, rootURL: URL?) -> BuildServerConfig {
         var normalizedConfig = config
-        
+
         // Ensure we have either workspace or project
         if normalizedConfig.workspace == nil && normalizedConfig.project == nil {
             logger.debug("No workspace or project specified, attempting to find one")
             normalizedConfig = findWorkspaceOrProject(in: normalizedConfig, rootURL: rootURL)
         }
-        
+
         // Provide default configuration if none specified
         if normalizedConfig.configuration == nil {
             normalizedConfig = BuildServerConfig(
@@ -270,18 +270,18 @@ actor BuildServerContext {
             )
             logger.debug("Using default configuration: \(BuildServerConfig.defaultConfiguration)")
         }
-        
+
         return normalizedConfig
     }
-    
+
     private func findWorkspaceOrProject(in config: BuildServerConfig, rootURL: URL?) -> BuildServerConfig {
         guard let rootURL = rootURL else { return config }
-        
+
         let fileManager = FileManager.default
-        
+
         do {
             let contents = try fileManager.contentsOfDirectory(at: rootURL, includingPropertiesForKeys: nil)
-            
+
             // Look for .xcworkspace first
             if let workspace = contents.first(where: { $0.pathExtension == "xcworkspace" }) {
                 let workspaceName = workspace.lastPathComponent
@@ -294,7 +294,7 @@ actor BuildServerContext {
                     configuration: config.configuration
                 )
             }
-            
+
             // Fallback to .xcodeproj
             if let project = contents.first(where: { $0.pathExtension == "xcodeproj" }) {
                 let projectName = project.lastPathComponent
@@ -310,7 +310,7 @@ actor BuildServerContext {
         } catch {
             logger.debug("Failed to scan directory for Xcode projects: \(error)")
         }
-        
+
         return config
     }
 }

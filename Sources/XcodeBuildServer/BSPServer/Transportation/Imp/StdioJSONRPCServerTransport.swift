@@ -14,7 +14,7 @@ public final class StdioJSONRPCServerTransport: JSONRPCServerTransport {
     private let jsonEncoder = JSONEncoder()
     private let requestHandlerLock = NSLock()
     nonisolated(unsafe) private var _requestHandler: RequestHandler?
-    
+
     public var requestHandler: RequestHandler? {
         get {
             requestHandlerLock.lock()
@@ -43,7 +43,7 @@ public final class StdioJSONRPCServerTransport: JSONRPCServerTransport {
 
         RunLoop.current.run()
     }
-    
+
     public func close() {
         logger.debug("Closing stdio transport")
         input.readabilityHandler = nil

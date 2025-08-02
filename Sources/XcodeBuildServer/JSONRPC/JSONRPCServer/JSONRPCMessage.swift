@@ -28,12 +28,12 @@ public enum JSONRPCID: Codable, Equatable, Hashable, Sendable {
             self = .string(stringValue)
         } else {
             throw DecodingError.typeMismatch(
-                JSONRPCID.self, 
+                JSONRPCID.self,
                 DecodingError.Context(
-                    codingPath: decoder.codingPath, 
+                    codingPath: decoder.codingPath,
                     debugDescription: "ID is not a valid type"
-                    )
-                    )
+                )
+            )
         }
     }
 }
@@ -49,30 +49,30 @@ public struct JSONRPCError: Codable, Sendable {
     let code: Int
     let message: String
     let data: JSONValue?
-    
+
     public init(code: Int, message: String, data: JSONValue? = nil) {
         self.code = code
         self.message = message
         self.data = data
     }
-    
+
     // Standard JSON-RPC error codes
     static func parseError(_ message: String) -> JSONRPCError {
         JSONRPCError(code: -32700, message: "Parse error: \(message)")
     }
-    
+
     static func invalidRequest(_ message: String) -> JSONRPCError {
         JSONRPCError(code: -32600, message: "Invalid request: \(message)")
     }
-    
+
     static func methodNotFound(_ message: String) -> JSONRPCError {
         JSONRPCError(code: -32601, message: "Method not found: \(message)")
     }
-    
+
     static func invalidParams(_ message: String) -> JSONRPCError {
         JSONRPCError(code: -32602, message: "Invalid params: \(message)")
     }
-    
+
     static func internalError(_ message: String) -> JSONRPCError {
         JSONRPCError(code: -32603, message: "Internal error: \(message)")
     }
@@ -91,10 +91,10 @@ public enum JSONRPCResult: Codable, Sendable {
             self = .error(error)
         } else {
             throw DecodingError.dataCorruptedError(
-                forKey: .result, 
-                in: container, 
+                forKey: .result,
+                in: container,
                 debugDescription: "Response must have either result or error"
-                )
+            )
         }
     }
 

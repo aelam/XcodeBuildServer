@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+// ===----------------------------------------------------------------------===//
 //
 // This source file is part of the Swift.org open source project
 //
@@ -8,7 +8,7 @@
 // See https://swift.org/LICENSE.txt for license information
 // See https://swift.org/CONTRIBUTORS.txt for the list of Swift project authors
 //
-//===----------------------------------------------------------------------===//
+// ===----------------------------------------------------------------------===//
 
 /// Representation of 'any' in the Language Server Protocol, which is equivalent
 /// to an arbitrary JSON value.
@@ -112,7 +112,7 @@ extension LSPAny: ExpressibleByArrayLiteral {
 
 extension LSPAny: ExpressibleByDictionaryLiteral {
     public init(dictionaryLiteral elements: (String, LSPAny)...) {
-        let dict = [String: LSPAny](elements, uniquingKeysWith: { first, _ in first })
+        let dict = [String: LSPAny](elements) { first, _ in first }
         self = .dictionary(dict)
     }
 }
