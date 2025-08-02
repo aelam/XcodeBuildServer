@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+// ===----------------------------------------------------------------------===//
 //
 // This source file is part of the Swift.org open source project
 //
@@ -8,12 +8,12 @@
 // See https://swift.org/LICENSE.txt for license information
 // See https://swift.org/CONTRIBUTORS.txt for the list of Swift project authors
 //
-//===----------------------------------------------------------------------===//
+// ===----------------------------------------------------------------------===//
 
 #if compiler(>=6)
-    public import Foundation
+public import Foundation
 #else
-    import Foundation
+import Foundation
 #endif
 
 struct FailedToConstructDocumentURIFromStringError: Error, CustomStringConvertible {

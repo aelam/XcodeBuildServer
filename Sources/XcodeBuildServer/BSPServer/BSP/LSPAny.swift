@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+// ===----------------------------------------------------------------------===//
 //
 // This source file is part of the Swift.org open source project
 //
@@ -8,7 +8,7 @@
 // See https://swift.org/LICENSE.txt for license information
 // See https://swift.org/CONTRIBUTORS.txt for the list of Swift project authors
 //
-//===----------------------------------------------------------------------===//
+// ===----------------------------------------------------------------------===//
 
 /// Representation of 'any' in the Language Server Protocol, which is equivalent
 /// to an arbitrary JSON value.
@@ -112,7 +112,7 @@ extension LSPAny: ExpressibleByArrayLiteral {
 
 extension LSPAny: ExpressibleByDictionaryLiteral {
     public init(dictionaryLiteral elements: (String, LSPAny)...) {
-        let dict = [String: LSPAny](elements, uniquingKeysWith: { first, _ in first })
+        let dict = [String: LSPAny](elements) { first, _ in first }
         self = .dictionary(dict)
     }
 }
@@ -155,49 +155,35 @@ extension Array: LSPAnyCodable where Element: LSPAnyCodable {
 
         var result = [Element]()
         for element in array {
-            switch element {
-            case let .dictionary(dict):
-                if let value = Element(fromLSPDictionary: dict) {
-                    result.append(value)
-                } else {
-                    return nil
-                }
-            case let .array(value):
-                if let value = value as? [Element] {
-                    result.append(contentsOf: value)
-                } else {
-                    return nil
-                }
-            case let .string(value):
-                if let value = value as? Element {
-                    result.append(value)
-                } else {
-                    return nil
-                }
-            case let .int(value):
-                if let value = value as? Element {
-                    result.append(value)
-                } else {
-                    return nil
-                }
-            case let .double(value):
-                if let value = value as? Element {
-                    result.append(value)
-                } else {
-                    return nil
-                }
-            case let .bool(value):
-                if let value = value as? Element {
-                    result.append(value)
-                } else {
-                    return nil
-                }
-            case .null:
-                // null is not expected for non-optional Element
+            guard let converted = Self.convertElement(element) else {
                 return nil
             }
+            result.append(contentsOf: converted)
         }
         self = result
+    }
+    private static func convertElement(_ element: LSPAny) -> [Element]? {
+        switch element {
+        case let .dictionary(dict):
+            return Element(fromLSPDictionary: dict).map { [$0] }
+        case let .array(value):
+            return value as? [Element]
+        case .string, .int, .double, .bool:
+            return convertPrimitiveValue(element)
+        case .null:
+            return nil
+        }
+    }
+    private static func convertPrimitiveValue(_ element: LSPAny) -> [Element]? {
+        let value: Any
+        switch element {
+        case let .string(stringValue): value = stringValue
+        case let .int(intValue): value = intValue
+        case let .double(doubleValue): value = doubleValue
+        case let .bool(boolValue): value = boolValue
+        default: return nil
+        }
+        return (value as? Element).map { [$0] }
     }
 
     public init?(fromLSPDictionary _: [String: LSPAny]) {
