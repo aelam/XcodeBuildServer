@@ -81,7 +81,7 @@ jobs:
         name: codecov-umbrella
         
   lint:
-    name: SwiftLint
+    name: Code Quality
     runs-on: macos-14
     
     steps:
@@ -95,12 +95,61 @@ jobs:
     - name: Run SwiftLint
       run: |
         swiftlint --strict --reporter github-actions-logging
+        
+    - name: Install swift-format
+      run: |
+        brew install swift-format
+        
+    - name: Check Swift Format
+      run: |
+        swift-format lint --recursive Sources Tests
+
+  security-scan:
+    name: Security Scan
+    runs-on: macos-14
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Install Semgrep
+      run: |
+        brew install semgrep
+        
+    - name: Run Semgrep Security Scan
+      run: |
+        semgrep --config=p/swift --config=p/security-audit --config=p/secrets . || echo "Semgrep scan completed with findings"
+        
+    - name: Check for hardcoded secrets
+      run: |
+        echo "Checking for potential secrets..."
+        
+        SECRETS_FOUND=false
+        
+        if grep -ri "api[_-]\?key\s*[:=]\s*['\"][^'\"]*['\"]" Sources/ Tests/ --include="*.swift" 2>/dev/null; then
+          echo "::warning::Potential API key pattern found"
+          SECRETS_FOUND=true
+        fi
+        
+        if grep -ri "token\s*[:=]\s*['\"][^'\"]*['\"]" Sources/ Tests/ --include="*.swift" 2>/dev/null; then
+          echo "::warning::Potential token pattern found"
+          SECRETS_FOUND=true
+        fi
+        
+        if grep -ri "password\s*[:=]\s*['\"][^'\"]*['\"]" Sources/ Tests/ --include="*.swift" 2>/dev/null; then
+          echo "::warning::Potential password pattern found"
+          SECRETS_FOUND=true
+        fi
+        
+        if [ "$SECRETS_FOUND" = false ]; then
+          echo "✅ No obvious secrets found"
+        fi
 
   build-release:
     name: Build Release
     runs-on: macos-14
     if: github.ref == 'refs/heads/main'
-    needs: [build-and-test, lint]
+    needs: [build-and-test, lint, security-scan]
     
     steps:
     - name: Checkout
