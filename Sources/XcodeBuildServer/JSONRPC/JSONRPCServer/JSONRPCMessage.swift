@@ -43,6 +43,33 @@ public struct JSONRPCError: Codable, Sendable {
     let code: Int
     let message: String
     let data: JSONValue?
+    
+    public init(code: Int, message: String, data: JSONValue? = nil) {
+        self.code = code
+        self.message = message
+        self.data = data
+    }
+    
+    // Standard JSON-RPC error codes
+    static func parseError(_ message: String) -> JSONRPCError {
+        JSONRPCError(code: -32700, message: "Parse error: \(message)")
+    }
+    
+    static func invalidRequest(_ message: String) -> JSONRPCError {
+        JSONRPCError(code: -32600, message: "Invalid request: \(message)")
+    }
+    
+    static func methodNotFound(_ message: String) -> JSONRPCError {
+        JSONRPCError(code: -32601, message: "Method not found: \(message)")
+    }
+    
+    static func invalidParams(_ message: String) -> JSONRPCError {
+        JSONRPCError(code: -32602, message: "Invalid params: \(message)")
+    }
+    
+    static func internalError(_ message: String) -> JSONRPCError {
+        JSONRPCError(code: -32603, message: "Internal error: \(message)")
+    }
 }
 
 public enum JSONRPCResult: Codable, Sendable {
@@ -81,6 +108,18 @@ public struct JSONRPCResponse: ResponseType {
     public let id: JSONRPCID?
     public let jsonrpc: String
     let response: JSONRPCResult
+}
+
+public struct JSONRPCErrorResponse: ResponseType {
+    public let jsonrpc: String
+    public let id: JSONRPCID?
+    public let error: JSONRPCError
+    
+    public init(jsonrpc: String = "2.0", id: JSONRPCID?, error: JSONRPCError) {
+        self.jsonrpc = jsonrpc
+        self.id = id
+        self.error = error
+    }
 }
 
 public enum JSONValue: Codable, Sendable {

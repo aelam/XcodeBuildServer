@@ -48,8 +48,8 @@ public struct TextDocumentRegisterForChangeRequest: RequestType, @unchecked Send
         }
 
         if params.action == .register {
-            let arguments = handler.buildServerContext.getCompileArguments(fileURI: fileURL.path)
-            let workingDirectory = handler.buildServerContext.rootURL?.path
+            let arguments = await handler.getCompileArguments(fileURI: fileURL.path)
+            let workingDirectory = await handler.getRootURL()?.path
             return TextDocumentRegisterForChangeResponse(
                 jsonrpc: jsonrpc,
                 id: id,

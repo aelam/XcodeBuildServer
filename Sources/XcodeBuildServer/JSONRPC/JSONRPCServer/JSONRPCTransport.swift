@@ -20,6 +20,7 @@ public typealias RequestHandler = @Sendable (_ request: JSONRPCRequest, _ reques
 
 public protocol JSONRPCServerTransport: AnyObject, Sendable {
     func listen()
+    func close()
     var requestHandler: RequestHandler? { get set }
     func send(response: ResponseType) throws
 }

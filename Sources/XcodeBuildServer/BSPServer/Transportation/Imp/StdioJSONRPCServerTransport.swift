@@ -29,6 +29,13 @@ public final class StdioJSONRPCServerTransport: JSONRPCServerTransport {
 
         RunLoop.current.run()
     }
+    
+    public func close() {
+        logger.debug("Closing stdio transport")
+        input.readabilityHandler = nil
+        // Note: We don't close stdio handles as they are managed by the system
+        logger.debug("Stdio transport closed")
+    }
 
     private func handleData(fileHandle: FileHandle) throws {
         let data = fileHandle.availableData

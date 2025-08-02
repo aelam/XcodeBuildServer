@@ -58,8 +58,8 @@ public struct BuildInitializeRequest: RequestType, @unchecked Sendable {
             try await handler.initialize(rootURL: URL(filePath: params.rootUri))
             guard
                 let rootURL = URL(string: params.rootUri), // without file://
-                let indexDataStoreURL = handler.buildServerContext.indexStoreURL,
-                let indexDatabaseURL = handler.buildServerContext.indexDatabaseURL
+                let indexDataStoreURL = await handler.getIndexStoreURL(),
+                let indexDatabaseURL = await handler.getIndexDatabaseURL()
             else {
                 return nil
             }
