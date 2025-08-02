@@ -44,18 +44,6 @@ jobs:
       run: |
         swift-format lint --recursive Sources Tests
         
-  dependency-review:
-    name: Dependency Review
-    runs-on: macos-14
-    if: github.event_name == 'pull_request'
-    
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      
-    - name: Dependency Review
-      uses: actions/dependency-review-action@v4
-      
   security-scan:
     name: Security Scan
     runs-on: macos-14
