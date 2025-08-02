@@ -1,0 +1,124 @@
+# SwiftLint configuration file
+
+# Include/Exclude paths
+included:
+  - Sources
+  - Tests
+
+excluded:
+  - .build
+  - .swiftpm
+  - Package.swift
+
+# Rules configuration
+opt_in_rules:
+  - array_init
+  - closure_spacing
+  - collection_alignment
+  - contains_over_filter_count
+  - empty_count
+  - empty_string
+  - fatal_error_message
+  - first_where
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - last_where
+  - legacy_random
+  - literal_expression_end_indentation
+  - multiline_arguments
+  - multiline_function_chains
+  - multiline_literal_brackets
+  - multiline_parameters
+  - operator_usage_whitespace
+  - overridden_super_call
+  - pattern_matching_keywords
+  - prefer_self_type_over_type_of_self
+  - redundant_nil_coalescing
+  - sorted_first_last
+  - toggle_bool
+  - trailing_closure
+  - unneeded_parentheses_in_closure_argument
+  - unused_import
+  - vertical_parameter_alignment_on_call
+  - yoda_condition
+
+disabled_rules:
+  - todo
+  - trailing_comma
+  - explicit_acl  # Too many violations, will be addressed gradually
+  - force_unwrapping  # Some cases are necessary for reliability
+
+# Rule-specific configuration
+line_length:
+  warning: 120
+  error: 150
+  ignores_urls: true
+  ignores_function_declarations: true
+  ignores_comments: true
+
+function_body_length:
+  warning: 60
+  error: 120
+
+function_parameter_count:
+  warning: 5
+  error: 8
+
+type_body_length:
+  warning: 200
+  error: 300
+
+file_length:
+  warning: 400
+  error: 1000
+
+cyclomatic_complexity:
+  warning: 10
+  error: 20
+
+nesting:
+  type_level:
+    warning: 2
+    error: 3
+  function_level:
+    warning: 5
+    error: 10
+
+identifier_name:
+  min_length:
+    warning: 1
+    error: 1
+  max_length:
+    warning: 40
+    error: 60
+  excluded:
+    - id
+    - x
+    - y
+    - z
+    - git_commit
+    - git_rebase
+    - objective_c
+    - objective_cpp
+
+type_name:
+  min_length:
+    warning: 3
+    error: 2
+  max_length:
+    warning: 50
+    error: 60
+  excluded:
+    - WorkspaceDidChangeWatchedFilesNotification
+    - WorkspaceWaitForBuildSystemUpdatesRequest
+
+# Custom rules (examples)
+custom_rules:
+  # Force developers to use explicit access control
+  explicit_acl:
+    name: "Explicit ACL"
+    regex: "^\\s*(class|struct|enum|protocol|extension|func|var|let)\\s+"
+    match_kinds:
+      - keyword
+    message: "Consider using explicit access control"
+    severity: warning

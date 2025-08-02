@@ -16,7 +16,7 @@
             "program": "${workspaceFolder:XcodeBuildServer}/.build/debug/XcodeBuildServerCLI"
         },
         {
-            "type": "lldb",
+            "type": "swift",
             "request": "launch",
             "args": [],
             "cwd": "${workspaceFolder:XcodeBuildServer}",
@@ -25,7 +25,7 @@
             "preLaunchTask": "swift: Build Release XcodeBuildServerCLI"
         },
         {
-            "type": "lldb",
+            "type": "swift",
             "request": "launch",
             "args": [],
             "cwd": "${workspaceFolder:XcodeBuildServer}",
