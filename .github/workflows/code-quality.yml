@@ -1,0 +1,117 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  swiftlint:
+    name: SwiftLint
+    runs-on: macos-14
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: SwiftLint
+      uses: norio-nomura/action-swiftlint@3.2.1
+      with:
+        args: --strict --reporter github-actions-logging
+        
+    - name: SwiftLint (Annotate only)
+      if: failure()
+      uses: norio-nomura/action-swiftlint@3.2.1
+      with:
+        args: --reporter github-actions-logging
+        
+  swift-format:
+    name: Swift Format Check
+    runs-on: macos-14
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Install swift-format
+      run: |
+        brew install swift-format
+        
+    - name: Check Swift Format
+      run: |
+        swift-format lint --recursive Sources Tests
+        
+  dependency-review:
+    name: Dependency Review
+    runs-on: macos-14
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Dependency Review
+      uses: actions/dependency-review-action@v4
+      
+  security-scan:
+    name: Security Scan
+    runs-on: macos-14
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Run Semgrep
+      uses: semgrep/semgrep-action@v1
+      with:
+        config: >-
+          p/swift
+          p/security-audit
+          p/secrets
+      env:
+        SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+        
+    - name: Check for hardcoded secrets
+      run: |
+        # Simple regex patterns for common secrets
+        echo "Checking for potential secrets..."
+        
+        # API keys
+        if grep -r "api[_-]key\s*[:=]\s*['\"][^'\"]*['\"]" Sources/ Tests/ --include="*.swift"; then
+          echo "::error::Potential API key found"
+          exit 1
+        fi
+        
+        # Tokens
+        if grep -r "token\s*[:=]\s*['\"][^'\"]*['\"]" Sources/ Tests/ --include="*.swift"; then
+          echo "::error::Potential token found"
+          exit 1
+        fi
+        
+        echo "No obvious secrets found"
+        
+  documentation:
+    name: Documentation Check
+    runs-on: macos-14
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Swift
+      uses: swift-actions/setup-swift@v2
+      with:
+        swift-version: '5.10'
+        
+    - name: Generate Documentation
+      run: |
+        swift package generate-documentation --warnings-as-errors
+        
+    - name: Upload Documentation
+      uses: actions/upload-artifact@v4
+      if: github.ref == 'refs/heads/main'
+      with:
+        name: documentation
+        path: .build/plugins/Swift-DocC/outputs/XcodeBuildServer.doccarchive
+        retention-days: 7

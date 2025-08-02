@@ -114,7 +114,7 @@ public struct JSONRPCErrorResponse: ResponseType {
     public let jsonrpc: String
     public let id: JSONRPCID?
     public let error: JSONRPCError
-    
+
     public init(jsonrpc: String = "2.0", id: JSONRPCID?, error: JSONRPCError) {
         self.jsonrpc = jsonrpc
         self.id = id
