@@ -125,7 +125,9 @@ actor BuildServerContext {
         let data = Data(json.utf8)
         do {
             buildSettingsForIndex = try jsonDecoder.decode(BuildSettingsForIndex.self, from: data)
-            logger.debug("Build settings for index: \(String(describing: self.buildSettingsForIndex), privacy: .public)")
+            logger.debug(
+                "Build settings for index: \(String(describing: self.buildSettingsForIndex), privacy: .public)"
+            )
         } catch {
             logger.error("Failed to decode build settings for index: \(error)")
             throw BuildServerError.buildSettingsForIndexLoadFailed
@@ -137,7 +139,9 @@ actor BuildServerContext {
             throw BuildServerError.invalidConfiguration("No scheme available for indexing paths")
         }
 
-        guard let buildSettings = buildSettings?.first(where: { $0.target == scheme && $0.action == "build" })?.buildSettings else {
+        guard let buildSettings = buildSettings?.first(where: {
+            $0.target == scheme && $0.action == "build"
+        })?.buildSettings else {
             throw BuildServerError.invalidConfiguration("No build settings found for scheme: \(scheme)")
         }
 
@@ -250,7 +254,26 @@ actor BuildServerContext {
         }
     }
 
-    private func validateAndNormalizeConfig(_ config: BuildServerConfig, rootURL: URL?) -> BuildServerConfig {
+}
+
+extension BuildServerContext {
+    func getCompileArguments(fileURI: String) -> [String] {
+        let filePath = URL(filePath: fileURI).path
+        guard
+            let buildSettingsForIndex,
+            let scheme = xcodeProject?.scheme
+        else {
+            return []
+        }
+
+        let fileBuildSettings = buildSettingsForIndex[scheme]?[filePath]
+        return fileBuildSettings?.swiftASTCommandArguments ?? []
+    }
+}
+
+// MARK: - Private Configuration Helpers
+private extension BuildServerContext {
+    func validateAndNormalizeConfig(_ config: BuildServerConfig, rootURL: URL?) -> BuildServerConfig {
         var normalizedConfig = config
 
         // Ensure we have either workspace or project
@@ -274,7 +297,7 @@ actor BuildServerContext {
         return normalizedConfig
     }
 
-    private func findWorkspaceOrProject(in config: BuildServerConfig, rootURL: URL?) -> BuildServerConfig {
+    func findWorkspaceOrProject(in config: BuildServerConfig, rootURL: URL?) -> BuildServerConfig {
         guard let rootURL = rootURL else { return config }
 
         let fileManager = FileManager.default
@@ -312,20 +335,5 @@ actor BuildServerContext {
         }
 
         return config
-    }
-}
-
-extension BuildServerContext {
-    func getCompileArguments(fileURI: String) -> [String] {
-        let filePath = URL(filePath: fileURI).path
-        guard
-            let buildSettingsForIndex,
-            let scheme = xcodeProject?.scheme
-        else {
-            return []
-        }
-
-        let fileBuildSettings = buildSettingsForIndex[scheme]?[filePath]
-        return fileBuildSettings?.swiftASTCommandArguments ?? []
     }
 }

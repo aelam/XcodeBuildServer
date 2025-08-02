@@ -15,7 +15,10 @@ public enum ProgressToken: Codable, Hashable, Sendable {
         } else if let string = try? String(from: decoder) {
             self = .string(string)
         } else {
-            let context = DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Expected Int or String")
+            let context = DecodingError.Context(
+                codingPath: decoder.codingPath,
+                debugDescription: "Expected Int or String"
+            )
             throw DecodingError.dataCorrupted(context)
         }
     }

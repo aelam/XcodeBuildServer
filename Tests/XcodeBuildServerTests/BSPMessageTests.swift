@@ -34,7 +34,6 @@ final class BSPMessageTests: XCTestCase {
 
         let data = message.data(using: .utf8)!
         let request = try JSONDecoder().decode(JSONRPCRequest.self, from: data)
-        
         XCTAssertEqual(request.method, "build/initialize")
         XCTAssertEqual(request.jsonrpc, "2.0")
         XCTAssertNotNil(request.id)
@@ -44,7 +43,6 @@ final class BSPMessageTests: XCTestCase {
             let typedRequest = try JSONDecoder().decode(requestType.self, from: data)
             // Verify it's the correct type
             XCTAssertTrue(typedRequest is BuildInitializeRequest)
-            
             if let buildRequest = typedRequest as? BuildInitializeRequest {
                 XCTAssertEqual(buildRequest.params.rootUri, "file:///Users/test/project")
                 XCTAssertEqual(buildRequest.params.displayName, "Test Client")

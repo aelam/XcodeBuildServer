@@ -15,7 +15,7 @@ struct ProcessNotification: NotificationType, Sendable {
     static var method: String { "$/progress" }
 
     func handle(_: MessageHandler) async throws {
-        fatalError()
+        fatalError("ProcessNotification not implemented")
     }
 }
 

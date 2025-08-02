@@ -6,7 +6,7 @@
 //
 
 public final class BuildShutdownRequest: Request, @unchecked Sendable {
-    override public class var method: String { "build/shutdown" }
+    override public static var method: String { "build/shutdown" }
 
     override public func handle(
         _: MessageHandler,
