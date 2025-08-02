@@ -6,17 +6,15 @@ on:
   pull_request:
     branches: [ main ]
 
-env:
-  DEVELOPER_DIR: /Applications/Xcode_16.2.app/Contents/Developer
-
 jobs:
   build-and-test:
     name: Build and Test
-    runs-on: macos-14
+    runs-on: macos-latest
     
     strategy:
       matrix:
         swift-version: ['6.1']
+        xcode-version: ['16.3']
     
     steps:
     - name: Checkout
@@ -42,43 +40,41 @@ jobs:
       
     - name: Run Tests
       run: swift test --enable-code-coverage
+
+    - name: Install LLVM
+      run: brew install llvm
       
-    - name: Generate Code Coverage
+    - name: Generate coverage report
       run: |
-        # Use a simpler approach with llvm-cov
-        echo "Generating code coverage report..."
+        # Use Homebrew LLVM tools for better version compatibility
+        LLVM_COV="/opt/homebrew/opt/llvm/bin/llvm-cov"
+        LLVM_PROFDATA="/opt/homebrew/opt/llvm/bin/llvm-profdata"
         
-        # Find all source files for coverage
-        find Sources -name "*.swift" > sources.txt
+        TEST_BINARY=$(find .build -path "*/Contents/MacOS/*PackageTests" -type f -perm +111 | head -1)
         
-        # Generate coverage using Swift's built-in capabilities
-        swift test --enable-code-coverage --build-path .build
-        
-        # Try to find and convert coverage data
-        if find .build -name "*.profdata" -type f | head -1 | xargs -I {} \
-           find .build -name "*PackageTests*" -type f | head -1 | xargs -I % \
-           xcrun llvm-cov export -format=lcov % -instr-profile {} > coverage.lcov 2>/dev/null; then
-          echo "✅ Coverage report generated successfully"
+        # Try merging profraw files with newer LLVM tools
+        if find .build -name "*.profraw" | head -1 >/dev/null 2>&1; then
+          echo "Merging profraw files with Homebrew LLVM..."
+          if $LLVM_PROFDATA merge -sparse .build/*/debug/codecov/*.profraw -o coverage.profdata 2>/dev/null; then
+            $LLVM_COV export "$TEST_BINARY" -instr-profile=coverage.profdata -format=lcov > coverage.info
+            echo "✅ Generated coverage using Homebrew LLVM tools"
+          else
+            echo "⚠️ Failed to merge profraw files"
+            echo "# No coverage data available" > coverage.info
+          fi
         else
-          echo "⚠️  Using alternative coverage method"
-          # Alternative: create a basic coverage report
-          echo "TN:" > coverage.lcov
-          echo "SF:Sources/XcodeBuildServer/main.swift" >> coverage.lcov
-          echo "FNF:0" >> coverage.lcov
-          echo "FNH:0" >> coverage.lcov
-          echo "LF:0" >> coverage.lcov
-          echo "LH:0" >> coverage.lcov
-          echo "end_of_record" >> coverage.lcov
+          echo "⚠️ No profraw files found"
+          echo "# No coverage data available" > coverage.info
         fi
         
-        ls -la coverage.lcov || echo "Coverage file not found"
-        
-    - name: Upload Coverage to Codecov
+    - name: Upload to Codecov
       uses: codecov/codecov-action@v4
       with:
-        file: ./coverage.lcov
-        flags: unittests
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: coverage.info
         name: codecov-umbrella
+        fail_ci_if_error: false
+        verbose: true
         
   lint:
     name: Code Quality
