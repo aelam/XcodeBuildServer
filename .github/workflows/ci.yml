@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 env:
-  DEVELOPER_DIR: /Applications/Xcode_15.4.app/Contents/Developer
+  DEVELOPER_DIR: /Applications/Xcode_16.2.app/Contents/Developer
 
 jobs:
   build-and-test:
@@ -45,9 +45,28 @@ jobs:
       
     - name: Generate Code Coverage
       run: |
-        xcrun llvm-cov export -format="lcov" \
-          .build/debug/XcodeBuildServerPackageTests.xctest/Contents/MacOS/XcodeBuildServerPackageTests \
-          -instr-profile .build/debug/codecov/default.profdata > coverage.lcov
+        # Ensure we're using the correct toolchain for coverage
+        SWIFT_EXEC=$(which swift)
+        TOOLCHAIN_PATH=$(dirname $(dirname $SWIFT_EXEC))
+        export PATH="$TOOLCHAIN_PATH/usr/bin:$PATH"
+        
+        # Find the test executable
+        TEST_EXECUTABLE=$(find .build -name "XcodeBuildServerPackageTests" -type f | head -1)
+        if [ -z "$TEST_EXECUTABLE" ]; then
+          echo "Test executable not found, trying alternative path..."
+          TEST_EXECUTABLE=".build/debug/XcodeBuildServerPackageTests.xctest/Contents/MacOS/XcodeBuildServerPackageTests"
+        fi
+        
+        # Generate coverage report
+        llvm-cov export -format="lcov" \
+          "$TEST_EXECUTABLE" \
+          -instr-profile .build/debug/codecov/default.profdata > coverage.lcov || {
+          echo "Coverage generation failed, trying without xcrun..."
+          xcrun --find llvm-cov
+          /usr/bin/xcrun llvm-cov export -format="lcov" \
+            "$TEST_EXECUTABLE" \
+            -instr-profile .build/debug/codecov/default.profdata > coverage.lcov
+        }
         
     - name: Upload Coverage to Codecov
       uses: codecov/codecov-action@v4
