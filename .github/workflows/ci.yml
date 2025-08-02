@@ -90,23 +90,7 @@ jobs:
     - name: Run SwiftLint
       run: |
         swiftlint --strict --reporter github-actions-logging
-        
-  security-audit:
-    name: Security Audit
-    runs-on: macos-14
-    
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      
-    - name: Audit Dependencies
-      run: |
-        swift package show-dependencies --format json > dependencies.json
-        # Check for known vulnerabilities (basic check)
-        if [ -f dependencies.json ]; then
-          echo "Dependencies audit completed"
-        fi
-        
+
   build-release:
     name: Build Release
     runs-on: macos-14
