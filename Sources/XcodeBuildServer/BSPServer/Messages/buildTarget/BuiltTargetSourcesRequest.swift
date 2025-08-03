@@ -11,7 +11,7 @@ struct BuiltTargetSourcesRequest: RequestType, Sendable {
         "buildTarget/sources"
     }
 
-    struct Params {
+    struct Params: Codable, Sendable {
         let language: LanguageId?
         let isHeader: Bool?
     }

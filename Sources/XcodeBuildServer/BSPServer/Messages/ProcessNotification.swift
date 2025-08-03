@@ -12,7 +12,7 @@ struct ProcessNotification: NotificationType, Sendable {
         "$/progress"
     }
 
-    struct Params {
+    struct Params: Codable, Sendable {
         let token: ProgressToken
         let value: WorkDoneProgressKind
     }
