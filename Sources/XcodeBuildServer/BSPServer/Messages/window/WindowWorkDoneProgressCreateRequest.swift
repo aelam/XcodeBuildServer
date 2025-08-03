@@ -1,11 +1,11 @@
 //
-//  WindowWorkDoneProgressCreate.swift
+//  WindowWorkDoneProgressCreateRequest.swift
 //  XcodeBuildServer
 //
 //  Created by ST22956 on 2024/11/23.
 //
 
-public struct CreateWorkDoneProgressRequest: RequestType {
+public struct WindowWorkDoneProgressCreateRequest: RequestType {
     public static func method() -> String {
         "window/workDoneProgress/create"
     }

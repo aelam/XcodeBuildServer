@@ -10,7 +10,7 @@ public struct WorkspaceDidChangeWatchedFilesNotification: NotificationType, Send
     }
 
     public struct Params: Codable, Sendable {
-        public var targets: [String]
+        public let targets: [String]
     }
 
     public func handle(

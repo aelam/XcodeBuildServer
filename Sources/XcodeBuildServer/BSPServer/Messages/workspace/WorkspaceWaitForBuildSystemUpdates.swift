@@ -13,7 +13,7 @@ public struct WorkspaceWaitForBuildSystemUpdatesRequest: RequestType, Sendable {
     }
 
     public struct Params: Codable, Sendable {
-        public var targets: [String]
+        public let targets: [String]
     }
 
     public func handle(
