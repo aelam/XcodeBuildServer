@@ -13,14 +13,18 @@
 /// Build target contains metadata about an artifact (for example library, test, or binary artifact).
 /// Using vocabulary of other build tools:
 /// - sbt: a build target is a combined project + config. Example:
-///   - a regular JVM project with main and test configurations will have 2 build targets, one for main and one for test.
+///   - a regular JVM project with main and test configurations will have 2 build targets, one for main and one for
+/// test.
 ///   - a single configuration in a single project that contains both Java and Scala sources maps to one BuildTarget.
-///    - a project with crossScalaVersions 2.11 and 2.12 containing main and test configuration in each will have 4 build targets.
-///   - a Scala 2.11 and 2.12 cross-built project for Scala.js and the JVM with main and test configurations will have 8 build targets.
+///    - a project with crossScalaVersions 2.11 and 2.12 containing main and test configuration in each will have 4
+/// build targets.
+///   - a Scala 2.11 and 2.12 cross-built project for Scala.js and the JVM with main and test configurations will have 8
+/// build targets.
 /// - Pants: a pants target corresponds one-to-one with a BuildTarget
 /// - Bazel: a bazel target corresponds one-to-one with a BuildTarget
 ///
-/// The general idea is that the BuildTarget data structure should contain only information that is fast or cheap to compute
+/// The general idea is that the BuildTarget data structure should contain only information that is fast or cheap to
+/// compute
 public struct BuildTarget: Codable, Hashable, Sendable {
     /// The target’s unique identifier
     public var id: BuildTargetIdentifier
@@ -119,7 +123,8 @@ public struct BuildTargetTag: Codable, Hashable, RawRepresentable, Sendable {
     /// require the `canTest` capability.
     public static let test: Self = .init(rawValue: "test")
 
-    /// This is a target of a dependency from the project the user opened, eg. a target that builds a SwiftPM dependency.
+    /// This is a target of a dependency from the project the user opened, eg. a target that builds a SwiftPM
+    /// dependency.
     ///
     /// **(BSP Extension)**
     public static let dependency: Self = .init(rawValue: "dependency")

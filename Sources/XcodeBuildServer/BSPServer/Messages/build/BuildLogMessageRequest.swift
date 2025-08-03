@@ -1,23 +1,25 @@
 //
-//  buildLogMessageRequest.swift
+//  BuildLogMessageRequest.swift
 //  XcodeBuildServer
 //
 //  Created by ST22956 on 2024/11/24.
 //
 
-public struct BuildLogMessageRequest: RequestType, @unchecked Sendable {
-
-    public static var method: String { "build/logMessage" }
+public struct BuildLogMessageRequest: RequestType, Sendable {
+    public static func method() -> String {
+        "build/logMessage"
+    }
 
     let id: JSONRPCID
 
     public func handle(
-        _ handler: any MessageHandler,
+        handler: any MessageHandler,
         id: RequestID
     ) async -> ResponseType? {
         guard let handler = handler as? XcodeBSPMessageHandler else {
             return nil
         }
+        _ = handler
         return nil
     }
 }

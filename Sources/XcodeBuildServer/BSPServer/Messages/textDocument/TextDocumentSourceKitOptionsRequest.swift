@@ -158,14 +158,19 @@
 /// The request may return `nil` if it doesn't have any build settings for this file in the given target.
 ///
 
-public struct TextDocumentSourceKitOptionsRequest: RequestType, @unchecked Sendable {
+public struct TextDocumentSourceKitOptionsRequest: RequestType, Sendable {
+    public static func method() -> String {
+        "textDocument/sourceKitOptions"
+    }
+
     public struct Params: Codable, Sendable {
         /// The URI of the document to get options for
         public var textDocument: TextDocumentIdentifier
 
         /// The target for which the build setting should be returned.
         ///
-        /// A source file might be part of multiple targets and might have different compiler arguments in those two targets,
+        /// A source file might be part of multiple targets and might have different compiler arguments in those two
+        /// targets,
         /// thus the target is necessary in this request.
         public var target: BuildTargetIdentifier
 
@@ -173,15 +178,13 @@ public struct TextDocumentSourceKitOptionsRequest: RequestType, @unchecked Senda
         public var language: Language
     }
 
-    public static let method: String = "textDocument/sourceKitOptions"
-
     public let id: JSONRPCID
     public let jsonrpc: String
     public let params: Params
 
     public func handle(
-        _ handler: any MessageHandler,
-        id _: RequestID
+        handler: any MessageHandler,
+        id: RequestID
     ) async -> ResponseType? {
         guard handler is XcodeBSPMessageHandler else {
             return nil

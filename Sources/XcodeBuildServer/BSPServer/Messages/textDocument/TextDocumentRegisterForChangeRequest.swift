@@ -18,8 +18,12 @@ import Foundation
  }
  */
 
-public struct TextDocumentRegisterForChangeRequest: RequestType, @unchecked Sendable {
-    public struct Params: Codable {
+public struct TextDocumentRegisterForChangeRequest: RequestType, Sendable {
+    public static func method() -> String {
+        "textDocument/registerForChanges"
+    }
+
+    public struct Params: Codable, Sendable {
         let uri: String
         let action: RegisterAction
     }
@@ -29,15 +33,13 @@ public struct TextDocumentRegisterForChangeRequest: RequestType, @unchecked Send
         case unregister
     }
 
-    public static var method: String { "textDocument/registerForChanges" }
-
     public let id: JSONRPCID
     public let jsonrpc: String
     public let params: Params
 
     public func handle(
-        _ handler: any MessageHandler,
-        id _: RequestID
+        handler: any MessageHandler,
+        id: RequestID
     ) async -> ResponseType? {
         guard let handler = handler as? XcodeBSPMessageHandler else {
             return nil
@@ -54,10 +56,10 @@ public struct TextDocumentRegisterForChangeRequest: RequestType, @unchecked Send
                 jsonrpc: jsonrpc,
                 id: id,
                 result:
-                    TextDocumentRegisterForChangeResponse.Result(
-                        compilerArguments: arguments,
-                        workingDirectory: workingDirectory
-                    )
+                TextDocumentRegisterForChangeResponse.Result(
+                    compilerArguments: arguments,
+                    workingDirectory: workingDirectory
+                )
             )
         } else {}
         return nil

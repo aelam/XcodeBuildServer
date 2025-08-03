@@ -9,8 +9,8 @@ public final class MessageRegistry: Sendable {
     private let methodToNotification: [String: any NotificationType.Type]
 
     public init(requests: [any RequestType.Type], notifications: [any NotificationType.Type]) {
-        methodToRequest = Dictionary(uniqueKeysWithValues: requests.map { ($0.method, $0) })
-        methodToNotification = Dictionary(uniqueKeysWithValues: notifications.map { ($0.method, $0) })
+        methodToRequest = Dictionary(uniqueKeysWithValues: requests.map { ($0.method(), $0) })
+        methodToNotification = Dictionary(uniqueKeysWithValues: notifications.map { ($0.method(), $0) })
     }
 
     /// Returns the type of the message named `method`, or nil if it is unknown.

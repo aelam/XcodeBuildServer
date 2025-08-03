@@ -159,7 +159,7 @@ public extension Language {
 }
 
 package extension Language {
-    package init?(inferredFromFileExtension fileURL: URL) {
+    init?(inferredFromFileExtension fileURL: URL) {
         // URL.pathExtension is only set for file URLs but we want to also infer a file extension for non-file URLs like
         // untitled:file.cpp
         let pathExtension = fileURL.pathExtension

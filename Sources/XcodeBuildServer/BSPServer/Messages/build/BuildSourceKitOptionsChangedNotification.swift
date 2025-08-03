@@ -134,6 +134,10 @@
 /// server --> client
 /// Deprecated
 public struct BuildSourceKitOptionsChangedNotification: NotificationType, Sendable {
+    public static func method() -> String {
+        "build/sourceKitOptionsChanged"
+    }
+
     public struct Params: Codable, Sendable {
         public struct UpdateOptions: Codable, Sendable {
             public let options: [String]
@@ -145,15 +149,14 @@ public struct BuildSourceKitOptionsChangedNotification: NotificationType, Sendab
 
         /// The target for which the build setting should be returned.
         ///
-        /// A source file might be part of multiple targets and might have different compiler arguments in those two targets,
+        /// A source file might be part of multiple targets and might have different compiler arguments in those two
+        /// targets,
         /// thus the target is necessary in this request.
         public var target: BuildTargetIdentifier
 
         /// The language with which the document was opened in the editor.
         public var language: Language
     }
-
-    public static let method: String = "build/sourceKitOptionsChanged"
 
     public let id: JSONRPCID
     public let jsonrpc: String

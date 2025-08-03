@@ -30,8 +30,12 @@ import Foundation
  }
  */
 
-public struct BuildInitializeRequest: RequestType, @unchecked Sendable {
-    struct Params: Codable {
+public struct BuildInitializeRequest: RequestType, Sendable {
+    public static func method() -> String {
+        "build/initialize"
+    }
+
+    struct Params: Codable, Sendable {
         struct BuildClientCapabilities: Codable, Sendable {
             let languageIds: [Language]
         }
@@ -41,13 +45,11 @@ public struct BuildInitializeRequest: RequestType, @unchecked Sendable {
         let displayName: String?
     }
 
-    public static var method: String { "build/initialize" }
-
     let id: JSONRPCID
     let params: Params
 
     public func handle(
-        _ handler: any MessageHandler,
+        handler: any MessageHandler,
         id: RequestID
     ) async -> ResponseType? {
         guard let handler = handler as? XcodeBSPMessageHandler else {

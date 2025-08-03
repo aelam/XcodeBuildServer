@@ -7,14 +7,16 @@
 import Foundation
 
 struct BuiltTargetSourcesRequest: RequestType, Sendable {
-    struct Params {
+    static func method() -> String {
+        "buildTarget/sources"
+    }
+
+    struct Params: Codable, Sendable {
         let language: LanguageId?
         let isHeader: Bool?
     }
 
-    static var method: String { "buildTarget/sources" }
-
-    func handle(_: any MessageHandler, id _: RequestID) async -> (any ResponseType)? {
+    func handle(handler: any MessageHandler, id: RequestID) async -> (any ResponseType)? {
         nil
     }
 }
@@ -124,10 +126,10 @@ public struct SourceKitSourceItemData: LSPAnyCodable, Codable {
     }
 
     public init?(fromLSPDictionary dictionary: [String: LSPAny]) {
-        if case .string(let language) = dictionary[CodingKeys.language.stringValue] {
+        if case let .string(language) = dictionary[CodingKeys.language.stringValue] {
             self.language = Language(rawValue: language)
         }
-        if case .bool(let isHeader) = dictionary[CodingKeys.isHeader.stringValue] {
+        if case let .bool(isHeader) = dictionary[CodingKeys.isHeader.stringValue] {
             self.isHeader = isHeader
         }
     }

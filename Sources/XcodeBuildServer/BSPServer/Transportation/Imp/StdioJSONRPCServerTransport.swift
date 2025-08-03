@@ -13,7 +13,7 @@ public final class StdioJSONRPCServerTransport: JSONRPCServerTransport {
     private let jsonDecoder = JSONDecoder()
     private let jsonEncoder = JSONEncoder()
     private let requestHandlerLock = NSLock()
-    nonisolated(unsafe) private var _requestHandler: RequestHandler?
+    private nonisolated(unsafe) var _requestHandler: RequestHandler?
 
     public var requestHandler: RequestHandler? {
         get {
@@ -91,6 +91,7 @@ public final class StdioJSONRPCServerTransport: JSONRPCServerTransport {
         output.write(data)
 
         logger.debug(
-            "Response: + \(header + String(data: data, encoding: .utf8)!, privacy: .public)")
+            "Response: + \(header + String(data: data, encoding: .utf8)!, privacy: .public)"
+        )
     }
 }

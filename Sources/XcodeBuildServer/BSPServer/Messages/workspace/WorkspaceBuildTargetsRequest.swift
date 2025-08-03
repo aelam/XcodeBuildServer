@@ -19,16 +19,18 @@
 
  */
 
-public struct WorkspaceBuildTargetsRequest: RequestType, @unchecked Sendable {
-    public static var method: String { "workspace/buildTargets" }
+public struct WorkspaceBuildTargetsRequest: RequestType, Sendable {
+    public static func method() -> String {
+        "workspace/buildTargets"
+    }
 
-    public struct Params: Codable {
+    public struct Params: Codable, Sendable {
         public var targets: [String]
     }
 
     public func handle(
-        _: MessageHandler,
-        id _: RequestID
+        handler: MessageHandler,
+        id: RequestID
     ) async -> ResponseType? {
         fatalError("WorkspaceBuildTargetsRequest not implemented")
     }

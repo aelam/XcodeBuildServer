@@ -63,7 +63,7 @@ public final actor JSONRPCServer {
         do {
             let typedRequest = try jsonDecoder.decode(requestType, from: requestData)
 
-            if let response = await typedRequest.handle(messageHandler, id: requestID) {
+            if let response = await typedRequest.handle(handler: messageHandler, id: requestID) {
                 do {
                     try send(response: response)
                 } catch {

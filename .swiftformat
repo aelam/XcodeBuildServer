@@ -1,0 +1,45 @@
+# SwiftFormat Configuration (for nicklockwood/SwiftFormat)
+
+# Swift version
+--swiftversion 5.9
+
+# Basic formatting
+--indent 4
+--tabwidth 4
+--maxwidth 120
+--linebreaks lf
+--commas always
+--trimwhitespace always
+
+# Wrapping
+--wraparguments before-first
+--wrapparameters before-first
+--wrapcollections before-first
+--closingparen balanced
+
+# Spacing (operators with spaces are default behavior)
+
+# Rules to disable
+--disable redundantSelf
+--disable trailingCommas
+--disable unusedArguments
+--disable wrapMultilineStatementBraces
+
+# Rules to enable
+--enable isEmpty
+--enable redundantNilInit
+--enable redundantGet
+--enable redundantReturn
+--enable redundantVoidReturnType
+--enable duplicateImports
+
+# Import organization
+--importgrouping testable-bottom
+
+# Attributes
+--funcattributes prev-line
+--typeattributes prev-line
+--varattributes prev-line
+
+# File exclusions
+--exclude Pods,Generated,DerivedData,.build
