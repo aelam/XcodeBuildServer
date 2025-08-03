@@ -7,12 +7,14 @@
 import Foundation
 
 struct BuiltTargetSourcesRequest: RequestType, Sendable {
+    static func method() -> String {
+        "buildTarget/sources"
+    }
+    
     struct Params {
         let language: LanguageId?
         let isHeader: Bool?
     }
-
-    static var method: String { "buildTarget/sources" }
 
     func handle(handler: any MessageHandler, id: RequestID) async -> (any ResponseType)? {
         nil

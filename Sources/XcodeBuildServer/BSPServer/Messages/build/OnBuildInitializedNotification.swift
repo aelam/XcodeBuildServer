@@ -15,8 +15,10 @@
  }
  */
 
-public struct OnBuildInitializedNotification: NotificationType, @unchecked Sendable {
-    public static var method: String { "build/initialized" }
-
+public struct OnBuildInitializedNotification: NotificationType, Sendable {
+    public static func method() -> String {
+        "build/initialized"
+    }
+    
     public func handle(_: MessageHandler) async {}
 }

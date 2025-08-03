@@ -7,12 +7,14 @@
 /// Notification from the build server to SourceKit-LSP to update a work done progress created using `window/workDoneProgress/create`.
 
 struct ProcessNotification: NotificationType, Sendable {
+    static func method() -> String {
+        "$/progress"
+    }
+    
     struct Params {
         public let token: ProgressToken
         public let value: WorkDoneProgressKind
     }
-
-    static var method: String { "$/progress" }
 
     func handle(_: MessageHandler) async throws {
         fatalError("ProcessNotification not implemented")

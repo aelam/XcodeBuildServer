@@ -18,8 +18,12 @@ import Foundation
  }
  */
 
-public struct TextDocumentRegisterForChangeRequest: RequestType, @unchecked Sendable {
-    public struct Params: Codable {
+public struct TextDocumentRegisterForChangeRequest: RequestType, Sendable {
+    public static func method() -> String {
+        "textDocument/registerForChanges"
+    }
+    
+    public struct Params: Codable, Sendable {
         let uri: String
         let action: RegisterAction
     }
@@ -28,8 +32,6 @@ public struct TextDocumentRegisterForChangeRequest: RequestType, @unchecked Send
         case register
         case unregister
     }
-
-    public static var method: String { "textDocument/registerForChanges" }
 
     public let id: JSONRPCID
     public let jsonrpc: String

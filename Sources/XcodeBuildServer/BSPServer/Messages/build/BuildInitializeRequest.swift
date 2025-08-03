@@ -30,7 +30,11 @@ import Foundation
  }
  */
 
-public struct BuildInitializeRequest: RequestType, @unchecked Sendable {
+public struct BuildInitializeRequest: RequestType, Sendable {
+    public static func method() -> String {
+        "build/initialize"
+    }
+    
     struct Params: Codable {
         struct BuildClientCapabilities: Codable, Sendable {
             let languageIds: [Language]
@@ -40,8 +44,6 @@ public struct BuildInitializeRequest: RequestType, @unchecked Sendable {
         let capabilities: BuildClientCapabilities
         let displayName: String?
     }
-
-    public static var method: String { "build/initialize" }
 
     let id: JSONRPCID
     let params: Params

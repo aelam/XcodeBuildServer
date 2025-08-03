@@ -9,8 +9,10 @@
 /// server to exit its process. The server should exit with success
 /// code 0 if the shutdown request has been received before;
 /// otherwise with error code 1.
-public struct OnBuildExitNotification: NotificationType, @unchecked Sendable {
-    public static let method: String = "build/exit"
-
+public struct OnBuildExitNotification: NotificationType, Sendable {
+    public static func method() -> String {
+        "build/exit"
+    }
+    
     public func handle(_: MessageHandler) async {}
 }

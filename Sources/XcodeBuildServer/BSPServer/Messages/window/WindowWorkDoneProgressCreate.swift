@@ -6,11 +6,13 @@
 //
 
 public struct CreateWorkDoneProgressRequest: RequestType {
+    public static func method() -> String {
+        "window/workDoneProgress/create"
+    }
+    
     struct Params: Codable {
         let token: ProgressToken
     }
-
-    public static let method: String = "window/workDoneProgress/create"
 
     public func handle(handler: any MessageHandler, id: RequestID) async -> (any ResponseType)? {
         fatalError("WindowWorkDoneProgressCreate not implemented")

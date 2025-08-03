@@ -6,11 +6,13 @@
 //
 
 struct BuildTargetDidChangeNotification: NotificationType, Sendable {
+    static func method() -> String {
+        "build/targetDidChange"
+    }
+    
     struct Params: Codable, Sendable {
         let changes: [BuildTargetEvent]?
     }
-
-    static let method: String = "build/targetDidChange"
 
     let id: JSONRPCID
     let jsonrpc: String

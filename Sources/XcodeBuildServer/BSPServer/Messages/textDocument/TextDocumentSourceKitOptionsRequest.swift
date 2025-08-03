@@ -158,7 +158,11 @@
 /// The request may return `nil` if it doesn't have any build settings for this file in the given target.
 ///
 
-public struct TextDocumentSourceKitOptionsRequest: RequestType, @unchecked Sendable {
+public struct TextDocumentSourceKitOptionsRequest: RequestType, Sendable {
+    public static func method() -> String {
+        "textDocument/sourceKitOptions"
+    }
+    
     public struct Params: Codable, Sendable {
         /// The URI of the document to get options for
         public var textDocument: TextDocumentIdentifier
@@ -172,8 +176,6 @@ public struct TextDocumentSourceKitOptionsRequest: RequestType, @unchecked Senda
         /// The language with which the document was opened in the editor.
         public var language: Language
     }
-
-    public static let method: String = "textDocument/sourceKitOptions"
 
     public let id: JSONRPCID
     public let jsonrpc: String

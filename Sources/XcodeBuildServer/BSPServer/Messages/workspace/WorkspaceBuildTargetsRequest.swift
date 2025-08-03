@@ -19,9 +19,11 @@
 
  */
 
-public struct WorkspaceBuildTargetsRequest: RequestType, @unchecked Sendable {
-    public static var method: String { "workspace/buildTargets" }
-
+public struct WorkspaceBuildTargetsRequest: RequestType, Sendable {
+    public static func method() -> String {
+        "workspace/buildTargets"
+    }
+    
     public struct Params: Codable {
         public var targets: [String]
     }
