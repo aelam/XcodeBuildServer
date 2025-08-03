@@ -10,7 +10,7 @@ struct BuildTargetPrepareRequest: RequestType, Sendable {
     static var method: String { "buildTarget/prepare" }
     let targets: [String]
 
-    func handle(_: any MessageHandler, id _: RequestID) async -> (any ResponseType)? {
+    func handle(handler: any MessageHandler, id: RequestID) async -> (any ResponseType)? {
         nil
     }
 }

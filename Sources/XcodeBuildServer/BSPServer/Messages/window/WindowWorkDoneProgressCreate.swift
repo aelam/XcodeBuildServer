@@ -12,7 +12,7 @@ public struct CreateWorkDoneProgressRequest: RequestType {
 
     public static let method: String = "window/workDoneProgress/create"
 
-    public func handle(_ handler: any MessageHandler, id: RequestID) async -> (any ResponseType)? {
+    public func handle(handler: any MessageHandler, id: RequestID) async -> (any ResponseType)? {
         fatalError("WindowWorkDoneProgressCreate not implemented")
     }
 }

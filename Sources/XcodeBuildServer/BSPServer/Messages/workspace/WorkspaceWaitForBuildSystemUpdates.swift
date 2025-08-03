@@ -15,8 +15,8 @@ public struct WorkspaceWaitForBuildSystemUpdatesRequest: RequestType, @unchecked
     }
 
     public func handle(
-        _: MessageHandler,
-        id _: RequestID
+        handler: MessageHandler,
+        id: RequestID
     ) async -> ResponseType? {
         fatalError("WorkspaceWaitForBuildSystemUpdatesRequest not implemented")
     }

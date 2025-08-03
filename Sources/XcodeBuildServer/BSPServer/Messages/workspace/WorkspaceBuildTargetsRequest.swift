@@ -27,8 +27,8 @@ public struct WorkspaceBuildTargetsRequest: RequestType, @unchecked Sendable {
     }
 
     public func handle(
-        _: MessageHandler,
-        id _: RequestID
+        handler: MessageHandler,
+        id: RequestID
     ) async -> ResponseType? {
         fatalError("WorkspaceBuildTargetsRequest not implemented")
     }

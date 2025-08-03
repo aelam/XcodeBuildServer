@@ -14,7 +14,7 @@ struct BuiltTargetSourcesRequest: RequestType, Sendable {
 
     static var method: String { "buildTarget/sources" }
 
-    func handle(_: any MessageHandler, id _: RequestID) async -> (any ResponseType)? {
+    func handle(handler: any MessageHandler, id: RequestID) async -> (any ResponseType)? {
         nil
     }
 }

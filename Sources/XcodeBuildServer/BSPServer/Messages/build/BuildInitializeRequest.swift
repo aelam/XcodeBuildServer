@@ -47,7 +47,7 @@ public struct BuildInitializeRequest: RequestType, @unchecked Sendable {
     let params: Params
 
     public func handle(
-        _ handler: any MessageHandler,
+        handler: any MessageHandler,
         id: RequestID
     ) async -> ResponseType? {
         guard let handler = handler as? XcodeBSPMessageHandler else {

@@ -12,7 +12,7 @@ public struct BuildLogMessageRequest: RequestType, @unchecked Sendable {
     let id: JSONRPCID
 
     public func handle(
-        _ handler: any MessageHandler,
+        handler: any MessageHandler,
         id: RequestID
     ) async -> ResponseType? {
         guard let _ = handler as? XcodeBSPMessageHandler else {

@@ -36,8 +36,8 @@ public struct TextDocumentRegisterForChangeRequest: RequestType, @unchecked Send
     public let params: Params
 
     public func handle(
-        _ handler: any MessageHandler,
-        id _: RequestID
+        handler: any MessageHandler,
+        id: RequestID
     ) async -> ResponseType? {
         guard let handler = handler as? XcodeBSPMessageHandler else {
             return nil

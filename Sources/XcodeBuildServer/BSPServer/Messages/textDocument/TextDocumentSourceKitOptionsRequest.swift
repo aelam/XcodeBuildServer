@@ -180,8 +180,8 @@ public struct TextDocumentSourceKitOptionsRequest: RequestType, @unchecked Senda
     public let params: Params
 
     public func handle(
-        _ handler: any MessageHandler,
-        id _: RequestID
+        handler: any MessageHandler,
+        id: RequestID
     ) async -> ResponseType? {
         guard handler is XcodeBSPMessageHandler else {
             return nil

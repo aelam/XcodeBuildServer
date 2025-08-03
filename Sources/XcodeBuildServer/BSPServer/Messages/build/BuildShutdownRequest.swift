@@ -9,8 +9,8 @@ public final class BuildShutdownRequest: Request, @unchecked Sendable {
     override public static var method: String { "build/shutdown" }
 
     override public func handle(
-        _: MessageHandler,
-        id _: RequestID
+        handler: MessageHandler,
+        id: RequestID
     ) async -> ResponseType {
         fatalError("BuildShutdownRequest not implemented")
     }

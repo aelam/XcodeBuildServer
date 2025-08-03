@@ -11,7 +11,7 @@ public protocol MessageType: Codable, Sendable {}
 public protocol RequestType: Codable, Sendable {
     static var method: String { get }
     func handle(
-        _ handler: MessageHandler,
+        handler: MessageHandler,
         id: RequestID
     ) async -> ResponseType?
 }
@@ -25,8 +25,8 @@ open class Request: RequestType, @unchecked Sendable {
     }
 
     public func handle(
-        _: MessageHandler,
-        id _: RequestID
+        handler: MessageHandler,
+        id: RequestID
     ) async -> ResponseType? {
         fatalError("implement in the RequestType: \(self)")
     }
