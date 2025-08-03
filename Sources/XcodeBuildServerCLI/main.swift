@@ -7,7 +7,7 @@
 import Foundation
 import XcodeBuildServer
 
-func run() {
+private func run() {
     let server = JSONRPCServer(
         transport: StdioJSONRPCServerTransport(),
         messageRegistry: bspRegistry,
@@ -26,7 +26,7 @@ func run() {
     RunLoop.main.run()
 }
 
-func killSelfIfParentIsNull() {
+private func killSelfIfParentIsNull() {
     let parentProcessID = getppid()
 
     // If parent process is 1, it's typically the init process, indicating the parent is null

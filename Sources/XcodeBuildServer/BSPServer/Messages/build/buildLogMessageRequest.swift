@@ -15,7 +15,7 @@ public struct BuildLogMessageRequest: RequestType, @unchecked Sendable {
         _ handler: any MessageHandler,
         id: RequestID
     ) async -> ResponseType? {
-        guard let handler = handler as? XcodeBSPMessageHandler else {
+        guard let _ = handler as? XcodeBSPMessageHandler else {
             return nil
         }
         return nil
