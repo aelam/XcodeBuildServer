@@ -19,21 +19,21 @@ enum BuildServerError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .missingConfigFile:
-            return "BSP configuration file not found"
+            "BSP configuration file not found"
         case .missingWorkspace:
-            return "No workspace specified in configuration"
+            "No workspace specified in configuration"
         case .missingProject:
-            return "No project or workspace found"
+            "No project or workspace found"
         case .buildSettingsLoadFailed:
-            return "Failed to load Xcode build settings"
+            "Failed to load Xcode build settings"
         case .buildSettingsForIndexLoadFailed:
-            return "Failed to load Xcode build settings for index"
-        case .invalidConfiguration(let message):
-            return "Invalid configuration: \(message)"
-        case .xcodebuildExecutionFailed(let output):
-            return "xcodebuild execution failed: \(output)"
+            "Failed to load Xcode build settings for index"
+        case let .invalidConfiguration(message):
+            "Invalid configuration: \(message)"
+        case let .xcodebuildExecutionFailed(output):
+            "xcodebuild execution failed: \(output)"
         case .indexingPathsLoadFailed:
-            return "Failed to load indexing paths"
+            "Failed to load indexing paths"
         }
     }
 }
@@ -253,7 +253,6 @@ actor BuildServerContext {
             throw BuildServerError.invalidConfiguration("Failed to parse config file: \(error.localizedDescription)")
         }
     }
-
 }
 
 extension BuildServerContext {
@@ -272,12 +271,13 @@ extension BuildServerContext {
 }
 
 // MARK: - Private Configuration Helpers
+
 private extension BuildServerContext {
     func validateAndNormalizeConfig(_ config: BuildServerConfig, rootURL: URL?) -> BuildServerConfig {
         var normalizedConfig = config
 
         // Ensure we have either workspace or project
-        if normalizedConfig.workspace == nil && normalizedConfig.project == nil {
+        if normalizedConfig.workspace == nil, normalizedConfig.project == nil {
             logger.debug("No workspace or project specified, attempting to find one")
             normalizedConfig = findWorkspaceOrProject(in: normalizedConfig, rootURL: rootURL)
         }
@@ -298,7 +298,7 @@ private extension BuildServerContext {
     }
 
     func findWorkspaceOrProject(in config: BuildServerConfig, rootURL: URL?) -> BuildServerConfig {
-        guard let rootURL = rootURL else { return config }
+        guard let rootURL else { return config }
 
         let fileManager = FileManager.default
 

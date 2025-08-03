@@ -8,8 +8,8 @@ public struct WorkspaceDidChangeWatchedFilesNotification: NotificationType, Send
     public static func method() -> String {
         "workspace/didChangeWatchedFiles"
     }
-    
-    public struct Params: Codable {
+
+    public struct Params: Codable, Sendable {
         public var targets: [String]
     }
 

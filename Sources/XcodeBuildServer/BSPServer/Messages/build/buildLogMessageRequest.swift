@@ -9,16 +9,17 @@ public struct BuildLogMessageRequest: RequestType, Sendable {
     public static func method() -> String {
         "build/logMessage"
     }
-    
+
     let id: JSONRPCID
 
     public func handle(
         handler: any MessageHandler,
         id: RequestID
     ) async -> ResponseType? {
-        guard let _ = handler as? XcodeBSPMessageHandler else {
+        guard let handler = handler as? XcodeBSPMessageHandler else {
             return nil
         }
+        _ = handler
         return nil
     }
 }

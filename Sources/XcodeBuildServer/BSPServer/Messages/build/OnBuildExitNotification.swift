@@ -13,6 +13,6 @@ public struct OnBuildExitNotification: NotificationType, Sendable {
     public static func method() -> String {
         "build/exit"
     }
-    
+
     public func handle(_: MessageHandler) async {}
 }

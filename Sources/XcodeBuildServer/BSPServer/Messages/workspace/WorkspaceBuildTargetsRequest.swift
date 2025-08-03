@@ -23,8 +23,8 @@ public struct WorkspaceBuildTargetsRequest: RequestType, Sendable {
     public static func method() -> String {
         "workspace/buildTargets"
     }
-    
-    public struct Params: Codable {
+
+    public struct Params: Codable, Sendable {
         public var targets: [String]
     }
 

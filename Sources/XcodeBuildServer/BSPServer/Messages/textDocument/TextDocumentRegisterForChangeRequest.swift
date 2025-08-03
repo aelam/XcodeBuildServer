@@ -22,7 +22,7 @@ public struct TextDocumentRegisterForChangeRequest: RequestType, Sendable {
     public static func method() -> String {
         "textDocument/registerForChanges"
     }
-    
+
     public struct Params: Codable, Sendable {
         let uri: String
         let action: RegisterAction
@@ -56,10 +56,10 @@ public struct TextDocumentRegisterForChangeRequest: RequestType, Sendable {
                 jsonrpc: jsonrpc,
                 id: id,
                 result:
-                    TextDocumentRegisterForChangeResponse.Result(
-                        compilerArguments: arguments,
-                        workingDirectory: workingDirectory
-                    )
+                TextDocumentRegisterForChangeResponse.Result(
+                    compilerArguments: arguments,
+                    workingDirectory: workingDirectory
+                )
             )
         } else {}
         return nil

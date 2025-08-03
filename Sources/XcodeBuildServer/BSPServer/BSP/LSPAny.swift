@@ -162,6 +162,7 @@ extension Array: LSPAnyCodable where Element: LSPAnyCodable {
         }
         self = result
     }
+
     private static func convertElement(_ element: LSPAny) -> [Element]? {
         switch element {
         case let .dictionary(dict):
@@ -174,6 +175,7 @@ extension Array: LSPAnyCodable where Element: LSPAnyCodable {
             return nil
         }
     }
+
     private static func convertPrimitiveValue(_ element: LSPAny) -> [Element]? {
         let value: Any
         switch element {

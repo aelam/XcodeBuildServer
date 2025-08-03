@@ -4,8 +4,8 @@
 //  Copyright © 2024 Wang Lun.
 //
 
-@testable import XcodeBuildServer
 import XCTest
+@testable import XcodeBuildServer
 
 final class BSPMessageTests: XCTestCase {
     func testBuildInitialize() throws {

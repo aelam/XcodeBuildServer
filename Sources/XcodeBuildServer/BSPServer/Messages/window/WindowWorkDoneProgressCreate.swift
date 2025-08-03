@@ -1,5 +1,5 @@
 //
-//  Untitled.swift
+//  WindowWorkDoneProgressCreate.swift
 //  XcodeBuildServer
 //
 //  Created by ST22956 on 2024/11/23.
@@ -9,8 +9,8 @@ public struct CreateWorkDoneProgressRequest: RequestType {
     public static func method() -> String {
         "window/workDoneProgress/create"
     }
-    
-    struct Params: Codable {
+
+    struct Params: Codable, Sendable {
         let token: ProgressToken
     }
 

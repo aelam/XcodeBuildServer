@@ -4,16 +4,17 @@
 //  Copyright © 2024 Wang Lun.
 //
 
-/// Notification from the build server to SourceKit-LSP to update a work done progress created using `window/workDoneProgress/create`.
+/// Notification from the build server to SourceKit-LSP to update a work done progress created using
+/// `window/workDoneProgress/create`.
 
 struct ProcessNotification: NotificationType, Sendable {
     static func method() -> String {
         "$/progress"
     }
-    
+
     struct Params {
-        public let token: ProgressToken
-        public let value: WorkDoneProgressKind
+        let token: ProgressToken
+        let value: WorkDoneProgressKind
     }
 
     func handle(_: MessageHandler) async throws {
@@ -44,11 +45,11 @@ public enum WorkDoneProgressKind: Codable, Hashable, Sendable {
 
     public func encode(to encoder: Encoder) throws {
         switch self {
-        case .begin(let begin):
+        case let .begin(begin):
             try begin.encode(to: encoder)
-        case .report(let report):
+        case let .report(report):
             try report.encode(to: encoder)
-        case .end(let end):
+        case let .end(end):
             try end.encode(to: encoder)
         }
     }

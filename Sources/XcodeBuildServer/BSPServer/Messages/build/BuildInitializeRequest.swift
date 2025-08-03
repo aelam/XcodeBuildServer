@@ -34,8 +34,8 @@ public struct BuildInitializeRequest: RequestType, Sendable {
     public static func method() -> String {
         "build/initialize"
     }
-    
-    struct Params: Codable {
+
+    struct Params: Codable, Sendable {
         struct BuildClientCapabilities: Codable, Sendable {
             let languageIds: [Language]
         }

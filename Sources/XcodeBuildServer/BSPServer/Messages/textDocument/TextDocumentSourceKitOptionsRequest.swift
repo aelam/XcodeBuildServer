@@ -162,14 +162,15 @@ public struct TextDocumentSourceKitOptionsRequest: RequestType, Sendable {
     public static func method() -> String {
         "textDocument/sourceKitOptions"
     }
-    
+
     public struct Params: Codable, Sendable {
         /// The URI of the document to get options for
         public var textDocument: TextDocumentIdentifier
 
         /// The target for which the build setting should be returned.
         ///
-        /// A source file might be part of multiple targets and might have different compiler arguments in those two targets,
+        /// A source file might be part of multiple targets and might have different compiler arguments in those two
+        /// targets,
         /// thus the target is necessary in this request.
         public var target: BuildTargetIdentifier
 

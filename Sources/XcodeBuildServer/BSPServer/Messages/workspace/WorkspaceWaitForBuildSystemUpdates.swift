@@ -12,7 +12,7 @@ public struct WorkspaceWaitForBuildSystemUpdatesRequest: RequestType, Sendable {
         "workspace/waitForBuildSystemUpdates"
     }
 
-    public struct Params: Codable {
+    public struct Params: Codable, Sendable {
         public var targets: [String]
     }
 
