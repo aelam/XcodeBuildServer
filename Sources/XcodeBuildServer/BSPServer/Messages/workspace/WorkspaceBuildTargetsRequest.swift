@@ -6,15 +6,15 @@
 
 /**
  export interface BuildTargetTag {
-   // ...
+ // ...
 
-   /** This is a target of a dependency from the project the user opened, eg. a target that builds a SwiftPM dependency. */
-   export const Dependency = "dependency";
+ /** This is a target of a dependency from the project the user opened, eg. a target that builds a SwiftPM dependency. */
+ export const Dependency = "dependency";
 
-   /** This target only exists to provide compiler arguments for SourceKit-LSP can't be built standalone.
-    *
-    * For example, a SwiftPM package manifest is in a non-buildable target. **/
-   export const NotBuildable = "not-buildable";
+ /** This target only exists to provide compiler arguments for SourceKit-LSP can't be built standalone.
+ *
+ * For example, a SwiftPM package manifest is in a non-buildable target. **/
+ export const NotBuildable = "not-buildable";
  }
 
  */
@@ -30,6 +30,6 @@ public struct WorkspaceBuildTargetsRequest: RequestType, @unchecked Sendable {
         _: MessageHandler,
         id _: RequestID
     ) async -> ResponseType? {
-        fatalError()
+        fatalError("WorkspaceBuildTargetsRequest not implemented")
     }
 }

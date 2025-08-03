@@ -1,0 +1,80 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_16.2.app/Contents/Developer
+
+jobs:
+  build-release:
+    name: Build Release Binaries
+    runs-on: macos-14
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Swift
+      uses: swift-actions/setup-swift@v2
+      with:
+        swift-version: '6.1'
+    
+    - name: Build for macOS (Universal)
+      run: |
+        swift build -c release --arch arm64 --arch x86_64
+        
+    - name: Create Release Archive
+      run: |
+        mkdir -p release
+        cp .build/apple/Products/Release/XcodeBuildServerCLI release/xcode-build-server
+        chmod +x release/xcode-build-server
+        
+        # Create tar.gz
+        tar -czf xcode-build-server-macos-universal.tar.gz -C release xcode-build-server
+        
+        # Create zip
+        cd release && zip ../xcode-build-server-macos-universal.zip xcode-build-server && cd ..
+        
+    - name: Generate Checksums
+      run: |
+        shasum -a 256 xcode-build-server-macos-universal.tar.gz > checksums.txt
+        shasum -a 256 xcode-build-server-macos-universal.zip >> checksums.txt
+        
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          xcode-build-server-macos-universal.tar.gz
+          xcode-build-server-macos-universal.zip
+          checksums.txt
+        generate_release_notes: true
+        prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
+        body: |
+          ## Changes in this Release
+          
+          ### Installation
+          
+          #### Homebrew (Recommended)
+          ```bash
+          # Coming soon
+          brew install xcode-build-server
+          ```
+          
+          #### Manual Installation
+          1. Download the appropriate archive for your platform
+          2. Extract the binary: `tar -xzf xcode-build-server-macos-universal.tar.gz`
+          3. Move to PATH: `mv xcode-build-server /usr/local/bin/`
+          4. Make executable: `chmod +x /usr/local/bin/xcode-build-server`
+          
+          ### Usage
+          ```bash
+          xcode-build-server --help
+          ```
+          
+          ### Checksums
+          Verify your download with the checksums provided in `checksums.txt`.
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

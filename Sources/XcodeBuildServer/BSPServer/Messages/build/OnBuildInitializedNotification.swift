@@ -7,11 +7,11 @@
 
 /**
  {
-     "method": "build\/initialized",
-     "jsonrpc": "2.0",
-     "params": {
+ "method": "build\/initialized",
+ "jsonrpc": "2.0",
+ "params": {
 
-     }
+ }
  }
  */
 

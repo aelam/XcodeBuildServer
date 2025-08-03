@@ -21,7 +21,7 @@ typealias BuildSettingsForIndex = [String: [String: FileBuildSettingInfoForIndex
 
 struct FileBuildSettingInfoForIndex: Decodable {
     var assetSymbolIndexPath: String?
-    var LanguageDialect: LanguageDialect
+    var languageDialect: LanguageDialect
     var outputFilePath: String?
     var swiftASTBuiltProductsDir: String?
     var swiftASTCommandArguments: [String]?

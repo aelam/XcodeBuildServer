@@ -1,0 +1,168 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: macos-latest
+    
+    strategy:
+      matrix:
+        swift-version: ['6.1']
+        xcode-version: ['16.3']
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Swift
+      uses: swift-actions/setup-swift@v2
+      with:
+        swift-version: ${{ matrix.swift-version }}
+    
+    - name: Cache Swift Package Manager
+      uses: actions/cache@v4
+      with:
+        path: |
+          .build
+          ~/.cache/org.swift.swiftpm
+        key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+        restore-keys: |
+          ${{ runner.os }}-spm-
+    
+    - name: Build
+      run: swift build -v
+      
+    - name: Run Tests
+      run: swift test --enable-code-coverage
+
+    - name: Install LLVM
+      run: brew install llvm
+      
+    - name: Generate coverage report
+      run: |
+        # Use Homebrew LLVM tools for better version compatibility
+        LLVM_COV="/opt/homebrew/opt/llvm/bin/llvm-cov"
+        LLVM_PROFDATA="/opt/homebrew/opt/llvm/bin/llvm-profdata"
+        
+        TEST_BINARY=$(find .build -path "*/Contents/MacOS/*PackageTests" -type f -perm +111 | head -1)
+        
+        # Try merging profraw files with newer LLVM tools
+        if find .build -name "*.profraw" | head -1 >/dev/null 2>&1; then
+          echo "Merging profraw files with Homebrew LLVM..."
+          if $LLVM_PROFDATA merge -sparse .build/*/debug/codecov/*.profraw -o coverage.profdata 2>/dev/null; then
+            $LLVM_COV export "$TEST_BINARY" -instr-profile=coverage.profdata -format=lcov > coverage.info
+            echo "✅ Generated coverage using Homebrew LLVM tools"
+          else
+            echo "⚠️ Failed to merge profraw files"
+            echo "# No coverage data available" > coverage.info
+          fi
+        else
+          echo "⚠️ No profraw files found"
+          echo "# No coverage data available" > coverage.info
+        fi
+        
+    - name: Upload to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: coverage.info
+        name: codecov-umbrella
+        fail_ci_if_error: false
+        verbose: true
+        
+  lint:
+    name: Code Quality
+    runs-on: macos-14
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Install SwiftLint
+      run: |
+        brew install swiftlint
+        
+    - name: Run SwiftLint
+      run: |
+        swiftlint --strict --reporter github-actions-logging
+        
+    - name: Install swift-format
+      run: |
+        brew install swift-format
+        
+    - name: Check Swift Format
+      run: |
+        swift-format lint --recursive Sources Tests
+
+  security-scan:
+    name: Security Scan
+    runs-on: macos-14
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Install Semgrep
+      run: |
+        brew install semgrep
+        
+    - name: Run Semgrep Security Scan
+      run: |
+        semgrep --config=p/swift --config=p/security-audit --config=p/secrets . || echo "Semgrep scan completed with findings"
+        
+    - name: Check for hardcoded secrets
+      run: |
+        echo "Checking for potential secrets..."
+        
+        SECRETS_FOUND=false
+        
+        if grep -ri "api[_-]\?key\s*[:=]\s*['\"][^'\"]*['\"]" Sources/ Tests/ --include="*.swift" 2>/dev/null; then
+          echo "::warning::Potential API key pattern found"
+          SECRETS_FOUND=true
+        fi
+        
+        if grep -ri "token\s*[:=]\s*['\"][^'\"]*['\"]" Sources/ Tests/ --include="*.swift" 2>/dev/null; then
+          echo "::warning::Potential token pattern found"
+          SECRETS_FOUND=true
+        fi
+        
+        if grep -ri "password\s*[:=]\s*['\"][^'\"]*['\"]" Sources/ Tests/ --include="*.swift" 2>/dev/null; then
+          echo "::warning::Potential password pattern found"
+          SECRETS_FOUND=true
+        fi
+        
+        if [ "$SECRETS_FOUND" = false ]; then
+          echo "✅ No obvious secrets found"
+        fi
+
+  build-release:
+    name: Build Release
+    runs-on: macos-14
+    if: github.ref == 'refs/heads/main'
+    needs: [build-and-test, lint, security-scan]
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Build Release
+      run: swift build -c release --arch arm64 --arch x86_64
+      
+    - name: Archive Binary
+      run: |
+        mkdir -p artifacts
+        cp .build/apple/Products/Release/XcodeBuildServerCLI artifacts/
+        tar -czf artifacts/xcode-build-server-macos.tar.gz -C artifacts XcodeBuildServerCLI
+        
+    - name: Upload Build Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: xcode-build-server-macos
+        path: artifacts/xcode-build-server-macos.tar.gz
+        retention-days: 30

@@ -18,6 +18,6 @@ public struct WorkspaceWaitForBuildSystemUpdatesRequest: RequestType, @unchecked
         _: MessageHandler,
         id _: RequestID
     ) async -> ResponseType? {
-        fatalError()
+        fatalError("WorkspaceWaitForBuildSystemUpdatesRequest not implemented")
     }
 }
