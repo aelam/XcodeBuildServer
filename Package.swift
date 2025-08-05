@@ -46,10 +46,17 @@ let package = Package(
         ),
         .testTarget(
             name: "XcodeBuildServerTests",
-            dependencies: ["XcodeBuildServer", "XcodeProjectManagement"],
+            dependencies: ["XcodeBuildServer"],
+            resources: [
+                .copy("DemoProjects")
+            ]
+        ),
+        .testTarget(
+            name: "XcodeProjectManagementTests",
+            dependencies: ["XcodeProjectManagement"],
             resources: [
                 .copy("DemoProjects"),
-                .copy("XcodeProjectManagement/README.md")
+                .copy("README.md")
             ]
         ),
     ]

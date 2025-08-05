@@ -10,9 +10,7 @@
       "Bash(swift build:*)",
       "Bash(tree:*)",
       "Bash(chmod:*)",
-      "Bash(git add:*)",
-      "Bash(rg:*)",
-      "Bash(git reset:*)"
+      "Bash(rg:*)"
     ],
     "deny": []
   }
