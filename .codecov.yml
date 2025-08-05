@@ -2,3 +2,5 @@ coverage:
   ignore:
     - "DemoProjects/"
     - "DemoProjects/**/*"
+    - "Tests/"
+    - "Tests/**/*"

@@ -2,7 +2,7 @@
 
 [![Swift](https://img.shields.io/badge/swift-6.1+-orange.svg)](https://swift.org)
 [![Platform](https://img.shields.io/badge/platform-macOS-lightgrey.svg)](https://developer.apple.com/macos/)
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/wang.lun/XcodeBuildServer/actions)
+[![Build Status](https://github.com/aelam/XcodeBuildServer/workflows/CI/badge.svg)](https://github.com/aelam/XcodeBuildServer/actions)
 [![codecov](https://codecov.io/github/aelam/XcodeBuildServer/graph/badge.svg?token=SUL2UI5FQD)](https://codecov.io/github/aelam/XcodeBuildServer)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
@@ -44,7 +44,25 @@ cp .build/release/XcodeBuildServerCLI /usr/local/bin/XcodeBuildServerCLI
 
 ## Quick Start
 
-1. **Configure your project**: Create a `.bsp/xcode.json` configuration file in your project root:
+1. **Configure your project**: 
+   1. Create a `.bsp/XcodeBuildServer.json` in your project root. The deprecated way is to create a `buildServer.json` file in your project root:
+   ```json
+   {
+      "name": "XcodeBuildServer",
+      "version": "0.2",
+      "bspVersion": "2.0",
+      "languages": [
+         "objective-c",
+         "objective-cpp",
+         "swift"
+      ],
+      "argv": [
+         "path/to/XcodeBuildServerCLI"
+      ],
+      "kind": "xcode"
+   }
+   ```
+   2. Create a `.bsp/xcode.json` configuration file in your project root:
    ```json
    {
      "workspace": "YourProject.xcworkspace",
@@ -53,20 +71,30 @@ cp .build/release/XcodeBuildServerCLI /usr/local/bin/XcodeBuildServerCLI
    }
    ```
 
-2. **Start the server**:
-   ```bash
-   xcode-build-server
+3. **Start the server**:
+   ```shell
+   XcodeBuildServerCLI
    ```
 
-3. **Connect from your IDE**: Configure your IDE to connect to the BSP server (typically on stdio).
+4. **Connect from your IDE**: Configure your IDE to connect to the BSP server (typically on stdio).
 
 ## Configuration
 
 The build server looks for configuration in the following order:
 1. `.bsp/*.json` files (BSP standard)
+   1. `xcode.json` in `.bsp/` directory for your project/workspace
+   2. `xcode.json` in `.bsp/` directory is not necessary if you have only one project or one workspace
 2. `buildServer.json` in project root (legacy support)
 
-### Configuration Options
+### xcode.json Configuration Options
+```json
+{
+  "workspace": "YourProject.xcworkspace",
+  "project": "YourProject.xcodeproj",
+  "scheme": "YourScheme",
+  "configuration": "Debug"
+}
+```
 
 | Option | Description | Required |
 |--------|-------------|----------|

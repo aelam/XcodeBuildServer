@@ -92,7 +92,6 @@ final class XcodeProjectLocator {
             return nil
         }
         do {
-            let string = try String(contentsOf: configURL, encoding: .utf8)
             let data = try Data(contentsOf: configURL)
             return try JSONDecoder().decode(BSPConfig.self, from: data)
         } catch {
