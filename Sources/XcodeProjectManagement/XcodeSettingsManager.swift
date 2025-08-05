@@ -68,10 +68,10 @@ public actor XcodeSettingsManager {
     private let commandBuilder: XcodeBuildCommandBuilder
     private let jsonDecoder = JSONDecoder()
 
-    private(set) var buildSettings: [XcodeBuildSettings]?
-    private(set) var buildSettingsForIndex: XcodeBuildSettingsForIndex?
-    private(set) var indexStoreURL: URL?
-    private(set) var indexDatabaseURL: URL?
+    public private(set) var buildSettings: [XcodeBuildSettings]?
+    public private(set) var buildSettingsForIndex: XcodeBuildSettingsForIndex?
+    public private(set) var indexStoreURL: URL?
+    public private(set) var indexDatabaseURL: URL?
 
     public init(commandBuilder: XcodeBuildCommandBuilder) {
         self.commandBuilder = commandBuilder
