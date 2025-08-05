@@ -8,7 +8,9 @@
       "Bash(rm:*)",
       "Bash(swift build)",
       "Bash(swift build:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(chmod:*)",
+      "Bash(./Scripts/verify-xcode-environment.sh:*)"
     ],
     "deny": []
   }

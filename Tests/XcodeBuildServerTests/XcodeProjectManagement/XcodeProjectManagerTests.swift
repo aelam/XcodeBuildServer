@@ -9,11 +9,6 @@ import Testing
 @testable import XcodeProjectManagement
 
 private func isXcodeBuildAvailable() -> Bool {
-    // Check if we're in CI environment
-    if ProcessInfo.processInfo.environment["CI"] != nil {
-        return false
-    }
-
     // First check if xcodebuild exists
     let process = Process()
     process.executableURL = URL(fileURLWithPath: "/usr/bin/which")
@@ -60,8 +55,6 @@ struct XcodeProjectManagerTests {
         let project = try await manager.loadProject()
 
         #expect(project.rootURL == projectFolder)
-        // In CI environment or without xcodebuild, scheme resolution may fail
-        // This is expected behavior and not a test failure
         #expect(project.configuration == "Debug")
 
         switch project.projectType {
@@ -82,8 +75,6 @@ struct XcodeProjectManagerTests {
         let project = try await manager.loadProject()
 
         #expect(project.rootURL == projectFolder)
-        // In CI environment or without xcodebuild, scheme resolution may fail
-        // This is expected behavior and not a test failure
         #expect(project.configuration == "Debug")
 
         switch project.projectType {
@@ -96,10 +87,6 @@ struct XcodeProjectManagerTests {
 
     @Test
     func getAvailableSchemes() async throws {
-        guard isXcodeBuildAvailable() else {
-            return // Skip test if xcodebuild not available
-        }
-
         let projectFolder = Bundle.module.resourceURL!
             .appendingPathComponent("DemoProjects")
             .appendingPathComponent("HelloProject")
@@ -107,22 +94,13 @@ struct XcodeProjectManagerTests {
         let manager = XcodeProjectManager(rootURL: projectFolder)
         _ = try await manager.loadProject()
 
-        do {
-            let schemes = try await manager.getAvailableSchemes()
-            #expect(!schemes.isEmpty)
-            #expect(schemes.contains("Hello"))
-        } catch {
-            // If xcodebuild fails in the environment, that's expected
-            print("Note: xcodebuild failed in current environment: \(error)")
-        }
+        let schemes = try await manager.getAvailableSchemes()
+        #expect(!schemes.isEmpty)
+        #expect(schemes.contains("Hello"))
     }
 
     @Test
     func getAvailableConfigurations() async throws {
-        guard isXcodeBuildAvailable() else {
-            return // Skip test if xcodebuild not available
-        }
-
         let projectFolder = Bundle.module.resourceURL!
             .appendingPathComponent("DemoProjects")
             .appendingPathComponent("HelloProject")
@@ -130,14 +108,9 @@ struct XcodeProjectManagerTests {
         let manager = XcodeProjectManager(rootURL: projectFolder)
         _ = try await manager.loadProject()
 
-        do {
-            let configurations = try await manager.getAvailableConfigurations()
-            #expect(!configurations.isEmpty)
-            #expect(configurations.contains("Debug"))
-            #expect(configurations.contains("Release"))
-        } catch {
-            // If xcodebuild fails in the environment, that's expected
-            print("Note: xcodebuild failed in current environment: \(error)")
-        }
+        let configurations = try await manager.getAvailableConfigurations()
+        #expect(!configurations.isEmpty)
+        #expect(configurations.contains("Debug"))
+        #expect(configurations.contains("Release"))
     }
 }
