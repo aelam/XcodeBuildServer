@@ -44,7 +44,25 @@ cp .build/release/XcodeBuildServerCLI /usr/local/bin/XcodeBuildServerCLI
 
 ## Quick Start
 
-1. **Configure your project**: Create a `.bsp/xcode.json` configuration file in your project root:
+1. **Configure your project**: 
+   1. Create a `.bsp/XcodeBuildServer.json` in your project root.  deprecated way is to create a `buildServer.json` file in your project root:
+   ```json
+   {
+      "name": "XcodeBuildServer",
+      "version": "0.2",
+      "bspVersion": "2.0",
+      "languages": [
+         "objective-c",
+         "objective-cpp",
+         "swift"
+      ],
+      "argv": [
+         "path/to/XcodeBuildServerCLI"
+      ],
+      "kind": "xcode"
+   }
+   ```
+   2. Create a `.bsp/xcode.json` configuration file in your project root:
    ```json
    {
      "workspace": "YourProject.xcworkspace",
@@ -53,12 +71,12 @@ cp .build/release/XcodeBuildServerCLI /usr/local/bin/XcodeBuildServerCLI
    }
    ```
 
-2. **Start the server**:
+3. **Start the server**:
    ```shell
    XcodeBuildServerCLI
    ```
 
-3. **Connect from your IDE**: Configure your IDE to connect to the BSP server (typically on stdio).
+4. **Connect from your IDE**: Configure your IDE to connect to the BSP server (typically on stdio).
 
 ## Configuration
 
