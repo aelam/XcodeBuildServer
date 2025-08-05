@@ -51,7 +51,7 @@ struct BuildServerConfig: Codable {
 
 actor BuildServerContext {
     private(set) var rootURL: URL?
-    private(set) var config: BuildServerConfig?
+    private(set) var config: BuildServerConfig? // Optional because not used in auto-discovery mode
     private(set) var projectManager: XcodeProjectManager?
     private(set) var projectInfo: XcodeProjectInfo?
     private(set) var settingsManager: XcodeSettingsManager?
@@ -59,6 +59,39 @@ actor BuildServerContext {
     private(set) var indexDatabaseURL: URL?
 
     private let jsonDecoder = JSONDecoder()
+
+    // Computed property to check if the context is properly loaded
+    var isLoaded: Bool {
+        projectManager != nil && projectInfo != nil && settingsManager != nil
+    }
+
+    // Safe accessors for core components (throws if not loaded)
+    private var loadedProjectManager: XcodeProjectManager {
+        get throws {
+            guard let projectManager else {
+                throw BuildServerError.invalidConfiguration("BuildServerContext not loaded - call loadProject() first")
+            }
+            return projectManager
+        }
+    }
+
+    private var loadedProjectInfo: XcodeProjectInfo {
+        get throws {
+            guard let projectInfo else {
+                throw BuildServerError.invalidConfiguration("BuildServerContext not loaded - call loadProject() first")
+            }
+            return projectInfo
+        }
+    }
+
+    private var loadedSettingsManager: XcodeSettingsManager {
+        get throws {
+            guard let settingsManager else {
+                throw BuildServerError.invalidConfiguration("BuildServerContext not loaded - call loadProject() first")
+            }
+            return settingsManager
+        }
+    }
 
     func loadProject(rootURL: URL) async throws {
         logger.debug("Loading project at \(rootURL)")
@@ -68,19 +101,19 @@ actor BuildServerContext {
 
         guard let configFileURL = getConfigPath(for: rootURL) else {
             logger.debug("No BSP config found, using project manager auto-discovery")
-            self.projectInfo = try await projectManager!.loadProject()
+            self.projectInfo = try await loadedProjectManager.loadProject()
 
             // Initialize settings manager with the loaded project
-            let commandBuilder = XcodeBuildCommandBuilder(projectInfo: self.projectInfo!)
+            let commandBuilder = try XcodeBuildCommandBuilder(projectInfo: loadedProjectInfo)
             self.settingsManager = XcodeSettingsManager(commandBuilder: commandBuilder)
 
-            try await settingsManager!.loadBuildSettings()
-            try await settingsManager!.loadBuildSettingsForIndex()
+            try await loadedSettingsManager.loadBuildSettings()
+            try await loadedSettingsManager.loadBuildSettingsForIndex()
 
-            if let scheme = self.projectInfo?.scheme {
-                try await settingsManager!.loadIndexingPaths(scheme: scheme)
-                self.indexStoreURL = await settingsManager?.indexStoreURL
-                self.indexDatabaseURL = await settingsManager?.indexDatabaseURL
+            if let scheme = try loadedProjectInfo.scheme {
+                try await loadedSettingsManager.loadIndexingPaths(scheme: scheme)
+                self.indexStoreURL = try await (loadedSettingsManager).indexStoreURL
+                self.indexDatabaseURL = try await (loadedSettingsManager).indexDatabaseURL
             }
             logger.debug("Project loaded via auto-discovery: \(String(describing: self.projectInfo))")
             return
@@ -94,32 +127,29 @@ actor BuildServerContext {
         }
 
         logger.debug("Loading Xcode project with config")
-        self.projectInfo = try await projectManager!.loadProject(
+        self.projectInfo = try await loadedProjectManager.loadProject(
             scheme: config.scheme,
             configuration: config.configuration ?? "Debug"
         )
         logger.debug("Xcode project loaded: \(String(describing: self.projectInfo))")
 
         // Initialize settings manager with the loaded project
-        let commandBuilder = XcodeBuildCommandBuilder(projectInfo: self.projectInfo!)
+        let commandBuilder = try XcodeBuildCommandBuilder(projectInfo: loadedProjectInfo)
         self.settingsManager = XcodeSettingsManager(commandBuilder: commandBuilder)
 
-        try await settingsManager!.loadBuildSettings()
-        try await settingsManager!.loadBuildSettingsForIndex()
+        try await loadedSettingsManager.loadBuildSettings()
+        try await loadedSettingsManager.loadBuildSettingsForIndex()
 
-        if let scheme = self.projectInfo?.scheme {
-            try await settingsManager!.loadIndexingPaths(scheme: scheme)
-            self.indexStoreURL = await settingsManager?.indexStoreURL
-            self.indexDatabaseURL = await settingsManager?.indexDatabaseURL
+        if let scheme = try loadedProjectInfo.scheme {
+            try await loadedSettingsManager.loadIndexingPaths(scheme: scheme)
+            self.indexStoreURL = try await (loadedSettingsManager).indexStoreURL
+            self.indexDatabaseURL = try await (loadedSettingsManager).indexDatabaseURL
         }
         logger.debug("Settings manager initialized and build settings loaded")
     }
 
     private func getXcodeBuildBasicArguments() throws -> [String] {
-        guard let projectInfo else {
-            throw BuildServerError.invalidConfiguration("Xcode project not loaded")
-        }
-
+        let projectInfo = try loadedProjectInfo
         var arguments: [String] = []
 
         switch projectInfo.projectType {
@@ -203,18 +233,29 @@ actor BuildServerContext {
 
 extension BuildServerContext {
     func getCompileArguments(fileURI: String) async -> [String] {
-        guard
-            let settingsManager,
-            let scheme = projectInfo?.scheme
-        else {
+        do {
+            let settingsManager = try loadedSettingsManager
+            let projectInfo = try loadedProjectInfo
+
+            guard let scheme = projectInfo.scheme else {
+                return []
+            }
+
+            return await settingsManager.getCompileArguments(fileURI: fileURI, scheme: scheme)
+        } catch {
+            logger.error("Failed to get compile arguments: \(error)")
             return []
         }
-
-        return await settingsManager.getCompileArguments(fileURI: fileURI, scheme: scheme)
     }
 
     func getBuildSetting(_ key: String, for target: String, action: String = "build") async -> String? {
-        await settingsManager?.getBuildSetting(key, for: target, action: action)
+        do {
+            let settingsManager = try loadedSettingsManager
+            return await settingsManager.getBuildSetting(key, for: target, action: action)
+        } catch {
+            logger.error("Failed to get build setting: \(error)")
+            return nil
+        }
     }
 }
 

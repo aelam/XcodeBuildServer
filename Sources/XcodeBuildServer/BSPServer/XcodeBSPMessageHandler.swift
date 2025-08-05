@@ -17,7 +17,10 @@ public final class XcodeBSPMessageHandler: MessageHandler, Sendable {
     }
 
     func getBuildSettings() async -> [XcodeBuildSettings]? {
-        await buildServerContext.settingsManager?.buildSettings
+        guard await buildServerContext.isLoaded else {
+            return nil
+        }
+        return await buildServerContext.settingsManager?.buildSettings
     }
 
     func getIndexStoreURL() async -> URL? {
