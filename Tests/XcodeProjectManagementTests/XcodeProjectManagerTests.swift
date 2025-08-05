@@ -8,42 +8,6 @@ import Foundation
 import Testing
 @testable import XcodeProjectManagement
 
-private func isXcodeBuildAvailable() -> Bool {
-    // First check if xcodebuild exists
-    let process = Process()
-    process.executableURL = URL(fileURLWithPath: "/usr/bin/which")
-    process.arguments = ["xcodebuild"]
-
-    let pipe = Pipe()
-    process.standardOutput = pipe
-    process.standardError = pipe
-
-    do {
-        try process.run()
-        process.waitUntilExit()
-        guard process.terminationStatus == 0 else { return false }
-    } catch {
-        return false
-    }
-
-    // Then check if xcodebuild can actually run (test with -version)
-    let testProcess = Process()
-    testProcess.executableURL = URL(fileURLWithPath: "/usr/bin/xcodebuild")
-    testProcess.arguments = ["-version"]
-
-    let testPipe = Pipe()
-    testProcess.standardOutput = testPipe
-    testProcess.standardError = testPipe
-
-    do {
-        try testProcess.run()
-        testProcess.waitUntilExit()
-        return testProcess.terminationStatus == 0
-    } catch {
-        return false
-    }
-}
-
 struct XcodeProjectManagerTests {
     @Test
     func loadProjectFromWorkspace() async throws {

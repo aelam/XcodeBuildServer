@@ -5,6 +5,7 @@
 //
 
 import Foundation
+import XcodeProjectManagement
 
 public final class XcodeBSPMessageHandler: MessageHandler, Sendable {
     let buildServerContext = BuildServerContext()
@@ -15,8 +16,11 @@ public final class XcodeBSPMessageHandler: MessageHandler, Sendable {
         try await buildServerContext.loadProject(rootURL: rootURL)
     }
 
-    func getBuildSettings() async -> [BuildSettings]? {
-        await buildServerContext.buildSettings
+    func getBuildSettings() async -> [XcodeBuildSettings]? {
+        guard await buildServerContext.isLoaded else {
+            return nil
+        }
+        return await buildServerContext.settingsManager?.buildSettings
     }
 
     func getIndexStoreURL() async -> URL? {
