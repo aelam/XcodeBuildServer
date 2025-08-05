@@ -19,10 +19,15 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
       
-    - name: Setup Swift
-      uses: swift-actions/setup-swift@v2
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
       with:
-        swift-version: ${{ matrix.swift-version }}
+        xcode-version: ${{ matrix.xcode-version }}
+        
+    - name: Verify Swift Version
+      run: |
+        swift --version
+        which swift
     
     - name: Build for macOS (Universal)
       run: |
