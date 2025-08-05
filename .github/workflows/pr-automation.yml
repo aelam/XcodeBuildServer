@@ -21,27 +21,11 @@ jobs:
       !contains(github.event.pull_request.title, '[manual review]')
     
     steps:
-      - name: Wait for Build and Test
+      - name: Wait for required checks
         uses: lewagon/wait-on-check-action@v1.3.1
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          check-name: 'Build and Test'
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 30
-
-      - name: Wait for Code Quality
-        uses: lewagon/wait-on-check-action@v1.3.1
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          check-name: 'Code Quality'
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 30
-
-      - name: Wait for Security Scan
-        uses: lewagon/wait-on-check-action@v1.3.1
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          check-name: 'Security Scan'
+          check-regexp: 'Build and Test.*|Code Quality|Security Scan'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 30
 
