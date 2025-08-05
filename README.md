@@ -2,7 +2,7 @@
 
 [![Swift](https://img.shields.io/badge/swift-6.1+-orange.svg)](https://swift.org)
 [![Platform](https://img.shields.io/badge/platform-macOS-lightgrey.svg)](https://developer.apple.com/macos/)
-[![Build Status](https://github.com/wang.lun/XcodeBuildServer/workflows/CI/badge.svg)](https://github.com/wang.lun/XcodeBuildServer/actions)
+[![Build Status](https://github.com/aelam/XcodeBuildServer/workflows/CI/badge.svg)](https://github.com/aelam/XcodeBuildServer/actions)
 [![codecov](https://codecov.io/github/aelam/XcodeBuildServer/graph/badge.svg?token=SUL2UI5FQD)](https://codecov.io/github/aelam/XcodeBuildServer)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
@@ -54,8 +54,8 @@ cp .build/release/XcodeBuildServerCLI /usr/local/bin/XcodeBuildServerCLI
    ```
 
 2. **Start the server**:
-   ```bash
-   xcode-build-server
+   ```shell
+   XcodeBuildServerCLI
    ```
 
 3. **Connect from your IDE**: Configure your IDE to connect to the BSP server (typically on stdio).
@@ -64,9 +64,19 @@ cp .build/release/XcodeBuildServerCLI /usr/local/bin/XcodeBuildServerCLI
 
 The build server looks for configuration in the following order:
 1. `.bsp/*.json` files (BSP standard)
+   1. `xcode.json` in `.bsp/` directory for your project/workspace
+   2. `xcode.json` in `.bsp/` directory is not necessary if you have only one project or one workspace
 2. `buildServer.json` in project root (legacy support)
 
-### Configuration Options
+### Configuration Options xcode.json
+```json
+{
+  "workspace": "YourProject.xcworkspace",
+  "project": "YourProject.xcodeproj",
+  "scheme": "YourScheme",
+  "configuration": "Debug"
+}
+```
 
 | Option | Description | Required |
 |--------|-------------|----------|
