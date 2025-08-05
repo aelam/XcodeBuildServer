@@ -1,6 +1,6 @@
 import Foundation
 
-enum XcodeProjectError: Error, CustomStringConvertible {
+enum XcodeProjectError: Error, CustomStringConvertible, Equatable {
     case notFound
     case multipleWorkspaces([URL])
     case invalidConfig(String)
@@ -8,11 +8,11 @@ enum XcodeProjectError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .notFound:
-            return "No .xcodeproj or .xcworkspace found in project directory."
-        case .multipleWorkspaces(let urls):
-            return "Multiple .xcworkspace files found: \(urls.map { $0.lastPathComponent }.joined(separator: ", ")). Please specify one in .bspconfig.json"
-        case .invalidConfig(let reason):
-            return "Invalid bsp config: \(reason)"
+            "No .xcodeproj or .xcworkspace found in project directory."
+        case let .multipleWorkspaces(urls):
+            "Multiple .xcworkspace files found: \(urls.map(\.lastPathComponent).joined(separator: ", ")). Please specify one in .bspconfig.json"
+        case let .invalidConfig(reason):
+            "Invalid bsp config: \(reason)"
         }
     }
 }
@@ -23,7 +23,7 @@ struct BSPConfig: Codable {
 }
 
 enum XcodeProjectType: Equatable {
-    case explicitWorkspace(URL)       // User provided or auto-detected .xcworkspace
+    case explicitWorkspace(URL) // User provided or auto-detected .xcworkspace
     case implicitProjectWorkspace(URL) // Converted from .xcodeproj
 }
 
