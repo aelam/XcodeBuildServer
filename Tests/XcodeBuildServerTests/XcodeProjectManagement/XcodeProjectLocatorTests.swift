@@ -40,7 +40,7 @@ struct XcodeProjectLocatorTests {
         let locator = XcodeProjectLocator(root: projectFolder)
         do {
             _ = try locator.resolveProject()
-            #expect(false, "Expected .notFound error")
+            #expect(Bool(false), "Expected .notFound error")
         } catch {
             let xcodeError = try #require(error as? XcodeProjectError)
             #expect(xcodeError == .notFound)
