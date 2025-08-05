@@ -22,17 +22,18 @@ struct BSPConfig: Codable {
     let project: String?
 }
 
-enum XcodeProjectType {
+enum XcodeProjectType: Equatable {
     case explicitWorkspace(URL)       // User provided or auto-detected .xcworkspace
     case implicitProjectWorkspace(URL) // Converted from .xcodeproj
 }
 
 final class XcodeProjectLocator {
     let root: URL
-    let configFile = ".bsp/xcode.json"
+    let configFile: String
 
-    init(root: URL) {
+    init(root: URL, configFile: String = ".bsp/xcode.json") {
         self.root = root
+        self.configFile = configFile
     }
 
     func resolveProject() throws -> XcodeProjectType {
@@ -71,7 +72,11 @@ final class XcodeProjectLocator {
     }
 
     private func findAll(withExtension ext: String) -> [URL] {
-        guard let enumerator = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil) else {
+        guard let enumerator = FileManager.default.enumerator(
+            at: root,
+            includingPropertiesForKeys: nil,
+            options: .skipsSubdirectoryDescendants
+        ) else {
             return []
         }
         return enumerator
