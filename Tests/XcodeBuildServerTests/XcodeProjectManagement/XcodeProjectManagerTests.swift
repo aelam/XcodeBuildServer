@@ -8,6 +8,24 @@ import Foundation
 import Testing
 @testable import XcodeProjectManagement
 
+private func isXcodeBuildAvailable() -> Bool {
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: "/usr/bin/which")
+    process.arguments = ["xcodebuild"]
+
+    let pipe = Pipe()
+    process.standardOutput = pipe
+    process.standardError = pipe
+
+    do {
+        try process.run()
+        process.waitUntilExit()
+        return process.terminationStatus == 0
+    } catch {
+        return false
+    }
+}
+
 struct XcodeProjectManagerTests {
     @Test
     func loadProjectFromWorkspace() async throws {
@@ -19,7 +37,10 @@ struct XcodeProjectManagerTests {
         let project = try await manager.loadProject()
 
         #expect(project.rootURL == projectFolder)
-        #expect(project.scheme != nil)
+        // scheme may be nil in CI environment without xcodebuild
+        if isXcodeBuildAvailable() {
+            #expect(project.scheme != nil)
+        }
         #expect(project.configuration == "Debug")
 
         switch project.projectType {
@@ -40,7 +61,10 @@ struct XcodeProjectManagerTests {
         let project = try await manager.loadProject()
 
         #expect(project.rootURL == projectFolder)
-        #expect(project.scheme != nil)
+        // scheme may be nil in CI environment without xcodebuild
+        if isXcodeBuildAvailable() {
+            #expect(project.scheme != nil)
+        }
         #expect(project.configuration == "Debug")
 
         switch project.projectType {
@@ -53,6 +77,10 @@ struct XcodeProjectManagerTests {
 
     @Test
     func getAvailableSchemes() async throws {
+        guard isXcodeBuildAvailable() else {
+            return // Skip test if xcodebuild not available
+        }
+
         let projectFolder = Bundle.module.resourceURL!
             .appendingPathComponent("DemoProjects")
             .appendingPathComponent("HelloProject")
@@ -67,6 +95,10 @@ struct XcodeProjectManagerTests {
 
     @Test
     func getAvailableConfigurations() async throws {
+        guard isXcodeBuildAvailable() else {
+            return // Skip test if xcodebuild not available
+        }
+
         let projectFolder = Bundle.module.resourceURL!
             .appendingPathComponent("DemoProjects")
             .appendingPathComponent("HelloProject")
