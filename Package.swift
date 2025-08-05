@@ -48,7 +48,7 @@ let package = Package(
             name: "XcodeBuildServerTests",
             dependencies: ["XcodeBuildServer", "XcodeProjectManagement"],
             resources: [
-                .copy("../../DemoProjects"),
+                .copy("DemoProjects"),
                 .copy("XcodeProjectManagement/README.md")
             ]
         ),
