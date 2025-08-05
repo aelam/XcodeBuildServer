@@ -88,8 +88,16 @@ final class XcodeProjectLocator {
 
     private func loadConfig() throws -> BSPConfig? {
         let configURL = root.appendingPathComponent(configFile)
-        guard FileManager.default.fileExists(atPath: configURL.path) else { return nil }
-        let data = try Data(contentsOf: configURL)
-        return try JSONDecoder().decode(BSPConfig.self, from: data)
+        guard FileManager.default.fileExists(atPath: configURL.path) else {
+            return nil
+        }
+        do {
+            let string = try String(contentsOf: configURL, encoding: .utf8)
+            let data = try Data(contentsOf: configURL)
+            return try JSONDecoder().decode(BSPConfig.self, from: data)
+        } catch {
+            print(error)
+            return nil
+        }
     }
 }

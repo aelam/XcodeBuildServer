@@ -13,15 +13,12 @@ import Testing
 
 struct XcodeProjectLocatorTests {
     @Test(arguments: [
-        ("DemoProjects/HelloWorkspace", "workspace"),
-        ("DemoProjects/HelloProject", "project"),
+        ("HelloWorkspace", "workspace"),
+        ("HelloProject", "project"),
     ])
     func xcodeProjectLocator(_ root: String, _ expectedKind: String) throws {
-        let projectFolder = URL(string: #filePath)!
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
+        let projectFolder = Bundle.module.resourceURL!
+            .appendingPathComponent("DemoProjects")
             .appendingPathComponent(root)
         print(projectFolder)
         let locator = XcodeProjectLocator(root: projectFolder)
@@ -37,12 +34,9 @@ struct XcodeProjectLocatorTests {
 
     @Test
     func xcodeProjectLocatorNoProjectFile() throws {
-        let projectFolder = URL(string: #filePath)!
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .appendingPathComponent("DemoProjects/NoProjectFile")
+        let projectFolder = Bundle.module.resourceURL!
+            .appendingPathComponent("DemoProjects")
+            .appendingPathComponent("NoProjectFile")
         let locator = XcodeProjectLocator(root: projectFolder)
         do {
             _ = try locator.resolveProject()
