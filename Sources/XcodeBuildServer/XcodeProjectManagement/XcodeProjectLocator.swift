@@ -10,7 +10,9 @@ enum XcodeProjectError: Error, CustomStringConvertible, Equatable {
         case .notFound:
             "No .xcodeproj or .xcworkspace found in project directory."
         case let .multipleWorkspaces(urls):
-            "Multiple .xcworkspace files found: \(urls.map(\.lastPathComponent).joined(separator: ", ")). Please specify one in .bspconfig.json"
+            "Multiple .xcworkspace files found: " +
+                urls.map(\.lastPathComponent).joined(separator: "\n") +
+                ", " + "Please specify one in .bspconfig.json"
         case let .invalidConfig(reason):
             "Invalid bsp config: \(reason)"
         }
