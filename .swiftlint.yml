@@ -9,6 +9,7 @@ excluded:
   - .build
   - .swiftpm
   - Package.swift
+  - "**/DemoProjects/**/*"
 
 # Rules configuration
 opt_in_rules:
@@ -108,9 +109,6 @@ type_name:
   max_length:
     warning: 50
     error: 60
-  excluded:
-    - WorkspaceDidChangeWatchedFilesNotification
-    - WorkspaceWaitForBuildSystemUpdatesRequest
 
 # Custom rules (examples)
 custom_rules:
