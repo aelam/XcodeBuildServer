@@ -29,7 +29,8 @@ let package = Package(
         .target(
             name: "XcodeProjectManagement",
             dependencies: [
-            ]
+            ],
+            resources: [.copy("README.md")]
         ),
         .target(
             name: "XcodeBuildServer",
