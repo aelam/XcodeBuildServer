@@ -71,3 +71,4 @@ DerivedData/
 .netrc
 .index-build/
 .swiftpm/
+*.profraw
