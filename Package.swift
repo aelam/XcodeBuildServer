@@ -35,7 +35,8 @@ let package = Package(
         ),
         .testTarget(
             name: "XcodeBuildServerTests",
-            dependencies: ["XcodeBuildServer"]
+            dependencies: ["XcodeBuildServer"],
+            resources: [.copy("../../DemoProjects")]
         ),
     ]
 )

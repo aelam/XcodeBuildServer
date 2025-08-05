@@ -22,7 +22,7 @@ A Build Server Protocol (BSP) implementation for Xcode projects, enabling better
 ### Homebrew (Recommended)
 ```bash
 # Coming soon
-brew install xcode-build-server
+brew install XcodeBuildServer
 ```
 
 ### Manual Installation
@@ -31,7 +31,7 @@ brew install xcode-build-server
    ```bash
    tar -xzf xcode-build-server-macos-universal.tar.gz
    sudo mv xcode-build-server /usr/local/bin/
-   chmod +x /usr/local/bin/xcode-build-server
+   chmod +x /usr/local/bin/XcodeBuildServerCLI
    ```
 
 ### Build from Source
@@ -39,7 +39,7 @@ brew install xcode-build-server
 git clone https://github.com/wang.lun/XcodeBuildServer.git
 cd XcodeBuildServer
 swift build -c release
-cp .build/release/XcodeBuildServerCLI /usr/local/bin/xcode-build-server
+cp .build/release/XcodeBuildServerCLI /usr/local/bin/XcodeBuildServerCLI
 ```
 
 ## Quick Start
