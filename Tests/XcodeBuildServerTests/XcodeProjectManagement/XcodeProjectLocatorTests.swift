@@ -9,7 +9,7 @@ import Foundation
 import Testing
 
 /// `.bsp/xcode.json`
-@testable import XcodeBuildServer
+@testable import XcodeProjectManagement
 
 struct XcodeProjectLocatorTests {
     @Test(arguments: [
@@ -40,7 +40,7 @@ struct XcodeProjectLocatorTests {
         let locator = XcodeProjectLocator(root: projectFolder)
         do {
             _ = try locator.resolveProject()
-            #expect(false, "Expected .notFound error")
+            Issue.record("Expected .notFound error")
         } catch {
             let xcodeError = try #require(error as? XcodeProjectError)
             #expect(xcodeError == .notFound)

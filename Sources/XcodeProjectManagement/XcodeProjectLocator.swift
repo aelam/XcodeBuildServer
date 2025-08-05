@@ -1,11 +1,11 @@
 import Foundation
 
-enum XcodeProjectError: Error, CustomStringConvertible, Equatable {
+public enum XcodeProjectError: Error, CustomStringConvertible, Equatable {
     case notFound
     case multipleWorkspaces([URL])
     case invalidConfig(String)
 
-    var description: String {
+    public var description: String {
         switch self {
         case .notFound:
             "No .xcodeproj or .xcworkspace found in project directory."
@@ -19,26 +19,26 @@ enum XcodeProjectError: Error, CustomStringConvertible, Equatable {
     }
 }
 
-struct BSPConfig: Codable {
+public struct BSPConfig: Codable {
     let workspace: String?
     let project: String?
 }
 
-enum XcodeProjectType: Equatable {
+public enum XcodeProjectType: Equatable, Sendable {
     case explicitWorkspace(URL) // User provided or auto-detected .xcworkspace
     case implicitProjectWorkspace(URL) // Converted from .xcodeproj
 }
 
-final class XcodeProjectLocator {
-    let root: URL
-    let configFile: String
+public final class XcodeProjectLocator {
+    public let root: URL
+    public let configFile: String
 
-    init(root: URL, configFile: String = ".bsp/xcode.json") {
+    public init(root: URL, configFile: String = ".bsp/xcode.json") {
         self.root = root
         self.configFile = configFile
     }
 
-    func resolveProject() throws -> XcodeProjectType {
+    public func resolveProject() throws -> XcodeProjectType {
         if let config = try? loadConfig() {
             if let workspace = config.workspace {
                 let workspaceURL = root.appendingPathComponent(workspace)

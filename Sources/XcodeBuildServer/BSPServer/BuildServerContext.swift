@@ -5,6 +5,7 @@
 //
 
 import Foundation
+import XcodeProjectManagement
 
 enum BuildServerError: Error, CustomStringConvertible {
     case missingConfigFile

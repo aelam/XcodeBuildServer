@@ -70,3 +70,4 @@ DerivedData/
 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 .netrc
 .index-build/
+.swiftpm/
