@@ -86,7 +86,7 @@ The build server looks for configuration in the following order:
    2. `xcode.json` in `.bsp/` directory is not necessary if you have only one project or one workspace
 2. `buildServer.json` in project root (legacy support)
 
-### Configuration Options xcode.json
+### xcode.json Configuration Options
 ```json
 {
   "workspace": "YourProject.xcworkspace",
