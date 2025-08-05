@@ -45,7 +45,7 @@ cp .build/release/XcodeBuildServerCLI /usr/local/bin/XcodeBuildServerCLI
 ## Quick Start
 
 1. **Configure your project**: 
-   1. Create a `.bsp/XcodeBuildServer.json` in your project root.  deprecated way is to create a `buildServer.json` file in your project root:
+   1. Create a `.bsp/XcodeBuildServer.json` in your project root. The deprecated way is to create a `buildServer.json` file in your project root:
    ```json
    {
       "name": "XcodeBuildServer",
