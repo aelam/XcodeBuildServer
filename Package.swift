@@ -11,6 +11,10 @@ let package = Package(
             name: "XcodeBuildServer",
             targets: ["XcodeBuildServer"]
         ),
+        .library(
+            name: "XcodeProjectManagement",
+            targets: ["XcodeProjectManagement"]
+        ),
         .executable(
             name: "XcodeBuildServerCLI",
             targets: [
@@ -23,8 +27,15 @@ let package = Package(
     ],
     targets: [
         .target(
+            name: "XcodeProjectManagement",
+            dependencies: [
+            ],
+            resources: [.copy("README.md")]
+        ),
+        .target(
             name: "XcodeBuildServer",
             dependencies: [
+                "XcodeProjectManagement",
             ]
         ),
         .executableTarget(
@@ -35,8 +46,11 @@ let package = Package(
         ),
         .testTarget(
             name: "XcodeBuildServerTests",
-            dependencies: ["XcodeBuildServer"],
-            resources: [.copy("../../DemoProjects")]
+            dependencies: ["XcodeBuildServer", "XcodeProjectManagement"],
+            resources: [
+                .copy("../../DemoProjects"),
+                .copy("XcodeProjectManagement/README.md")
+            ]
         ),
     ]
 )
