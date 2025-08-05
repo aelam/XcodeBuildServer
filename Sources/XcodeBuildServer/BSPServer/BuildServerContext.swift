@@ -11,8 +11,6 @@ enum BuildServerError: Error, CustomStringConvertible {
     case missingConfigFile
     case missingWorkspace
     case missingProject
-    case buildSettingsLoadFailed
-    case buildSettingsForIndexLoadFailed
     case invalidConfiguration(String)
     case xcodebuildExecutionFailed(String)
     case indexingPathsLoadFailed
@@ -25,10 +23,6 @@ enum BuildServerError: Error, CustomStringConvertible {
             "No workspace specified in configuration"
         case .missingProject:
             "No project or workspace found"
-        case .buildSettingsLoadFailed:
-            "Failed to load Xcode build settings"
-        case .buildSettingsForIndexLoadFailed:
-            "Failed to load Xcode build settings for index"
         case let .invalidConfiguration(message):
             "Invalid configuration: \(message)"
         case let .xcodebuildExecutionFailed(output):
