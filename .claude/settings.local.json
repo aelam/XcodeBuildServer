@@ -5,7 +5,10 @@
       "Bash(mv:*)",
       "Bash(swift test)",
       "Bash(find:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(swift build)",
+      "Bash(swift build:*)",
+      "Bash(tree:*)"
     ],
     "deny": []
   }
