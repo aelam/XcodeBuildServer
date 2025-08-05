@@ -9,7 +9,7 @@ import Foundation
 import Testing
 
 /// `.bsp/xcode.json`
-@testable import XcodeBuildServer
+@testable import XcodeProjectManagement
 
 struct XcodeProjectLocatorTests {
     @Test(arguments: [

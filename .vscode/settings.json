@@ -1,0 +1,17 @@
+{
+    "editor.defaultFormatter": "vknabel.vscode-swiftformat",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll": "always"
+    },
+    "files.exclude": {
+        ".dist": true
+    },
+    "search.exclude": {
+        ".dist": true,
+        ".build": true,
+        "DerivedData": true
+    },
+    "explorer.excludeGitIgnore": true,
+    "sweetpad.build.xcodeWorkspacePath": ".swiftpm/xcode/package.xcworkspace"
+}
