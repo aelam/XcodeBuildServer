@@ -2,7 +2,7 @@
 
 [![Swift](https://img.shields.io/badge/swift-6.1+-orange.svg)](https://swift.org)
 [![Platform](https://img.shields.io/badge/platform-macOS-lightgrey.svg)](https://developer.apple.com/macos/)
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/wang.lun/XcodeBuildServer/actions)
+[![Build Status](https://github.com/wang.lun/XcodeBuildServer/workflows/CI/badge.svg)](https://github.com/wang.lun/XcodeBuildServer/actions)
 [![codecov](https://codecov.io/github/aelam/XcodeBuildServer/graph/badge.svg?token=SUL2UI5FQD)](https://codecov.io/github/aelam/XcodeBuildServer)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 

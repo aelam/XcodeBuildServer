@@ -5,14 +5,16 @@ on:
     tags:
       - 'v*.*.*'
 
-env:
-  DEVELOPER_DIR: /Applications/Xcode_16.2.app/Contents/Developer
-
 jobs:
   build-release:
     name: Build Release Binaries
-    runs-on: macos-14
-    
+    runs-on: macos-latest
+
+    strategy:
+      matrix:
+        swift-version: ['6.1']
+        xcode-version: ['16.3']
+
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -20,7 +22,7 @@ jobs:
     - name: Setup Swift
       uses: swift-actions/setup-swift@v2
       with:
-        swift-version: '6.1'
+        swift-version: ${{ matrix.swift-version }}
     
     - name: Build for macOS (Universal)
       run: |
