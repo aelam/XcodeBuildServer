@@ -1,0 +1,70 @@
+name: PR Automation
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  auto-approve:
+    name: Auto Approve
+    runs-on: ubuntu-latest
+    if: >
+      !github.event.pull_request.draft &&
+      (
+        github.actor == 'dependabot[bot]' || 
+        github.actor == github.repository_owner
+      ) &&
+      !contains(github.event.pull_request.title, '[manual review]')
+    
+    steps:
+      - name: Wait for CI to complete
+        uses: fountainhead/action-wait-for-check@v1.2.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          checkName: 'Build and Test'
+          ref: ${{ github.event.pull_request.head.sha }}
+          timeoutSeconds: 1800
+          intervalSeconds: 30
+
+      - name: Wait for lint to complete
+        uses: fountainhead/action-wait-for-check@v1.2.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          checkName: 'Code Quality'
+          ref: ${{ github.event.pull_request.head.sha }}
+          timeoutSeconds: 600
+          intervalSeconds: 30
+
+      - name: Approve PR
+        uses: juliangruber/approve-pull-request-action@v2.0.6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          number: ${{ github.event.pull_request.number }}
+
+      - name: Enable auto-merge
+        uses: peter-evans/enable-pull-request-automerge@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pull-request-number: ${{ github.event.pull_request.number }}
+          merge-method: squash
+
+  request-manual-review:
+    name: Request Manual Review
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.title, '[manual review]')
+    
+    steps:
+      - name: Add label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['needs-manual-review']
+            });
