@@ -2,7 +2,6 @@
 //  XcodeBuildServerCLI.swift
 //
 //  Copyright © 2024 Wang Lun.
-in
 
 import Foundation
 import XcodeBuildServer
