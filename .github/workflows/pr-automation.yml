@@ -21,23 +21,13 @@ jobs:
       !contains(github.event.pull_request.title, '[manual review]')
     
     steps:
-      - name: Wait for CI to complete
-        uses: fountainhead/action-wait-for-check@v1.2.0
+      - name: Wait for all CI checks
+        uses: lewagon/wait-on-check-action@v1.3.1
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          checkName: 'Build and Test'
           ref: ${{ github.event.pull_request.head.sha }}
-          timeoutSeconds: 1800
-          intervalSeconds: 30
-
-      - name: Wait for lint to complete
-        uses: fountainhead/action-wait-for-check@v1.2.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          checkName: 'Code Quality'
-          ref: ${{ github.event.pull_request.head.sha }}
-          timeoutSeconds: 600
-          intervalSeconds: 30
+          check-name: 'CI'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 30
 
       - name: Approve PR
         uses: juliangruber/approve-pull-request-action@v2.0.6
