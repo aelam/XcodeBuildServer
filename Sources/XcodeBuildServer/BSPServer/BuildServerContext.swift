@@ -49,19 +49,12 @@ struct BuildServerConfig: Codable {
     let configuration: String?
 }
 
-struct XcodeProject {
-    let workspace: String?
-    let project: String?
-    let scheme: String?
-    var configuration: String?
-}
-
 actor BuildServerContext {
     private(set) var rootURL: URL?
     private(set) var config: BuildServerConfig?
-    private(set) var xcodeProject: XcodeProject?
-    private(set) var buildSettings: [BuildSettings]?
-    private(set) var buildSettingsForIndex: BuildSettingsForIndex?
+    private(set) var projectManager: XcodeProjectManager?
+    private(set) var projectInfo: XcodeProjectInfo?
+    private(set) var settingsManager: XcodeSettingsManager?
     private(set) var indexStoreURL: URL?
     private(set) var indexDatabaseURL: URL?
 
@@ -70,9 +63,29 @@ actor BuildServerContext {
     func loadProject(rootURL: URL) async throws {
         logger.debug("Loading project at \(rootURL)")
         self.rootURL = rootURL
+
+        self.projectManager = XcodeProjectManager(rootURL: rootURL)
+
         guard let configFileURL = getConfigPath(for: rootURL) else {
-            throw BuildServerError.missingConfigFile
+            logger.debug("No BSP config found, using project manager auto-discovery")
+            self.projectInfo = try await projectManager!.loadProject()
+
+            // Initialize settings manager with the loaded project
+            let commandBuilder = XcodeBuildCommandBuilder(projectInfo: self.projectInfo!)
+            self.settingsManager = XcodeSettingsManager(commandBuilder: commandBuilder)
+
+            try await settingsManager!.loadBuildSettings()
+            try await settingsManager!.loadBuildSettingsForIndex()
+
+            if let scheme = self.projectInfo?.scheme {
+                try await settingsManager!.loadIndexingPaths(scheme: scheme)
+                self.indexStoreURL = await settingsManager?.indexStoreURL
+                self.indexDatabaseURL = await settingsManager?.indexDatabaseURL
+            }
+            logger.debug("Project loaded via auto-discovery: \(String(describing: self.projectInfo))")
+            return
         }
+
         self.config = try loadConfig(configFileURL: configFileURL)
         logger.debug("Config loaded: \(String(describing: self.config))")
 
@@ -80,117 +93,49 @@ actor BuildServerContext {
             throw BuildServerError.missingConfigFile
         }
 
-        logger.debug("Loading Xcode project")
-        xcodeProject = XcodeProject(
-            workspace: config.workspace,
-            project: config.project,
+        logger.debug("Loading Xcode project with config")
+        self.projectInfo = try await projectManager!.loadProject(
             scheme: config.scheme,
-            configuration: config.configuration
+            configuration: config.configuration ?? "Debug"
         )
-        logger.debug("Xcode project loaded: \(String(describing: self.xcodeProject))")
-        try await loadXcodeBuildSettings()
-        try await loadXcodeBuildSettingsForIndex()
-        try await loadIndexingPaths()
-        logger.debug("Build settings loaded: \(String(describing: self.buildSettings))")
-    }
+        logger.debug("Xcode project loaded: \(String(describing: self.projectInfo))")
 
-    private func loadXcodeBuildSettings() async throws {
-        // xcodebuild -showBuildSettings -json
-        // Load the index store
-        var arguments = try getXcodeBuildBasicArguments()
-        arguments.append(contentsOf: ["-destination", "generic/platform=iOS Simulator"])
-        arguments.append(contentsOf: ["-showBuildSettings", "-json"])
-        guard let json = try await xcodebuild(arguments: arguments), !json.isEmpty else {
-            throw BuildServerError.buildSettingsLoadFailed
+        // Initialize settings manager with the loaded project
+        let commandBuilder = XcodeBuildCommandBuilder(projectInfo: self.projectInfo!)
+        self.settingsManager = XcodeSettingsManager(commandBuilder: commandBuilder)
+
+        try await settingsManager!.loadBuildSettings()
+        try await settingsManager!.loadBuildSettingsForIndex()
+
+        if let scheme = self.projectInfo?.scheme {
+            try await settingsManager!.loadIndexingPaths(scheme: scheme)
+            self.indexStoreURL = await settingsManager?.indexStoreURL
+            self.indexDatabaseURL = await settingsManager?.indexDatabaseURL
         }
-        let data = Data(json.utf8)
-        logger.debug("Build settings JSON: \(String(data: data, encoding: .utf8) ?? "nil", privacy: .public)")
-        do {
-            buildSettings = try jsonDecoder.decode([BuildSettings].self, from: data)
-            logger.debug("Build settings: \(String(describing: self.buildSettings), privacy: .public)")
-        } catch {
-            logger.error("Failed to decode build settings: \(error)")
-            throw BuildServerError.buildSettingsLoadFailed
-        }
-    }
-
-    private func loadXcodeBuildSettingsForIndex() async throws {
-        // xcodebuild -showBuildSettingsForIndex -json
-        var arguments = try getXcodeBuildBasicArguments()
-        // arguments.append(contentsOf: ["-destination", "generic/platform=iOS Simulator"])
-        arguments.append(contentsOf: ["-showBuildSettingsForIndex", "-json"])
-        guard let json = try await xcodebuild(arguments: arguments), !json.isEmpty else {
-            throw BuildServerError.buildSettingsForIndexLoadFailed
-        }
-        logger.debug("Build settings for index JSON: \(json, privacy: .public)")
-        let data = Data(json.utf8)
-        do {
-            buildSettingsForIndex = try jsonDecoder.decode(BuildSettingsForIndex.self, from: data)
-            logger.debug(
-                "Build settings for index: \(String(describing: self.buildSettingsForIndex), privacy: .public)"
-            )
-        } catch {
-            logger.error("Failed to decode build settings for index: \(error)")
-            throw BuildServerError.buildSettingsForIndexLoadFailed
-        }
-    }
-
-    private func loadIndexingPaths() async throws {
-        guard let scheme = xcodeProject?.scheme else {
-            throw BuildServerError.invalidConfiguration("No scheme available for indexing paths")
-        }
-
-        guard let buildSettings = buildSettings?.first(where: {
-            $0.target == scheme && $0.action == "build"
-        })?.buildSettings else {
-            throw BuildServerError.invalidConfiguration("No build settings found for scheme: \(scheme)")
-        }
-
-        guard let buildFolderPath = buildSettings["BUILD_DIR"] else {
-            throw BuildServerError.invalidConfiguration("BUILD_DIR not found in build settings")
-        }
-
-        let outputFolder = URL(fileURLWithPath: buildFolderPath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-
-        indexStoreURL = outputFolder.appendingPathComponent("Index.noIndex/DataStore")
-        let indexDatabaseURL = outputFolder.appendingPathComponent("IndexDatabase.noIndex")
-
-        do {
-            if !FileManager.default.fileExists(atPath: indexDatabaseURL.path) {
-                try FileManager.default.createDirectory(at: indexDatabaseURL, withIntermediateDirectories: true)
-            }
-        } catch {
-            logger.error("Failed to create index database directory: \(error)")
-            throw BuildServerError.indexingPathsLoadFailed
-        }
-
-        self.indexDatabaseURL = indexDatabaseURL
-        logger.debug("Index store: \(String(describing: self.indexStoreURL), privacy: .public)")
+        logger.debug("Settings manager initialized and build settings loaded")
     }
 
     private func getXcodeBuildBasicArguments() throws -> [String] {
-        guard let xcodeProject else {
+        guard let projectInfo else {
             throw BuildServerError.invalidConfiguration("Xcode project not loaded")
         }
 
         var arguments: [String] = []
-        if let workspace = xcodeProject.workspace {
-            arguments.append(contentsOf: ["-workspace", workspace])
-        } else if let project = xcodeProject.project {
-            arguments.append(contentsOf: ["-project", project])
-        } else {
-            throw BuildServerError.missingProject
+
+        switch projectInfo.projectType {
+        case let .explicitWorkspace(url):
+            arguments.append(contentsOf: ["-workspace", url.path])
+        case let .implicitProjectWorkspace(url):
+            let projectURL = url.deletingLastPathComponent()
+            arguments.append(contentsOf: ["-project", projectURL.path])
         }
 
-        if let scheme = xcodeProject.scheme {
+        if let scheme = projectInfo.scheme {
             arguments.append(contentsOf: ["-scheme", scheme])
         }
 
-        if let configuration = xcodeProject.configuration {
-            arguments.append(contentsOf: ["-configuration", configuration])
-        }
+        arguments.append(contentsOf: ["-configuration", projectInfo.configuration])
+
         return arguments
     }
 
@@ -257,17 +202,19 @@ actor BuildServerContext {
 }
 
 extension BuildServerContext {
-    func getCompileArguments(fileURI: String) -> [String] {
-        let filePath = URL(filePath: fileURI).path
+    func getCompileArguments(fileURI: String) async -> [String] {
         guard
-            let buildSettingsForIndex,
-            let scheme = xcodeProject?.scheme
+            let settingsManager,
+            let scheme = projectInfo?.scheme
         else {
             return []
         }
 
-        let fileBuildSettings = buildSettingsForIndex[scheme]?[filePath]
-        return fileBuildSettings?.swiftASTCommandArguments ?? []
+        return await settingsManager.getCompileArguments(fileURI: fileURI, scheme: scheme)
+    }
+
+    func getBuildSetting(_ key: String, for target: String, action: String = "build") async -> String? {
+        await settingsManager?.getBuildSetting(key, for: target, action: action)
     }
 }
 
@@ -276,12 +223,6 @@ extension BuildServerContext {
 private extension BuildServerContext {
     func validateAndNormalizeConfig(_ config: BuildServerConfig, rootURL: URL?) -> BuildServerConfig {
         var normalizedConfig = config
-
-        // Ensure we have either workspace or project
-        if normalizedConfig.workspace == nil, normalizedConfig.project == nil {
-            logger.debug("No workspace or project specified, attempting to find one")
-            normalizedConfig = findWorkspaceOrProject(in: normalizedConfig, rootURL: rootURL)
-        }
 
         // Provide default configuration if none specified
         if normalizedConfig.configuration == nil {
@@ -296,45 +237,5 @@ private extension BuildServerContext {
         }
 
         return normalizedConfig
-    }
-
-    func findWorkspaceOrProject(in config: BuildServerConfig, rootURL: URL?) -> BuildServerConfig {
-        guard let rootURL else { return config }
-
-        let fileManager = FileManager.default
-
-        do {
-            let contents = try fileManager.contentsOfDirectory(at: rootURL, includingPropertiesForKeys: nil)
-
-            // Look for .xcworkspace first
-            if let workspace = contents.first(where: { $0.pathExtension == "xcworkspace" }) {
-                let workspaceName = workspace.lastPathComponent
-                logger.debug("Found workspace: \(workspaceName)")
-                return BuildServerConfig(
-                    rootURL: config.rootURL,
-                    workspace: workspaceName,
-                    project: config.project,
-                    scheme: config.scheme,
-                    configuration: config.configuration
-                )
-            }
-
-            // Fallback to .xcodeproj
-            if let project = contents.first(where: { $0.pathExtension == "xcodeproj" }) {
-                let projectName = project.lastPathComponent
-                logger.debug("Found project: \(projectName)")
-                return BuildServerConfig(
-                    rootURL: config.rootURL,
-                    workspace: config.workspace,
-                    project: projectName,
-                    scheme: config.scheme,
-                    configuration: config.configuration
-                )
-            }
-        } catch {
-            logger.debug("Failed to scan directory for Xcode projects: \(error)")
-        }
-
-        return config
     }
 }
