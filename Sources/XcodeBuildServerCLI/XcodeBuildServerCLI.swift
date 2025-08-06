@@ -41,8 +41,8 @@ struct XcodeBuildServerCLI {
             messageHandler: messageHandler
         )
 
-        // Monitor parent process more frequently
-        Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+        // Monitor parent process at a reasonable interval
+        Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
             killSelfIfParentIsNull()
         }
 
