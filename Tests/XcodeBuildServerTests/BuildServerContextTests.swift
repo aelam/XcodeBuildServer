@@ -11,13 +11,13 @@ import Testing
 
 struct BuildServerContextTests {
     @Test
-    func bspConfigDefaultConfiguration() {
-        #expect(BSPConfig.defaultConfiguration == "Debug")
+    func xcodeBSPConfigurationDefaultConfiguration() {
+        #expect(XcodeBSPConfiguration.defaultConfiguration == "Debug")
     }
 
     @Test
-    func bspConfigCodable() throws {
-        let config = BSPConfig(
+    func xcodeBSPConfigurationCodable() throws {
+        let config = XcodeBSPConfiguration(
             workspace: "Test.xcworkspace",
             project: nil,
             scheme: "TestScheme",
@@ -28,7 +28,7 @@ struct BuildServerContextTests {
         let data = try encoder.encode(config)
 
         let decoder = JSONDecoder()
-        let decodedConfig = try decoder.decode(BSPConfig.self, from: data)
+        let decodedConfig = try decoder.decode(XcodeBSPConfiguration.self, from: data)
 
         #expect(decodedConfig.workspace == "Test.xcworkspace")
         #expect(decodedConfig.project == nil)
@@ -66,15 +66,15 @@ struct BuildServerContextTests {
     }
 
     @Test
-    func bspConfigToProjectReference() {
-        let bspConfig = BSPConfig(
+    func xcodeBSPConfigurationToProjectReference() {
+        let config = XcodeBSPConfiguration(
             workspace: "Test.xcworkspace",
             project: nil,
             scheme: "TestScheme",
             configuration: "Release"
         )
 
-        let projectRef = bspConfig.projectReference
+        let projectRef = config.projectReference
         #expect(projectRef.workspace == "Test.xcworkspace")
         #expect(projectRef.project == nil)
         #expect(projectRef.scheme == "TestScheme")

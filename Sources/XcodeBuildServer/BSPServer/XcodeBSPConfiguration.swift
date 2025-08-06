@@ -7,7 +7,7 @@
 import Foundation
 import XcodeProjectManagement
 
-public struct BSPConfig: Codable {
+public struct XcodeBSPConfiguration: Codable {
     public let workspace: String?
     public let project: String?
     public let scheme: String?

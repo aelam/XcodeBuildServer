@@ -22,7 +22,7 @@ struct XcodeProjectLocatorTests {
             .appendingPathComponent(root)
         print(projectFolder)
         let locator = XcodeProjectLocator(root: projectFolder)
-        let bspConfig = try locator.resolveProject()
+        let bspConfig = try locator.resolveProjectByAutoDiscovery()
         let actualKind = switch bspConfig {
         case .explicitWorkspace:
             "workspace"
@@ -39,7 +39,7 @@ struct XcodeProjectLocatorTests {
             .appendingPathComponent("NoProjectFile")
         let locator = XcodeProjectLocator(root: projectFolder)
         do {
-            _ = try locator.resolveProject()
+            _ = try locator.resolveProjectByAutoDiscovery()
             Issue.record("Expected .notFound error")
         } catch {
             let xcodeError = try #require(error as? XcodeProjectError)

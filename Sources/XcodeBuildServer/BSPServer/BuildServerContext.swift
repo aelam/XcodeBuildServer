@@ -9,7 +9,7 @@ import XcodeProjectManagement
 
 public actor BuildServerContext {
     private(set) var rootURL: URL?
-    private(set) var config: BSPConfig? // Optional because not used in auto-discovery mode
+    private(set) var config: XcodeBSPConfiguration? // Optional because not used in auto-discovery mode
     private(set) var toolchain: XcodeToolchain? // Shared toolchain for all components
     private(set) var projectManager: XcodeProjectManager?
     private(set) var projectInfo: XcodeProjectInfo?
@@ -160,12 +160,12 @@ public actor BuildServerContext {
         return nil
     }
 
-    private func loadConfig(configFileURL: URL) throws -> BSPConfig? {
+    private func loadConfig(configFileURL: URL) throws -> XcodeBSPConfiguration? {
         logger.debug("Loading config from: \(configFileURL.path)")
 
         do {
             let data = try Data(contentsOf: configFileURL)
-            var config = try JSONDecoder().decode(BSPConfig.self, from: data)
+            var config = try JSONDecoder().decode(XcodeBSPConfiguration.self, from: data)
 
             // Validate and provide defaults
             config = validateAndNormalizeConfig(config, rootURL: rootURL)
@@ -326,18 +326,18 @@ extension BuildServerContext {
 }
 
 private extension BuildServerContext {
-    func validateAndNormalizeConfig(_ config: BSPConfig, rootURL: URL?) -> BSPConfig {
+    func validateAndNormalizeConfig(_ config: XcodeBSPConfiguration, rootURL: URL?) -> XcodeBSPConfiguration {
         var normalizedConfig = config
 
         // Provide default configuration if none specified
         if normalizedConfig.configuration == nil {
-            normalizedConfig = BSPConfig(
+            normalizedConfig = XcodeBSPConfiguration(
                 workspace: normalizedConfig.workspace,
                 project: normalizedConfig.project,
                 scheme: normalizedConfig.scheme,
-                configuration: BSPConfig.defaultConfiguration
+                configuration: XcodeBSPConfiguration.defaultConfiguration
             )
-            logger.debug("Using default configuration: \(BSPConfig.defaultConfiguration)")
+            logger.debug("Using default configuration: \(XcodeBSPConfiguration.defaultConfiguration)")
         }
 
         return normalizedConfig
