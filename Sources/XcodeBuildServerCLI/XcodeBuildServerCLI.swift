@@ -87,7 +87,7 @@ struct XcodeBuildServerCLI {
             }
             exit(0)
         }
-        
+
         // Additional check: verify parent process still exists and is not a zombie
         let result = kill(parentProcessID, 0) // Signal 0 just checks if process exists
         if result != 0 {
