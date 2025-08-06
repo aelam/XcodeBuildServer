@@ -101,6 +101,13 @@ public final actor StdioJSONRPCServerTransport: JSONRPCServerTransport {
         let header = "Content-Length: \(data.count)\r\n\r\n"
         let headerData = header.data(using: .utf8)!
 
+        // Debug logging
+        if ProcessInfo.processInfo.environment["BSP_DEBUG"] != nil {
+            let timestamp = DateFormatter().string(from: Date())
+            let jsonString = String(data: data, encoding: .utf8) ?? "[Invalid UTF-8]"
+            fputs("🔴 [\(timestamp)] OUTGOING: \(jsonString)\n", stderr)
+        }
+
         // Perform write operations on a background queue to avoid blocking
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             DispatchQueue.global(qos: .userInitiated).async {
@@ -147,6 +154,12 @@ public final actor StdioJSONRPCServerTransport: JSONRPCServerTransport {
         let jsonContent = components[1].replacing("\\/", with: "/")
         guard let rawData = jsonContent.data(using: .utf8) else {
             throw JSONRPCTransportError.invalidMessage
+        }
+
+        // Debug logging
+        if ProcessInfo.processInfo.environment["BSP_DEBUG"] != nil {
+            let timestamp = DateFormatter().string(from: Date())
+            fputs("🔵 [\(timestamp)] INCOMING: \(jsonContent)\n", stderr)
         }
 
         // Decode JSON-RPC request

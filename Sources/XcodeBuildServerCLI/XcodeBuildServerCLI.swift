@@ -24,8 +24,19 @@ struct XcodeBuildServerCLI {
         // Start BSP server - project discovery happens on build/initialize request
         let messageHandler = XcodeBSPMessageHandler()
 
+        // Check for debug mode from environment variable
+        let isDebugMode = ProcessInfo.processInfo.environment["BSP_DEBUG"] != nil ||
+            arguments.contains("--debug")
+
+        if isDebugMode {
+            print("🔧 BSP Debug Mode Enabled")
+            print("📝 Logging JSON-RPC communication to stderr")
+            print("📡 PID: \(ProcessInfo.processInfo.processIdentifier)")
+        }
+
+        let transport = StdioJSONRPCServerTransport()
         let server = JSONRPCServer(
-            transport: StdioJSONRPCServerTransport(),
+            transport: transport,
             messageRegistry: bspRegistry,
             messageHandler: messageHandler
         )
