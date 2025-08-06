@@ -5,15 +5,22 @@
 //
 
 import Foundation
+import JSONRPCServer
 import XcodeProjectManagement
 
-public final class XcodeBSPMessageHandler: MessageHandler, Sendable {
+public final class XcodeBSPMessageHandler: ContextualMessageHandler, Sendable {
+    public typealias Context = BuildServerContext
     let buildServerContext = BuildServerContext()
 
     public init() {}
 
     public func initialize(rootURL: URL) async throws {
         try await buildServerContext.loadProject(rootURL: rootURL)
+    }
+
+    public func withContext<T>(_ operation: @escaping @Sendable (BuildServerContext) async throws -> T) async rethrows
+        -> T {
+        try await operation(buildServerContext)
     }
 
     func getBuildSettings() async -> [XcodeBuildSettings]? {

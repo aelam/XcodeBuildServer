@@ -4,6 +4,8 @@
 //  Copyright © 2024 Wang Lun.
 //
 
+import Foundation
+
 /**
  {
  "jsonrpc": "2.0",
@@ -158,7 +160,9 @@
 /// The request may return `nil` if it doesn't have any build settings for this file in the given target.
 ///
 
-public struct TextDocumentSourceKitOptionsRequest: RequestType, Sendable {
+public struct TextDocumentSourceKitOptionsRequest: ContextualRequestType, Sendable {
+    public typealias RequiredContext = BuildServerContext
+
     public static func method() -> String {
         "textDocument/sourceKitOptions"
     }
@@ -182,14 +186,38 @@ public struct TextDocumentSourceKitOptionsRequest: RequestType, Sendable {
     public let jsonrpc: String
     public let params: Params
 
-    public func handle(
-        handler: any MessageHandler,
+    public func handle<Handler: ContextualMessageHandler>(
+        handler: Handler,
         id: RequestID
-    ) async -> ResponseType? {
-        guard handler is XcodeBSPMessageHandler else {
-            return nil
+    ) async -> ResponseType? where Handler.Context == BuildServerContext {
+        await handler.withContext { context in
+            // Get file URL from the textDocument parameter
+            guard let fileURL = URL(string: params.textDocument.uri.stringValue) else {
+                return TextDocumentSourceKitOptionsResponse(
+                    id: id,
+                    jsonrpc: "2.0",
+                    result: nil
+                )
+            }
+
+            // Get compile arguments for the specific file
+            let compilerArguments = await context.getCompileArguments(fileURI: fileURL.path)
+
+            // Get working directory from context
+            let workingDirectory = await context.rootURL?.path
+
+            // Create and return the response
+            let result = TextDocumentSourceKitOptionsResponse.Result(
+                compilerArguments: compilerArguments,
+                workingDirectory: workingDirectory
+            )
+
+            return TextDocumentSourceKitOptionsResponse(
+                id: id,
+                jsonrpc: "2.0",
+                result: result
+            )
         }
-        return nil
     }
 }
 

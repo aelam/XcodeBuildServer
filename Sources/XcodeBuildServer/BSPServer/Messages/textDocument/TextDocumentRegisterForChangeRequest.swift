@@ -18,7 +18,9 @@ import Foundation
  }
  */
 
-public struct TextDocumentRegisterForChangeRequest: RequestType, Sendable {
+public struct TextDocumentRegisterForChangeRequest: ContextualRequestType, Sendable {
+    public typealias RequiredContext = BuildServerContext
+
     public static func method() -> String {
         "textDocument/registerForChanges"
     }
@@ -37,32 +39,37 @@ public struct TextDocumentRegisterForChangeRequest: RequestType, Sendable {
     public let jsonrpc: String
     public let params: Params
 
-    public func handle(
-        handler: any MessageHandler,
+    public func handle<Handler: ContextualMessageHandler>(
+        handler: Handler,
         id: RequestID
-    ) async -> ResponseType? {
-        guard let handler = handler as? XcodeBSPMessageHandler else {
-            return nil
-        }
+    ) async -> ResponseType? where Handler.Context == BuildServerContext {
+        await handler.withContext { context in
+            guard let fileURL = URL(string: params.uri) else {
+                return TextDocumentRegisterForChangeResponse(
+                    jsonrpc: jsonrpc,
+                    id: id,
+                    result: nil
+                )
+            }
 
-        guard let fileURL = URL(string: params.uri) else {
-            return nil
-        }
-
-        if params.action == .register {
-            let arguments = await handler.getCompileArguments(fileURI: fileURL.path)
-            let workingDirectory = await handler.getRootURL()?.path
+            if params.action == .register {
+                let arguments = await context.getCompileArguments(fileURI: fileURL.path)
+                let workingDirectory = await context.rootURL?.path
+                return TextDocumentRegisterForChangeResponse(
+                    jsonrpc: jsonrpc,
+                    id: id,
+                    result: TextDocumentRegisterForChangeResponse.Result(
+                        compilerArguments: arguments,
+                        workingDirectory: workingDirectory
+                    )
+                )
+            }
             return TextDocumentRegisterForChangeResponse(
                 jsonrpc: jsonrpc,
                 id: id,
-                result:
-                TextDocumentRegisterForChangeResponse.Result(
-                    compilerArguments: arguments,
-                    workingDirectory: workingDirectory
-                )
+                result: nil
             )
-        } else {}
-        return nil
+        }
     }
 }
 

@@ -5,7 +5,6 @@
 //
 
 import Foundation
-import OSLog
 
 public final class StdioJSONRPCServerTransport: JSONRPCServerTransport {
     private let input: FileHandle
@@ -39,23 +38,17 @@ public final class StdioJSONRPCServerTransport: JSONRPCServerTransport {
             try? self.handleData(fileHandle: handle)
         }
 
-        logger.debug("==> Start XcodeBuildServer")
-
         RunLoop.current.run()
     }
 
     public func close() {
-        logger.debug("Closing stdio transport")
         input.readabilityHandler = nil
         // Note: We don't close stdio handles as they are managed by the system
-        logger.debug("Stdio transport closed")
     }
 
     private func handleData(fileHandle: FileHandle) throws {
         let data = fileHandle.availableData
-        guard
-            !data.isEmpty
-        else {
+        guard !data.isEmpty else {
             return
         }
 
@@ -67,15 +60,11 @@ public final class StdioJSONRPCServerTransport: JSONRPCServerTransport {
         else {
             return
         }
+
         let content = components[1].replacing("\\/", with: "/")
         guard let rawData = content.data(using: .utf8) else {
             return
         }
-        guard let message = String(data: rawData, encoding: .utf8) else {
-            throw JSONRPCTransportError.invalidMessage
-        }
-
-        logger.debug("received: + \(message, privacy: .public)")
 
         guard let request = try? jsonDecoder.decode(JSONRPCRequest.self, from: rawData) else {
             throw JSONRPCTransportError.invalidMessage
@@ -89,9 +78,5 @@ public final class StdioJSONRPCServerTransport: JSONRPCServerTransport {
         let headerData = header.data(using: .utf8)!
         output.write(headerData)
         output.write(data)
-
-        logger.debug(
-            "Response: + \(header + String(data: data, encoding: .utf8)!, privacy: .public)"
-        )
     }
 }

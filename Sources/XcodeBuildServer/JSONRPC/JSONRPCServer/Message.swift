@@ -4,29 +4,23 @@
 //  Copyright © 2024 Wang Lun.
 //
 
-public typealias RequestID = JSONRPCID
+@_exported import JSONRPCServer
 
-public protocol MessageType: Codable, Sendable {}
+// MARK: - BSP-Specific Extensions
 
-public protocol RequestType: Codable, Sendable {
-    static func method() -> String
+public extension ContextualRequestType where RequiredContext == BuildServerContext {
+    /// Default implementation that falls back to the original handle method.
+    /// This provides backward compatibility for existing request handlers.
     func handle(
         handler: MessageHandler,
         id: RequestID
-    ) async -> ResponseType?
-}
+    ) async -> ResponseType? {
+        // Try to use the contextual handler if available
+        if let contextualHandler = handler as? XcodeBSPMessageHandler {
+            return await handle(handler: contextualHandler, id: id)
+        }
 
-public protocol ResponseType: MessageType {}
-
-/// A notification, which must have a unique `method` name.
-public protocol NotificationType: MessageType {
-    /// The name of the request.
-    static func method() -> String
-
-    func handle(_ handler: MessageHandler) async throws
-}
-
-public struct VoidResponse: ResponseType, Hashable {
-    public let id: JSONRPCID?
-    public let jsonrpc: String
+        // Return nil if not a contextual handler
+        return nil
+    }
 }

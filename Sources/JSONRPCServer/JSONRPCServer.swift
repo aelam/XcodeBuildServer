@@ -5,14 +5,13 @@
 //
 
 import Foundation
-import OSLog
 
 public final actor JSONRPCServer {
     private let transport: JSONRPCServerTransport
     private let messageRegistry: MessageRegistry
     private let messageHandler: MessageHandler
     private let jsonDecoder = JSONDecoder()
-    private let jsonEncoder = JSONDecoder()
+    private let jsonEncoder = JSONEncoder()
 
     public init(
         transport: JSONRPCServerTransport,
@@ -27,27 +26,22 @@ public final actor JSONRPCServer {
     public func listen() {
         transport.requestHandler = { [weak self] request, requestData in
             Task {
-                await self?.onReceivedMesssage(request: request, requestData: requestData)
+                await self?.onReceivedMessage(request: request, requestData: requestData)
             }
         }
         transport.listen()
     }
 
-    func close() async {
-        logger.debug("Closing JSON-RPC server")
+    public func close() async {
         transport.close()
-        logger.debug("JSON-RPC server closed")
     }
 
-    private func onReceivedMesssage(request: JSONRPCRequest, requestData: Data) async {
-        logger.debug("Received method: \(request.method, privacy: .public)")
-
+    private func onReceivedMessage(request: JSONRPCRequest, requestData: Data) async {
         if let requestType = messageRegistry.requestType(for: request.method) {
             await handleRequest(request: request, requestData: requestData, requestType: requestType)
         } else if let notificationType = messageRegistry.notificationType(for: request.method) {
             await handleNotification(requestData: requestData, notificationType: notificationType)
         } else {
-            logger.error("Unknown method: \(request.method)")
             if let requestID = request.id {
                 await sendErrorResponse(id: requestID, error: .methodNotFound("Method not found: \(request.method)"))
             }
@@ -56,7 +50,6 @@ public final actor JSONRPCServer {
 
     private func handleRequest(request: JSONRPCRequest, requestData: Data, requestType: any RequestType.Type) async {
         guard let requestID = request.id else {
-            logger.error("Request missing ID for method: \(request.method)")
             return
         }
 
@@ -67,14 +60,12 @@ public final actor JSONRPCServer {
                 do {
                     try send(response: response)
                 } catch {
-                    logger.error("Failed to send response: \(error)")
+                    // Failed to send response
                 }
             } else {
-                logger.error("Handler returned nil response for method: \(request.method)")
                 await sendErrorResponse(id: requestID, error: .internalError("Handler failed to process request"))
             }
         } catch {
-            logger.error("Failed to decode request for method \(request.method): \(error)")
             await sendErrorResponse(id: requestID, error: .parseError("Invalid request format"))
         }
     }
@@ -84,7 +75,6 @@ public final actor JSONRPCServer {
             let typedNotification = try jsonDecoder.decode(notificationType, from: requestData)
             try await typedNotification.handle(messageHandler)
         } catch {
-            logger.error("Failed to handle notification: \(error)")
             // Notifications don't have responses, so we can only log the error
         }
     }
@@ -99,7 +89,7 @@ public final actor JSONRPCServer {
         do {
             try send(response: errorResponse)
         } catch {
-            logger.error("Failed to send error response: \(error)")
+            // Failed to send error response
         }
     }
 
