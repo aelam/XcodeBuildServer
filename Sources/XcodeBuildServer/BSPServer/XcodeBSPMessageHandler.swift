@@ -5,6 +5,7 @@
 //
 
 import Foundation
+import JSONRPCServer
 import XcodeProjectManagement
 
 public final class XcodeBSPMessageHandler: ContextualMessageHandler, Sendable {

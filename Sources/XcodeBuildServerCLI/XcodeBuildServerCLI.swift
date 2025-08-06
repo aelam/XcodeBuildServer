@@ -4,6 +4,7 @@
 //  Copyright © 2024 Wang Lun.
 
 import Foundation
+import JSONRPCServer
 import XcodeBuildServer
 
 @main

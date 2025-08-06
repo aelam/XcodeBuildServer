@@ -8,6 +8,10 @@ let package = Package(
     platforms: [.macOS(.v13)],
     products: [
         .library(
+            name: "JSONRPCServer",
+            targets: ["JSONRPCServer"]
+        ),
+        .library(
             name: "XcodeBuildServer",
             targets: ["XcodeBuildServer"]
         ),
@@ -27,6 +31,11 @@ let package = Package(
     ],
     targets: [
         .target(
+            name: "JSONRPCServer",
+            dependencies: [
+            ]
+        ),
+        .target(
             name: "XcodeProjectManagement",
             dependencies: [
             ],
@@ -35,6 +44,7 @@ let package = Package(
         .target(
             name: "XcodeBuildServer",
             dependencies: [
+                "JSONRPCServer",
                 "XcodeProjectManagement",
             ]
         ),

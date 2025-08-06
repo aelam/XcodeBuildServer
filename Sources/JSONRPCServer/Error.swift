@@ -4,12 +4,6 @@
 //  Copyright © 2024 Wang Lun.
 //
 
-//
-//  Error.swift
-//  XcodeBuildServer
-//
-//  Created by ST22956 on 2024/11/09.
-//
 public struct ErrorCode: RawRepresentable, Codable, Hashable, Sendable {
     public var rawValue: Int
 
@@ -140,13 +134,6 @@ public extension MessageDecodingError {
     }
 }
 
-public extension ResponseError {
-    /// Converts a `MessageDecodingError` to a `ResponseError`.
-    init(_ decodingError: MessageDecodingError) {
-        self.init(code: decodingError.code, message: decodingError.message)
-    }
-}
-
 public struct ResponseError: Error, Codable, Hashable {
     public var code: ErrorCode
     public var message: String
@@ -154,5 +141,12 @@ public struct ResponseError: Error, Codable, Hashable {
     public init(code: ErrorCode, message: String) {
         self.code = code
         self.message = message
+    }
+}
+
+public extension ResponseError {
+    /// Converts a `MessageDecodingError` to a `ResponseError`.
+    init(_ decodingError: MessageDecodingError) {
+        self.init(code: decodingError.code, message: decodingError.message)
     }
 }
