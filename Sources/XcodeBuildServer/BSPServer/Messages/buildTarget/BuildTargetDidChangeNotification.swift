@@ -22,7 +22,7 @@ struct BuildTargetDidChangeNotification: ContextualNotificationType, Sendable {
 
     func handle<Handler: ContextualMessageHandler>(_ handler: Handler) async throws
         where Handler.Context == BuildServerContext {
-        await handler.withContext { context in
+        await handler.withContext { _ in
             guard let changes = params.changes else {
                 return
             }

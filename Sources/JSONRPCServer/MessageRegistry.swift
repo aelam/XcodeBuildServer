@@ -25,7 +25,7 @@ public final class MessageRegistry: Sendable {
     public init(requests: [any RequestType.Type], notifications: [any NotificationType.Type]) {
         // Validate no duplicate method names in requests
         let requestMethods = requests.map { $0.method() }
-        let duplicateRequests = Dictionary(grouping: requestMethods, by: { $0 })
+        let duplicateRequests = Dictionary(grouping: requestMethods) { $0 }
             .filter { $1.count > 1 }
             .keys
 
@@ -35,7 +35,7 @@ public final class MessageRegistry: Sendable {
 
         // Validate no duplicate method names in notifications
         let notificationMethods = notifications.map { $0.method() }
-        let duplicateNotifications = Dictionary(grouping: notificationMethods, by: { $0 })
+        let duplicateNotifications = Dictionary(grouping: notificationMethods) { $0 }
             .filter { $1.count > 1 }
             .keys
 
@@ -49,7 +49,8 @@ public final class MessageRegistry: Sendable {
         let methodOverlap = Set(requestMethods).intersection(Set(notificationMethods))
         if !methodOverlap.isEmpty {
             fatalError(
-                "Method names cannot be used for both requests and notifications: \(Array(methodOverlap).joined(separator: ", "))"
+                "Method names overlap between requests and notifications: " +
+                    "\(Array(methodOverlap).joined(separator: ", "))"
             )
         }
 
