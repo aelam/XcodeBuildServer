@@ -27,11 +27,11 @@ public struct XcodeTargetInfo: Sendable {
     }
 
     public var isTestTarget: Bool {
-        xcodeProductType?.isTestType == true
+        xcodeProductType?.isTestType == true || name.contains("Test")
     }
 
     public var isUITestTarget: Bool {
-        xcodeProductType == .uiTest
+        xcodeProductType == .uiTest || name.contains("UITest")
     }
 
     public var isRunnableTarget: Bool {
@@ -155,17 +155,12 @@ public actor XcodeProjectManager {
         let commandBuilder = XcodeBuildCommandBuilder(projectInfo: project, toolchain: toolchain)
         let output = try await commandBuilder.executeCommand(options: .listSchemesJSON)
 
-        if let output, let data = output.data(using: .utf8) {
-            do {
-                let listInfo = try JSONDecoder().decode(XcodeListInfo.self, from: data)
-                return listInfo.project?.schemes ?? []
-            } catch {
-                // Fallback to text parsing if JSON fails
-                return parseSchemes(from: output)
-            }
+        guard let output, let data = output.data(using: .utf8) else {
+            return []
         }
 
-        return []
+        let listInfo = try JSONDecoder().decode(XcodeListInfo.self, from: data)
+        return listInfo.project?.schemes ?? []
     }
 
     public func getAvailableConfigurations() async throws -> [String] {
@@ -176,17 +171,12 @@ public actor XcodeProjectManager {
         let commandBuilder = XcodeBuildCommandBuilder(projectInfo: project, toolchain: toolchain)
         let output = try await commandBuilder.executeCommand(options: .listSchemesJSON)
 
-        if let output, let data = output.data(using: .utf8) {
-            do {
-                let listInfo = try JSONDecoder().decode(XcodeListInfo.self, from: data)
-                return listInfo.project?.configurations ?? []
-            } catch {
-                // Fallback to text parsing if JSON fails
-                return parseConfigurations(from: output)
-            }
+        guard let output, let data = output.data(using: .utf8) else {
+            return []
         }
 
-        return []
+        let listInfo = try JSONDecoder().decode(XcodeListInfo.self, from: data)
+        return listInfo.project?.configurations ?? []
     }
 
     public func getAvailableTargets() async throws -> [String] {
@@ -197,17 +187,12 @@ public actor XcodeProjectManager {
         let commandBuilder = XcodeBuildCommandBuilder(projectInfo: project, toolchain: toolchain)
         let output = try await commandBuilder.executeCommand(options: .listSchemesJSON)
 
-        if let output, let data = output.data(using: .utf8) {
-            do {
-                let listInfo = try JSONDecoder().decode(XcodeListInfo.self, from: data)
-                return listInfo.project?.targets ?? []
-            } catch {
-                // Fallback to text parsing if JSON fails
-                return parseTargets(from: output)
-            }
+        guard let output, let data = output.data(using: .utf8) else {
+            return []
         }
 
-        return []
+        let listInfo = try JSONDecoder().decode(XcodeListInfo.self, from: data)
+        return listInfo.project?.targets ?? []
     }
 
     public func getTargetBuildSettings(target: String) async throws -> [String: String] {
@@ -255,99 +240,12 @@ public actor XcodeProjectManager {
         let tempCommandBuilder = XcodeBuildCommandBuilder(projectInfo: tempProject, toolchain: toolchain)
         let output = try await tempCommandBuilder.executeCommand(options: .listSchemesJSON)
 
-        if let output, let data = output.data(using: .utf8) {
-            do {
-                let listInfo = try JSONDecoder().decode(XcodeListInfo.self, from: data)
-                return listInfo.project?.schemes.first
-            } catch {
-                // Fallback to text parsing if JSON fails
-                let schemes = parseSchemes(from: output)
-                return schemes.first
-            }
+        guard let output, let data = output.data(using: .utf8) else {
+            return nil
         }
 
-        return nil
-    }
-
-    private func parseSchemes(from output: String) -> [String] {
-        let lines = output.components(separatedBy: .newlines)
-        var schemes: [String] = []
-        var inSchemesSection = false
-
-        for line in lines {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-
-            if trimmed == "Schemes:" {
-                inSchemesSection = true
-                continue
-            }
-
-            if inSchemesSection {
-                if trimmed.isEmpty || trimmed.hasPrefix("Build Configurations:") {
-                    break
-                }
-
-                if !trimmed.isEmpty {
-                    schemes.append(trimmed)
-                }
-            }
-        }
-
-        return schemes
-    }
-
-    private func parseConfigurations(from output: String) -> [String] {
-        let lines = output.components(separatedBy: .newlines)
-        var configurations: [String] = []
-        var inConfigSection = false
-
-        for line in lines {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-
-            if trimmed == "Build Configurations:" {
-                inConfigSection = true
-                continue
-            }
-
-            if inConfigSection {
-                if trimmed.isEmpty {
-                    break
-                }
-
-                if !trimmed.isEmpty, !trimmed.contains("If no build configuration") {
-                    configurations.append(trimmed)
-                }
-            }
-        }
-
-        return configurations
-    }
-
-    private func parseTargets(from output: String) -> [String] {
-        let lines = output.components(separatedBy: .newlines)
-        var targets: [String] = []
-        var inTargetsSection = false
-
-        for line in lines {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-
-            if trimmed == "Targets:" {
-                inTargetsSection = true
-                continue
-            }
-
-            if inTargetsSection {
-                if trimmed.isEmpty || trimmed.hasPrefix("Build Configurations:") || trimmed.hasPrefix("Schemes:") {
-                    break
-                }
-
-                if !trimmed.isEmpty {
-                    targets.append(trimmed)
-                }
-            }
-        }
-
-        return targets
+        let listInfo = try JSONDecoder().decode(XcodeListInfo.self, from: data)
+        return listInfo.project?.schemes.first
     }
 
     private func parseBuildSettings(from output: String) -> [String: String] {
