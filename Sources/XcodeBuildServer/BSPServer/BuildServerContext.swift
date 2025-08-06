@@ -17,7 +17,7 @@ struct BuildServerConfig: Codable {
     let configuration: String?
 }
 
-actor BuildServerContext {
+public actor BuildServerContext {
     private(set) var rootURL: URL?
     private(set) var config: BuildServerConfig? // Optional because not used in auto-discovery mode
     private(set) var toolchain: XcodeToolchain? // Shared toolchain for all components
