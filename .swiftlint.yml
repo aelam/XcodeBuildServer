@@ -39,9 +39,11 @@ opt_in_rules:
   - toggle_bool
   - trailing_closure
   - unneeded_parentheses_in_closure_argument
-  - unused_import
   - vertical_parameter_alignment_on_call
   - yoda_condition
+
+analyzer_rules:
+  - unused_import
 
 disabled_rules:
   - todo
