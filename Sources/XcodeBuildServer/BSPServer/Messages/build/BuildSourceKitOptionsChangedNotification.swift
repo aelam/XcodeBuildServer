@@ -134,6 +134,8 @@
 /// server --> client
 /// Deprecated
 public struct BuildSourceKitOptionsChangedNotification: NotificationType, Sendable {
+    public typealias RequiredContext = BuildServerContext
+
     public static func method() -> String {
         "build/sourceKitOptionsChanged"
     }

@@ -16,6 +16,8 @@
  */
 
 public struct OnBuildInitializedNotification: NotificationType, Sendable {
+    public typealias RequiredContext = BuildServerContext
+
     public static func method() -> String {
         "build/initialized"
     }

@@ -10,6 +10,7 @@
 /// code 0 if the shutdown request has been received before;
 /// otherwise with error code 1.
 public struct OnBuildExitNotification: NotificationType, Sendable {
+    public typealias RequiredContext = BuildServerContext
     public static func method() -> String {
         "build/exit"
     }

@@ -6,6 +6,8 @@
 //
 
 struct BuildTargetDidChangeNotification: NotificationType, Sendable {
+    typealias RequiredContext = BuildServerContext
+
     static func method() -> String {
         "build/targetDidChange"
     }

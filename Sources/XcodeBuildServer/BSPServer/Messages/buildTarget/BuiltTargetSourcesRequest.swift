@@ -6,7 +6,9 @@
 
 import Foundation
 
-struct BuiltTargetSourcesRequest: RequestType, Sendable {
+struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
+    typealias RequiredContext = BuildServerContext
+
     static func method() -> String {
         "buildTarget/sources"
     }
@@ -16,8 +18,15 @@ struct BuiltTargetSourcesRequest: RequestType, Sendable {
         let isHeader: Bool?
     }
 
-    func handle(handler: any MessageHandler, id: RequestID) async -> (any ResponseType)? {
-        nil
+    func handle<Handler: ContextualMessageHandler>(
+        handler: Handler,
+        id: RequestID
+    ) async -> ResponseType? where Handler.Context == BuildServerContext {
+        await handler.withContext { context in
+            BuildTargetSourcesResponse(
+                items: []
+            )
+        }
     }
 }
 

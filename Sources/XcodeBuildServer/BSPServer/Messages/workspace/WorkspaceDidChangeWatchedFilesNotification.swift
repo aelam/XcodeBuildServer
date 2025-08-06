@@ -5,6 +5,8 @@
 //
 
 public struct WorkspaceDidChangeWatchedFilesNotification: NotificationType, Sendable {
+    public typealias RequiredContext = BuildServerContext
+
     public static func method() -> String {
         "workspace/didChangeWatchedFiles"
     }
