@@ -12,7 +12,7 @@ public enum XcodeProjectError: Error, CustomStringConvertible, Equatable {
         case let .multipleWorkspaces(urls):
             "Multiple .xcworkspace files found: " +
                 urls.map(\.lastPathComponent).joined(separator: "\n") +
-                ", " + "Please specify one in .bspconfig.json"
+                ", " + "Please specify one in .bsp/xcode.json"
         case let .invalidConfig(reason):
             "Invalid bsp config: \(reason)"
         }
