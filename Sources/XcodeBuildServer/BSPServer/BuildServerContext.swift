@@ -9,7 +9,13 @@ import XcodeProjectManagement
 
 public actor BuildServerContext {
     private(set) var rootURL: URL?
-    private(set) var config: XcodeBSPConfiguration? // Optional because not used in auto-discovery mode
+    /// loaded from `.bsp/xcode.json` or legacy `buildServer.json`
+    /// This configuration is used to initialize the project manager and settings manager.
+    /// If no config is found, the project manager will auto-discover the project.
+    /// If a config is found, it will be used to load the project.
+    /// If the working directory has more than one xcworkspace or project,
+    /// It's better to specify the workspace or project in the config.
+    private(set) var config: XcodeBSPConfiguration?
     private(set) var toolchain: XcodeToolchain? // Shared toolchain for all components
     private(set) var projectManager: XcodeProjectManager?
     private(set) var projectInfo: XcodeProjectInfo?
