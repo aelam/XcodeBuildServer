@@ -66,9 +66,7 @@ fastlane/test_output
 /Packages
 xcuserdata/
 DerivedData/
-.swiftpm/configuration/registries.json
-.swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 .netrc
 .index-build/
-.swiftpm/
+**/.swiftpm/**/*
 *.profraw

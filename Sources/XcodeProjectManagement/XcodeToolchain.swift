@@ -82,8 +82,13 @@ public actor XcodeToolchain {
 
         // Set environment variables for consistent toolchain selection
         var environment = ProcessInfo.processInfo.environment
+
+        // Only set the standard DEVELOPER_DIR environment variable
         environment["DEVELOPER_DIR"] = installation.path.appendingPathComponent("Contents/Developer").path
-        environment["XCODE_DEVELOPER_DIR_PATH"] = installation.path.path
+
+        // Remove any potentially interfering environment variables
+        environment.removeValue(forKey: "XCODE_DEVELOPER_DIR_PATH")
+
         process.environment = environment
 
         let outputPipe = Pipe()
@@ -113,7 +118,7 @@ public actor XcodeToolchain {
     }
 
     public func getXcodeVersion() async throws -> String {
-        guard let installation = selectedInstallation else {
+        guard selectedInstallation != nil else {
             throw XcodeToolchainError.xcodeNotFound
         }
 
@@ -144,6 +149,21 @@ public actor XcodeToolchain {
             let xcodeURL = developerDirURL.deletingLastPathComponent().deletingLastPathComponent()
 
             if let installation = try? await createInstallation(from: xcodeURL, isDeveloperDirSet: true) {
+                installations.append(installation)
+            }
+        }
+
+        // 1.5. Check current xcode-select --print-path
+        if let currentDeveloperDir = try? await getCurrentDeveloperDir() {
+            let developerDirURL = URL(fileURLWithPath: currentDeveloperDir)
+            let xcodeURL = developerDirURL.deletingLastPathComponent().deletingLastPathComponent()
+
+            // Only add if it's different from what we already found
+            let alreadyFound = installations.contains { $0.path.path == xcodeURL.path }
+            if !alreadyFound, let installation = try? await createInstallation(
+                from: xcodeURL,
+                isDeveloperDirSet: false
+            ) {
                 installations.append(installation)
             }
         }
@@ -260,6 +280,34 @@ public actor XcodeToolchain {
                     } else {
                         continuation.resume(returning: nil)
                     }
+                } else {
+                    continuation.resume(returning: nil)
+                }
+            }
+
+            do {
+                try process.run()
+            } catch {
+                continuation.resume(throwing: error)
+            }
+        }
+    }
+
+    private func getCurrentDeveloperDir() async throws -> String? {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/xcode-select")
+        process.arguments = ["--print-path"]
+
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = pipe
+
+        return try await withCheckedThrowingContinuation { continuation in
+            process.terminationHandler = { process in
+                if process.terminationStatus == 0 {
+                    let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                    let output = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines)
+                    continuation.resume(returning: output)
                 } else {
                     continuation.resume(returning: nil)
                 }
