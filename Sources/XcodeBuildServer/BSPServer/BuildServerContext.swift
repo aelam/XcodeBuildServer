@@ -79,7 +79,7 @@ actor BuildServerContext {
         self.toolchain = XcodeToolchain()
         try await loadedToolchain.initialize()
 
-        self.projectManager = XcodeProjectManager(rootURL: rootURL, toolchain: loadedToolchain)
+        self.projectManager = try XcodeProjectManager(rootURL: rootURL, toolchain: loadedToolchain)
 
         guard let configFileURL = getConfigPath(for: rootURL) else {
             logger.debug("No BSP config found, using project manager auto-discovery")
@@ -87,7 +87,7 @@ actor BuildServerContext {
 
             // Initialize settings manager with the loaded project
             let commandBuilder = try XcodeBuildCommandBuilder(projectInfo: loadedProjectInfo)
-            self.settingsManager = XcodeSettingsManager(commandBuilder: commandBuilder, toolchain: loadedToolchain)
+            self.settingsManager = try XcodeSettingsManager(commandBuilder: commandBuilder, toolchain: loadedToolchain)
 
             try await loadedSettingsManager.loadBuildSettings()
             try await loadedSettingsManager.loadBuildSettingsForIndex()
@@ -117,7 +117,7 @@ actor BuildServerContext {
 
         // Initialize settings manager with the loaded project
         let commandBuilder = try XcodeBuildCommandBuilder(projectInfo: loadedProjectInfo)
-        self.settingsManager = XcodeSettingsManager(commandBuilder: commandBuilder, toolchain: loadedToolchain)
+        self.settingsManager = try XcodeSettingsManager(commandBuilder: commandBuilder, toolchain: loadedToolchain)
 
         try await loadedSettingsManager.loadBuildSettings()
         try await loadedSettingsManager.loadBuildSettingsForIndex()

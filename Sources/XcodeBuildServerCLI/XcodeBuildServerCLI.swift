@@ -21,24 +21,19 @@ struct XcodeBuildServerCLI {
         }
 
         // Start BSP server - project discovery happens on build/initialize request
-        do {
-            let messageHandler = XcodeBSPMessageHandler()
+        let messageHandler = XcodeBSPMessageHandler()
 
-            let server = JSONRPCServer(
-                transport: StdioJSONRPCServerTransport(),
-                messageRegistry: bspRegistry,
-                messageHandler: messageHandler
-            )
+        let server = JSONRPCServer(
+            transport: StdioJSONRPCServerTransport(),
+            messageRegistry: bspRegistry,
+            messageHandler: messageHandler
+        )
 
-            Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { _ in
-                killSelfIfParentIsNull()
-            }
-
-            await server.listen()
-        } catch {
-            print("Failed to start build server: \(error)")
-            exit(1)
+        Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { _ in
+            killSelfIfParentIsNull()
         }
+
+        await server.listen()
     }
 
     private static func printUsage() {
