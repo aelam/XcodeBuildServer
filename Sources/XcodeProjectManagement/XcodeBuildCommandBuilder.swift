@@ -98,13 +98,17 @@ public struct XcodeBuildOptions: Sendable {
     )
 
     public static let listSchemes = XcodeBuildOptions(list: true)
+
+    public static let listSchemesJSON = XcodeBuildOptions(json: true, list: true)
 }
 
 public class XcodeBuildCommandBuilder {
     private let projectInfo: XcodeProjectInfo
+    private let toolchain: XcodeToolchain
 
-    public init(projectInfo: XcodeProjectInfo) {
+    public init(projectInfo: XcodeProjectInfo, toolchain: XcodeToolchain = XcodeToolchain()) {
         self.projectInfo = projectInfo
+        self.toolchain = toolchain
     }
 
     public func buildCommand(
@@ -215,5 +219,18 @@ public class XcodeBuildCommandBuilder {
         arguments.append(contentsOf: options.customFlags)
 
         return arguments
+    }
+
+    public func executeCommand(
+        action: XcodeBuildAction? = nil,
+        destination: XcodeBuildDestination? = nil,
+        options: XcodeBuildOptions = XcodeBuildOptions()
+    ) async throws -> String? {
+        let arguments = buildCommand(action: action, destination: destination, options: options)
+        let (output, _) = try await toolchain.executeXcodeBuild(
+            arguments: arguments,
+            workingDirectory: projectInfo.rootURL
+        )
+        return output
     }
 }
