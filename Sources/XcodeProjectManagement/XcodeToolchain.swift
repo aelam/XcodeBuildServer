@@ -143,77 +143,12 @@ public actor XcodeToolchain {
     private func discoverXcodeInstallations() async throws {
         var installations: [XcodeInstallation] = []
 
-        // 1. Check DEVELOPER_DIR environment variable
-        if let customDir = customDeveloperDir ?? ProcessInfo.processInfo.environment["DEVELOPER_DIR"] {
-            let developerDirURL = URL(fileURLWithPath: customDir)
-            let xcodeURL = developerDirURL.deletingLastPathComponent().deletingLastPathComponent()
+        installations += await findDeveloperDirInstallations()
+        installations += await findActiveXcodeInstallations()
+        installations += await findCommonPathInstallations()
+        installations += await findAdditionalXcodeVersions()
 
-            if let installation = try? await createInstallation(from: xcodeURL, isDeveloperDirSet: true) {
-                installations.append(installation)
-            }
-        }
-
-        // 1.5. Check current xcode-select --print-path
-        if let currentDeveloperDir = try? await getCurrentDeveloperDir() {
-            let developerDirURL = URL(fileURLWithPath: currentDeveloperDir)
-            let xcodeURL = developerDirURL.deletingLastPathComponent().deletingLastPathComponent()
-
-            // Only add if it's different from what we already found
-            let alreadyFound = installations.contains { $0.path.path == xcodeURL.path }
-            if !alreadyFound, let installation = try? await createInstallation(
-                from: xcodeURL,
-                isDeveloperDirSet: false
-            ) {
-                installations.append(installation)
-            }
-        }
-
-        // 2. Use xcrun to find active developer directory
-        if let activeXcode = try? await findActiveXcodePath() {
-            let xcodeURL = URL(fileURLWithPath: activeXcode)
-            if let installation = try? await createInstallation(from: xcodeURL, isDeveloperDirSet: false) {
-                installations.append(installation)
-            }
-        }
-
-        // 3. Search common Xcode installation locations
-        let commonPaths = [
-            "/Applications/Xcode.app",
-            "/Applications/Xcode-beta.app"
-        ]
-
-        for path in commonPaths {
-            let xcodeURL = URL(fileURLWithPath: path)
-            if FileManager.default.fileExists(atPath: xcodeURL.path),
-               let installation = try? await createInstallation(from: xcodeURL, isDeveloperDirSet: false) {
-                installations.append(installation)
-            }
-        }
-
-        // 4. Search for additional Xcode versions in Applications
-        if let applicationsContents = try? FileManager.default.contentsOfDirectory(atPath: "/Applications") {
-            for item in applicationsContents {
-                if item.hasPrefix("Xcode"), item.hasSuffix(".app"), !commonPaths.contains("/Applications/\(item)") {
-                    let xcodeURL = URL(fileURLWithPath: "/Applications/\(item)")
-                    if let installation = try? await createInstallation(from: xcodeURL, isDeveloperDirSet: false) {
-                        installations.append(installation)
-                    }
-                }
-            }
-        }
-
-        // Remove duplicates based on path, but preserve isDeveloperDirSet flag
-        let uniqueInstallations = installations.reduce(into: [String: XcodeInstallation]()) { dict, installation in
-            let path = installation.path.path
-            if let existing = dict[path] {
-                // If we already have this path, prefer the one with isDeveloperDirSet = true
-                dict[path] = installation.isDeveloperDirSet ? installation : existing
-            } else {
-                dict[path] = installation
-            }
-        }.values
-
-        self.availableInstallations = Array(uniqueInstallations).sorted { $0.version > $1.version }
+        self.availableInstallations = deduplicateInstallations(installations)
     }
 
     private func selectBestInstallation() async throws {
@@ -241,6 +176,123 @@ public actor XcodeToolchain {
     }
 
     private func createInstallation(from xcodeURL: URL, isDeveloperDirSet: Bool) async throws -> XcodeInstallation {
+        try await XcodeInstallationFactory.createInstallation(from: xcodeURL, isDeveloperDirSet: isDeveloperDirSet)
+    }
+
+    private func findActiveXcodePath() async throws -> String? {
+        try await XcodePathResolver.findActiveXcodePath()
+    }
+
+    private func findDeveloperDirInstallations() async -> [XcodeInstallation] {
+        var installations: [XcodeInstallation] = []
+
+        // Check DEVELOPER_DIR environment variable
+        if let customDir = customDeveloperDir ?? ProcessInfo.processInfo.environment["DEVELOPER_DIR"] {
+            let developerDirURL = URL(fileURLWithPath: customDir)
+            let xcodeURL = developerDirURL.deletingLastPathComponent().deletingLastPathComponent()
+
+            if let installation = try? await createInstallation(from: xcodeURL, isDeveloperDirSet: true) {
+                installations.append(installation)
+            }
+        }
+
+        // Check current xcode-select --print-path
+        if let currentDeveloperDir = try? await XcodePathResolver.getCurrentDeveloperDir() {
+            let developerDirURL = URL(fileURLWithPath: currentDeveloperDir)
+            let xcodeURL = developerDirURL.deletingLastPathComponent().deletingLastPathComponent()
+
+            let alreadyFound = installations.contains { $0.path.path == xcodeURL.path }
+            if !alreadyFound, let installation = try? await createInstallation(
+                from: xcodeURL,
+                isDeveloperDirSet: false
+            ) {
+                installations.append(installation)
+            }
+        }
+
+        return installations
+    }
+
+    private func findActiveXcodeInstallations() async -> [XcodeInstallation] {
+        var installations: [XcodeInstallation] = []
+
+        if let activeXcode = try? await findActiveXcodePath() {
+            let xcodeURL = URL(fileURLWithPath: activeXcode)
+            if let installation = try? await createInstallation(from: xcodeURL, isDeveloperDirSet: false) {
+                installations.append(installation)
+            }
+        }
+
+        return installations
+    }
+
+    private func findCommonPathInstallations() async -> [XcodeInstallation] {
+        var installations: [XcodeInstallation] = []
+
+        let commonPaths = [
+            "/Applications/Xcode.app",
+            "/Applications/Xcode-beta.app"
+        ]
+
+        for path in commonPaths {
+            let xcodeURL = URL(fileURLWithPath: path)
+            if FileManager.default.fileExists(atPath: xcodeURL.path),
+               let installation = try? await createInstallation(from: xcodeURL, isDeveloperDirSet: false) {
+                installations.append(installation)
+            }
+        }
+
+        return installations
+    }
+
+    private func findAdditionalXcodeVersions() async -> [XcodeInstallation] {
+        var installations: [XcodeInstallation] = []
+        let commonPaths = ["/Applications/Xcode.app", "/Applications/Xcode-beta.app"]
+
+        if let applicationsContents = try? FileManager.default.contentsOfDirectory(atPath: "/Applications") {
+            for item in applicationsContents {
+                if item.hasPrefix("Xcode"), item.hasSuffix(".app"), !commonPaths.contains("/Applications/\(item)") {
+                    let xcodeURL = URL(fileURLWithPath: "/Applications/\(item)")
+                    if let installation = try? await createInstallation(from: xcodeURL, isDeveloperDirSet: false) {
+                        installations.append(installation)
+                    }
+                }
+            }
+        }
+
+        return installations
+    }
+
+    private func deduplicateInstallations(_ installations: [XcodeInstallation]) -> [XcodeInstallation] {
+        let uniqueInstallations = installations.reduce(into: [String: XcodeInstallation]()) { dict, installation in
+            let path = installation.path.path
+            if let existing = dict[path] {
+                dict[path] = installation.isDeveloperDirSet ? installation : existing
+            } else {
+                dict[path] = installation
+            }
+        }.values
+
+        return Array(uniqueInstallations).sorted { $0.version > $1.version }
+    }
+}
+
+// MARK: - Utility Functions
+
+public func isXcodeBuildAvailable() async -> Bool {
+    let toolchain = XcodeToolchain()
+    do {
+        try await toolchain.initialize()
+        return await toolchain.isXcodeBuildAvailable()
+    } catch {
+        return false
+    }
+}
+
+// MARK: - Helper Classes
+
+private enum XcodeInstallationFactory {
+    static func createInstallation(from xcodeURL: URL, isDeveloperDirSet: Bool) async throws -> XcodeInstallation {
         let infoPlistURL = xcodeURL.appendingPathComponent("Contents/Info.plist")
         guard let plistData = try? Data(contentsOf: infoPlistURL),
               let plist = try? PropertyListSerialization.propertyList(from: plistData, format: nil) as? [String: Any],
@@ -256,8 +308,10 @@ public actor XcodeToolchain {
             isDeveloperDirSet: isDeveloperDirSet
         )
     }
+}
 
-    private func findActiveXcodePath() async throws -> String? {
+private enum XcodePathResolver {
+    static func findActiveXcodePath() async throws -> String? {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
         process.arguments = ["--show-sdk-path"]
@@ -269,10 +323,6 @@ public actor XcodeToolchain {
             process.terminationHandler = { _ in
                 let data = pipe.fileHandleForReading.readDataToEndOfFile()
                 if let output = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) {
-                    // Convert from SDK path to Xcode.app path
-                    // e.g.,
-                    // /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
-                    // to /Applications/Xcode.app
                     let components = output.split(separator: "/")
                     if let appIndex = components.firstIndex(where: { $0.hasSuffix(".app") }) {
                         let appPath = "/" + components[1 ... appIndex].joined(separator: "/")
@@ -293,7 +343,7 @@ public actor XcodeToolchain {
         }
     }
 
-    private func getCurrentDeveloperDir() async throws -> String? {
+    static func getCurrentDeveloperDir() async throws -> String? {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/xcode-select")
         process.arguments = ["--print-path"]
@@ -319,17 +369,5 @@ public actor XcodeToolchain {
                 continuation.resume(throwing: error)
             }
         }
-    }
-}
-
-// MARK: - Utility Functions
-
-public func isXcodeBuildAvailable() async -> Bool {
-    let toolchain = XcodeToolchain()
-    do {
-        try await toolchain.initialize()
-        return await toolchain.isXcodeBuildAvailable()
-    } catch {
-        return false
     }
 }
