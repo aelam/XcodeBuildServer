@@ -6,7 +6,7 @@
 
 import Foundation
 
-public enum JSONRPCTransportError: Error {
+public enum JSONRPCTransportError: Error, Sendable {
     case connectionFailed
     case disconnectionFailed
     case sendFailed
@@ -14,13 +14,35 @@ public enum JSONRPCTransportError: Error {
     case listenFailed
     case acceptFailed
     case invalidMessage
+    case transportClosed
 }
 
-public typealias RequestHandler = @Sendable (_ request: JSONRPCRequest, _ requestData: Data) -> Void
+/// Represents a received JSON-RPC message with its raw data
+public struct JSONRPCMessage: Sendable {
+    public let request: JSONRPCRequest
+    public let rawData: Data
 
-public protocol JSONRPCServerTransport: AnyObject, Sendable {
-    func listen()
-    func close()
-    var requestHandler: RequestHandler? { get set }
-    func send(response: ResponseType) throws
+    public init(request: JSONRPCRequest, rawData: Data) {
+        self.request = request
+        self.rawData = rawData
+    }
+}
+
+/// Stream-based JSON-RPC transport protocol providing async streams for message handling
+/// Implementers should typically be actors for thread safety
+public protocol JSONRPCServerTransport: Sendable {
+    /// Async stream of incoming JSON-RPC messages
+    var messageStream: AsyncStream<JSONRPCMessage> { get }
+
+    /// Async stream of transport errors
+    var errorStream: AsyncStream<JSONRPCTransportError> { get }
+
+    /// Start listening for incoming connections and messages
+    func listen() async throws
+
+    /// Close the transport and cleanup resources
+    func close() async
+
+    /// Send a response back to the client
+    func send(response: ResponseType) async throws
 }
