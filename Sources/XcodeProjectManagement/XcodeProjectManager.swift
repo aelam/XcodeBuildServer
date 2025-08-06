@@ -6,6 +6,16 @@
 
 import Foundation
 
+public struct XcodeListInfo: Codable, Sendable {
+    public let project: XcodeListProject?
+
+    public struct XcodeListProject: Codable, Sendable {
+        public let schemes: [String]
+        public let targets: [String]
+        public let configurations: [String]
+    }
+}
+
 public struct XcodeTargetInfo: Sendable {
     public let name: String
     public let productType: String?
@@ -142,9 +152,20 @@ public actor XcodeProjectManager {
             throw XcodeProjectError.notFound
         }
 
-        let arguments = buildBasicArguments(for: project) + ["-list"]
-        let output = try await runXcodeBuild(arguments: arguments)
-        return parseSchemes(from: output ?? "")
+        let commandBuilder = XcodeBuildCommandBuilder(projectInfo: project, toolchain: toolchain)
+        let output = try await commandBuilder.executeCommand(options: .listSchemesJSON)
+
+        if let output, let data = output.data(using: .utf8) {
+            do {
+                let listInfo = try JSONDecoder().decode(XcodeListInfo.self, from: data)
+                return listInfo.project?.schemes ?? []
+            } catch {
+                // Fallback to text parsing if JSON fails
+                return parseSchemes(from: output)
+            }
+        }
+
+        return []
     }
 
     public func getAvailableConfigurations() async throws -> [String] {
@@ -152,9 +173,20 @@ public actor XcodeProjectManager {
             throw XcodeProjectError.notFound
         }
 
-        let arguments = buildBasicArguments(for: project) + ["-list"]
-        let output = try await runXcodeBuild(arguments: arguments)
-        return parseConfigurations(from: output ?? "")
+        let commandBuilder = XcodeBuildCommandBuilder(projectInfo: project, toolchain: toolchain)
+        let output = try await commandBuilder.executeCommand(options: .listSchemesJSON)
+
+        if let output, let data = output.data(using: .utf8) {
+            do {
+                let listInfo = try JSONDecoder().decode(XcodeListInfo.self, from: data)
+                return listInfo.project?.configurations ?? []
+            } catch {
+                // Fallback to text parsing if JSON fails
+                return parseConfigurations(from: output)
+            }
+        }
+
+        return []
     }
 
     public func getAvailableTargets() async throws -> [String] {
@@ -162,9 +194,20 @@ public actor XcodeProjectManager {
             throw XcodeProjectError.notFound
         }
 
-        let arguments = buildBasicArguments(for: project) + ["-list"]
-        let output = try await runXcodeBuild(arguments: arguments)
-        return parseTargets(from: output ?? "")
+        let commandBuilder = XcodeBuildCommandBuilder(projectInfo: project, toolchain: toolchain)
+        let output = try await commandBuilder.executeCommand(options: .listSchemesJSON)
+
+        if let output, let data = output.data(using: .utf8) {
+            do {
+                let listInfo = try JSONDecoder().decode(XcodeListInfo.self, from: data)
+                return listInfo.project?.targets ?? []
+            } catch {
+                // Fallback to text parsing if JSON fails
+                return parseTargets(from: output)
+            }
+        }
+
+        return []
     }
 
     public func getTargetBuildSettings(target: String) async throws -> [String: String] {
@@ -172,10 +215,9 @@ public actor XcodeProjectManager {
             throw XcodeProjectError.notFound
         }
 
-        var arguments = buildBasicArguments(for: project)
-        arguments.append(contentsOf: ["-target", target, "-showBuildSettings"])
-
-        let output = try await runXcodeBuild(arguments: arguments)
+        let commandBuilder = XcodeBuildCommandBuilder(projectInfo: project, toolchain: toolchain)
+        let options = XcodeBuildOptions(showBuildSettings: true, customFlags: ["-target", target])
+        let output = try await commandBuilder.executeCommand(options: options)
         return parseBuildSettings(from: output ?? "")
     }
 
@@ -210,25 +252,21 @@ public actor XcodeProjectManager {
             configuration: "Debug"
         )
 
-        let arguments = buildBasicArguments(for: tempProject) + ["-list"]
-        let output = try await runXcodeBuild(arguments: arguments)
-        let schemes = parseSchemes(from: output ?? "")
+        let tempCommandBuilder = XcodeBuildCommandBuilder(projectInfo: tempProject, toolchain: toolchain)
+        let output = try await tempCommandBuilder.executeCommand(options: .listSchemesJSON)
 
-        return schemes.first
-    }
-
-    private func buildBasicArguments(for project: XcodeProjectInfo) -> [String] {
-        var arguments: [String] = []
-
-        switch project.projectType {
-        case let .explicitWorkspace(url):
-            arguments.append(contentsOf: ["-workspace", url.path])
-        case let .implicitProjectWorkspace(url):
-            let projectURL = url.deletingLastPathComponent()
-            arguments.append(contentsOf: ["-project", projectURL.path])
+        if let output, let data = output.data(using: .utf8) {
+            do {
+                let listInfo = try JSONDecoder().decode(XcodeListInfo.self, from: data)
+                return listInfo.project?.schemes.first
+            } catch {
+                // Fallback to text parsing if JSON fails
+                let schemes = parseSchemes(from: output)
+                return schemes.first
+            }
         }
 
-        return arguments
+        return nil
     }
 
     private func parseSchemes(from output: String) -> [String] {
@@ -331,10 +369,5 @@ public actor XcodeProjectManager {
         }
 
         return buildSettings
-    }
-
-    private func runXcodeBuild(arguments: [String]) async throws -> String? {
-        let (output, _) = try await toolchain.executeXcodeBuild(arguments: arguments, workingDirectory: locator.root)
-        return output
     }
 }
