@@ -1,0 +1,60 @@
+{
+  "name": "XcodeBuildServer Swift Development",
+  "image": "swift:6.1-jammy",
+  
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "configureZshAsDefaultShell": true,
+      "installOhMyZsh": true,
+      "username": "vscode",
+      "userUid": "automatic",
+      "userGid": "automatic"
+    },
+    "ghcr.io/devcontainers/features/git:1": {
+      "ppa": true,
+      "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "lts",
+      "nodeGypDependencies": true
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "swift.path": "/usr/bin/swift",
+        "swift.buildPath": "/usr/bin/swift",
+        "swift.runtimePath": "/usr/lib/swift",
+        "files.watcherExclude": {
+          "**/.build/**": true,
+          "**/Package.resolved": true
+        }
+      },
+      "extensions": [
+        "sswg.swift-lang",
+        "ms-vscode.vscode-json",
+        "ms-vscode.cmake-tools",
+        "ms-vscode.cpptools",
+        "GitHub.copilot",
+        "ms-vscode.hexeditor"
+      ]
+    }
+  },
+
+  "postCreateCommand": ".devcontainer/setup.sh",
+  
+  "remoteUser": "vscode",
+  "workspaceFolder": "/workspace",
+  
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached"
+  ],
+
+  "runArgs": [
+    "--cap-add=SYS_PTRACE",
+    "--security-opt", "seccomp=unconfined"
+  ]
+}
