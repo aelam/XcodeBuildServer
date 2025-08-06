@@ -66,6 +66,7 @@ public extension XcodeBuildSettingsForIndex {
 
 public actor XcodeSettingsManager {
     private let commandBuilder: XcodeBuildCommandBuilder
+    private let toolchain: XcodeToolchain
     private let jsonDecoder = JSONDecoder()
 
     public private(set) var buildSettings: [XcodeBuildSettings]?
@@ -73,8 +74,9 @@ public actor XcodeSettingsManager {
     public private(set) var indexStoreURL: URL?
     public private(set) var indexDatabaseURL: URL?
 
-    public init(commandBuilder: XcodeBuildCommandBuilder) {
+    public init(commandBuilder: XcodeBuildCommandBuilder, toolchain: XcodeToolchain) {
         self.commandBuilder = commandBuilder
+        self.toolchain = toolchain
     }
 
     public func loadBuildSettings(destination: XcodeBuildDestination = .iOSSimulator) async throws {
@@ -153,25 +155,7 @@ public actor XcodeSettingsManager {
     }
 
     private func runXcodeBuild(arguments: [String]) async throws -> String? {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/xcodebuild")
-        process.arguments = arguments
-
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = pipe
-
-        return try await withCheckedThrowingContinuation { continuation in
-            process.terminationHandler = { _ in
-                let data = pipe.fileHandleForReading.readDataToEndOfFile()
-                continuation.resume(returning: String(data: data, encoding: .utf8))
-            }
-
-            do {
-                try process.run()
-            } catch {
-                continuation.resume(throwing: error)
-            }
-        }
+        let (output, _) = try await toolchain.executeXcodeBuild(arguments: arguments)
+        return output
     }
 }

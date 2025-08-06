@@ -20,6 +20,7 @@ struct BuildServerConfig: Codable {
 actor BuildServerContext {
     private(set) var rootURL: URL?
     private(set) var config: BuildServerConfig? // Optional because not used in auto-discovery mode
+    private(set) var toolchain: XcodeToolchain? // Shared toolchain for all components
     private(set) var projectManager: XcodeProjectManager?
     private(set) var projectInfo: XcodeProjectInfo?
     private(set) var settingsManager: XcodeSettingsManager?
@@ -61,11 +62,24 @@ actor BuildServerContext {
         }
     }
 
+    private var loadedToolchain: XcodeToolchain {
+        get throws {
+            guard let toolchain else {
+                throw BuildServerError.invalidConfiguration("BuildServerContext not loaded - call loadProject() first")
+            }
+            return toolchain
+        }
+    }
+
     func loadProject(rootURL: URL) async throws {
         logger.debug("Loading project at \(rootURL)")
         self.rootURL = rootURL
 
-        self.projectManager = XcodeProjectManager(rootURL: rootURL)
+        // Initialize shared toolchain first
+        self.toolchain = XcodeToolchain()
+        try await loadedToolchain.initialize()
+
+        self.projectManager = try XcodeProjectManager(rootURL: rootURL, toolchain: loadedToolchain)
 
         guard let configFileURL = getConfigPath(for: rootURL) else {
             logger.debug("No BSP config found, using project manager auto-discovery")
@@ -73,7 +87,7 @@ actor BuildServerContext {
 
             // Initialize settings manager with the loaded project
             let commandBuilder = try XcodeBuildCommandBuilder(projectInfo: loadedProjectInfo)
-            self.settingsManager = XcodeSettingsManager(commandBuilder: commandBuilder)
+            self.settingsManager = try XcodeSettingsManager(commandBuilder: commandBuilder, toolchain: loadedToolchain)
 
             try await loadedSettingsManager.loadBuildSettings()
             try await loadedSettingsManager.loadBuildSettingsForIndex()
@@ -103,7 +117,7 @@ actor BuildServerContext {
 
         // Initialize settings manager with the loaded project
         let commandBuilder = try XcodeBuildCommandBuilder(projectInfo: loadedProjectInfo)
-        self.settingsManager = XcodeSettingsManager(commandBuilder: commandBuilder)
+        self.settingsManager = try XcodeSettingsManager(commandBuilder: commandBuilder, toolchain: loadedToolchain)
 
         try await loadedSettingsManager.loadBuildSettings()
         try await loadedSettingsManager.loadBuildSettingsForIndex()
