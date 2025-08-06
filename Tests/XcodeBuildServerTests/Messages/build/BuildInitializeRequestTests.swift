@@ -190,6 +190,23 @@ struct BuildInitializeRequestTests {
 
     @Test
     func responseStructure() throws {
+        let response = createTestBuildInitializeResponse()
+
+        let encoded = try JSONEncoder().encode(response)
+        let decoded = try JSONDecoder().decode(BuildInitializeResponse.self, from: encoded)
+
+        #expect(decoded.jsonrpc == "2.0")
+        #expect(decoded.id == .int(1))
+        #expect(decoded.result.displayName == "xcode build server")
+        #expect(decoded.result.bspVersion == "2.0")
+        #expect(decoded.result.capabilities.compileProvider?.languageIds.contains(.swift) == true)
+    }
+}
+
+// MARK: - Helper Methods
+
+extension BuildInitializeRequestTests {
+    private func createTestBuildInitializeResponse() -> BuildInitializeResponse {
         let capabilities = BuildServerCapabilities(
             compileProvider: CompileProvider(languageIds: [.swift]),
             testProvider: TestProvider(languageIds: [.swift]),
@@ -226,19 +243,10 @@ struct BuildInitializeRequestTests {
             displayName: "xcode build server"
         )
 
-        let response = BuildInitializeResponse(
+        return BuildInitializeResponse(
             jsonrpc: "2.0",
             id: .int(1),
             result: result
         )
-
-        let encoded = try JSONEncoder().encode(response)
-        let decoded = try JSONDecoder().decode(BuildInitializeResponse.self, from: encoded)
-
-        #expect(decoded.jsonrpc == "2.0")
-        #expect(decoded.id == .int(1))
-        #expect(decoded.result.displayName == "xcode build server")
-        #expect(decoded.result.bspVersion == "2.0")
-        #expect(decoded.result.capabilities.compileProvider?.languageIds.contains(.swift) == true)
     }
 }
