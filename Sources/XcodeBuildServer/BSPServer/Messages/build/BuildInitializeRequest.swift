@@ -10,6 +10,7 @@ import JSONRPCServer
 
 public struct BuildInitializeRequest: ContextualRequestType, Sendable {
     public typealias RequiredContext = BuildServerContext
+
     public static func method() -> String {
         "build/initialize"
     }
@@ -98,10 +99,8 @@ public struct BuildInitializeRequest: ContextualRequestType, Sendable {
     private func createServerCapabilities(
         clientCapabilities: Params.BuildClientCapabilities
     ) -> BuildServerCapabilities {
-        // XcodeBuildServer supports these languages for Xcode projects
-        let serverSupportedLanguages: Set<Language> = [.swift, .objective_c, .objective_cpp, .c, .cpp]
         let clientLanguages = Set(clientCapabilities.languageIds)
-        let supportedLanguages = Array(serverSupportedLanguages.intersection(clientLanguages))
+        let supportedLanguages = Array(xcodeBuildServerSupportedLanguages.intersection(clientLanguages))
 
         // Create capabilities based on supported languages
         let hasLanguages = !supportedLanguages.isEmpty

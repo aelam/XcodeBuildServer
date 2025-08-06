@@ -8,9 +8,15 @@ import Foundation
 import JSONRPCServer
 import XcodeProjectManagement
 
+/// Languages supported by XcodeBuildServer for Xcode projects
+public let xcodeBuildServerSupportedLanguages: Set<Language> = [.swift, .objective_c, .objective_cpp, .c, .cpp]
+
 public final class XcodeBSPMessageHandler: ContextualMessageHandler, Sendable {
     public typealias Context = BuildServerContext
     let buildServerContext = BuildServerContext()
+
+    /// Languages supported by XcodeBuildServer for Xcode projects
+    public let supportedLanguages: Set<Language> = xcodeBuildServerSupportedLanguages
 
     public init() {}
 
@@ -44,5 +50,10 @@ public final class XcodeBSPMessageHandler: ContextualMessageHandler, Sendable {
 
     func getRootURL() async -> URL? {
         await buildServerContext.rootURL
+    }
+
+    /// Get the languages supported by this XcodeBuildServer instance
+    public func getSupportedLanguages() -> Set<Language> {
+        supportedLanguages
     }
 }
