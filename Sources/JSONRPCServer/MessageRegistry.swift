@@ -49,7 +49,8 @@ public final class MessageRegistry: Sendable {
         let methodOverlap = Set(requestMethods).intersection(Set(notificationMethods))
         if !methodOverlap.isEmpty {
             fatalError(
-                "Method names cannot be used for both requests and notifications: \(Array(methodOverlap).joined(separator: ", "))"
+                "Method names overlap between requests and notifications: " +
+                    "\(Array(methodOverlap).joined(separator: ", "))"
             )
         }
 
