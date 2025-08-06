@@ -60,12 +60,12 @@ public final class StdioJSONRPCServerTransport: JSONRPCServerTransport {
         else {
             return
         }
-        
+
         let content = components[1].replacing("\\/", with: "/")
         guard let rawData = content.data(using: .utf8) else {
             return
         }
-        
+
         guard let request = try? jsonDecoder.decode(JSONRPCRequest.self, from: rawData) else {
             throw JSONRPCTransportError.invalidMessage
         }
