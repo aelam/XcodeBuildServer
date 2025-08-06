@@ -124,15 +124,15 @@ public actor XcodeProjectManager {
     private(set) var currentProject: XcodeProjectInfo?
     private let toolchain: XcodeToolchain
 
-    public init(rootURL: URL, configFile: String = ".bsp/xcode.json", toolchain: XcodeToolchain = XcodeToolchain()) {
-        self.locator = XcodeProjectLocator(root: rootURL, configFile: configFile)
+    public init(rootURL: URL, toolchain: XcodeToolchain = XcodeToolchain()) {
+        self.locator = XcodeProjectLocator(root: rootURL)
         self.toolchain = toolchain
     }
 
     public func loadProject(scheme: String? = nil, configuration: String = "Debug") async throws -> XcodeProjectInfo {
         try await toolchain.initialize()
 
-        let projectType = try locator.resolveProject()
+        let projectType = try locator.resolveProjectByAutoDiscovery()
         let rootURL = locator.root
 
         let resolvedScheme = try await resolveScheme(for: projectType, fallback: scheme)
@@ -141,6 +141,26 @@ public actor XcodeProjectManager {
             projectType: projectType,
             scheme: resolvedScheme,
             configuration: configuration
+        )
+
+        self.currentProject = project
+        return project
+    }
+
+    public func loadProject(from reference: XcodeProjectReference) async throws -> XcodeProjectInfo {
+        try await toolchain.initialize()
+
+        let projectType = try locator.resolveProject(from: reference)
+        let rootURL = locator.root
+
+        let resolvedScheme = try await resolveScheme(for: projectType, fallback: reference.scheme)
+        let resolvedConfiguration = reference.configuration ?? "Debug"
+
+        let project = XcodeProjectInfo(
+            rootURL: rootURL,
+            projectType: projectType,
+            scheme: resolvedScheme,
+            configuration: resolvedConfiguration
         )
 
         self.currentProject = project

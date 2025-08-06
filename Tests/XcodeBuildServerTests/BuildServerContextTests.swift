@@ -7,17 +7,17 @@
 import Foundation
 import Testing
 @testable import XcodeBuildServer
+@testable import XcodeProjectManagement
 
 struct BuildServerContextTests {
     @Test
-    func buildServerConfigDefaultConfiguration() {
-        #expect(BuildServerConfig.defaultConfiguration == "Debug")
+    func bspConfigDefaultConfiguration() {
+        #expect(BSPConfig.defaultConfiguration == "Debug")
     }
 
     @Test
-    func buildServerConfigCodable() throws {
-        let config = BuildServerConfig(
-            rootURL: URL(fileURLWithPath: "/test/path"),
+    func bspConfigCodable() throws {
+        let config = BSPConfig(
             workspace: "Test.xcworkspace",
             project: nil,
             scheme: "TestScheme",
@@ -28,9 +28,8 @@ struct BuildServerContextTests {
         let data = try encoder.encode(config)
 
         let decoder = JSONDecoder()
-        let decodedConfig = try decoder.decode(BuildServerConfig.self, from: data)
+        let decodedConfig = try decoder.decode(BSPConfig.self, from: data)
 
-        #expect(decodedConfig.rootURL?.path == "/test/path")
         #expect(decodedConfig.workspace == "Test.xcworkspace")
         #expect(decodedConfig.project == nil)
         #expect(decodedConfig.scheme == "TestScheme")
@@ -64,5 +63,21 @@ struct BuildServerContextTests {
         // Verify rootURL was set even on failure
         let storedURL = await context.rootURL
         #expect(storedURL == testURL)
+    }
+
+    @Test
+    func bspConfigToProjectReference() {
+        let bspConfig = BSPConfig(
+            workspace: "Test.xcworkspace",
+            project: nil,
+            scheme: "TestScheme",
+            configuration: "Release"
+        )
+
+        let projectRef = bspConfig.projectReference
+        #expect(projectRef.workspace == "Test.xcworkspace")
+        #expect(projectRef.project == nil)
+        #expect(projectRef.scheme == "TestScheme")
+        #expect(projectRef.configuration == "Release")
     }
 }

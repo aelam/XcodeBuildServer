@@ -7,19 +7,9 @@
 import Foundation
 import XcodeProjectManagement
 
-struct BuildServerConfig: Codable {
-    static let defaultConfiguration = "Debug"
-
-    let rootURL: URL?
-    let workspace: String?
-    let project: String?
-    let scheme: String?
-    let configuration: String?
-}
-
 public actor BuildServerContext {
     private(set) var rootURL: URL?
-    private(set) var config: BuildServerConfig? // Optional because not used in auto-discovery mode
+    private(set) var config: BSPConfig? // Optional because not used in auto-discovery mode
     private(set) var toolchain: XcodeToolchain? // Shared toolchain for all components
     private(set) var projectManager: XcodeProjectManager?
     private(set) var projectInfo: XcodeProjectInfo?
@@ -109,10 +99,7 @@ public actor BuildServerContext {
         }
 
         logger.debug("Loading Xcode project with config")
-        self.projectInfo = try await loadedProjectManager.loadProject(
-            scheme: config.scheme,
-            configuration: config.configuration ?? "Debug"
-        )
+        self.projectInfo = try await loadedProjectManager.loadProject(from: config.projectReference)
         logger.debug("Xcode project loaded: \(String(describing: self.projectInfo))")
 
         // Initialize settings manager with the loaded project
@@ -173,12 +160,12 @@ public actor BuildServerContext {
         return nil
     }
 
-    private func loadConfig(configFileURL: URL) throws -> BuildServerConfig? {
+    private func loadConfig(configFileURL: URL) throws -> BSPConfig? {
         logger.debug("Loading config from: \(configFileURL.path)")
 
         do {
             let data = try Data(contentsOf: configFileURL)
-            var config = try JSONDecoder().decode(BuildServerConfig.self, from: data)
+            var config = try JSONDecoder().decode(BSPConfig.self, from: data)
 
             // Validate and provide defaults
             config = validateAndNormalizeConfig(config, rootURL: rootURL)
@@ -339,19 +326,18 @@ extension BuildServerContext {
 }
 
 private extension BuildServerContext {
-    func validateAndNormalizeConfig(_ config: BuildServerConfig, rootURL: URL?) -> BuildServerConfig {
+    func validateAndNormalizeConfig(_ config: BSPConfig, rootURL: URL?) -> BSPConfig {
         var normalizedConfig = config
 
         // Provide default configuration if none specified
         if normalizedConfig.configuration == nil {
-            normalizedConfig = BuildServerConfig(
-                rootURL: normalizedConfig.rootURL,
+            normalizedConfig = BSPConfig(
                 workspace: normalizedConfig.workspace,
                 project: normalizedConfig.project,
                 scheme: normalizedConfig.scheme,
-                configuration: BuildServerConfig.defaultConfiguration
+                configuration: BSPConfig.defaultConfiguration
             )
-            logger.debug("Using default configuration: \(BuildServerConfig.defaultConfiguration)")
+            logger.debug("Using default configuration: \(BSPConfig.defaultConfiguration)")
         }
 
         return normalizedConfig

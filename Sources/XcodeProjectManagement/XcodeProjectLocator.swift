@@ -19,9 +19,18 @@ public enum XcodeProjectError: Error, CustomStringConvertible, Equatable {
     }
 }
 
-public struct BSPConfig: Codable {
-    let workspace: String?
-    let project: String?
+public struct XcodeProjectReference: Codable, Sendable {
+    public let workspace: String?
+    public let project: String?
+    public let scheme: String?
+    public let configuration: String?
+
+    public init(workspace: String? = nil, project: String? = nil, scheme: String? = nil, configuration: String? = nil) {
+        self.workspace = workspace
+        self.project = project
+        self.scheme = scheme
+        self.configuration = configuration
+    }
 }
 
 public enum XcodeProjectType: Equatable, Sendable {
@@ -31,31 +40,34 @@ public enum XcodeProjectType: Equatable, Sendable {
 
 public final class XcodeProjectLocator {
     public let root: URL
-    public let configFile: String
 
-    public init(root: URL, configFile: String = ".bsp/xcode.json") {
+    public init(root: URL) {
         self.root = root
-        self.configFile = configFile
     }
 
-    public func resolveProject() throws -> XcodeProjectType {
-        if let config = try? loadConfig() {
-            if let workspace = config.workspace {
-                let workspaceURL = root.appendingPathComponent(workspace)
-                guard FileManager.default.fileExists(atPath: workspaceURL.path) else {
-                    throw XcodeProjectError.invalidConfig("Workspace path does not exist: \(workspace)")
-                }
-                return .explicitWorkspace(workspaceURL)
-            } else if let project = config.project {
-                let projectURL = root.appendingPathComponent(project)
-                guard FileManager.default.fileExists(atPath: projectURL.path) else {
-                    throw XcodeProjectError.invalidConfig("Project path does not exist: \(project)")
-                }
-                let implicitWorkspace = projectURL.appendingPathComponent("project.xcworkspace")
-                return .implicitProjectWorkspace(implicitWorkspace)
+    // Resolve project with explicit reference
+    public func resolveProject(from reference: XcodeProjectReference) throws -> XcodeProjectType {
+        if let workspace = reference.workspace {
+            let workspaceURL = root.appendingPathComponent(workspace)
+            guard FileManager.default.fileExists(atPath: workspaceURL.path) else {
+                throw XcodeProjectError.invalidConfig("Workspace path does not exist: \(workspace)")
             }
+            return .explicitWorkspace(workspaceURL)
+        } else if let project = reference.project {
+            let projectURL = root.appendingPathComponent(project)
+            guard FileManager.default.fileExists(atPath: projectURL.path) else {
+                throw XcodeProjectError.invalidConfig("Project path does not exist: \(project)")
+            }
+            let implicitWorkspace = projectURL.appendingPathComponent("project.xcworkspace")
+            return .implicitProjectWorkspace(implicitWorkspace)
         }
 
+        // If no specific reference provided, fall back to auto-discovery
+        return try resolveProjectByAutoDiscovery()
+    }
+
+    // Auto-discovery when no explicit configuration is provided
+    public func resolveProjectByAutoDiscovery() throws -> XcodeProjectType {
         let workspaces = findAll(withExtension: "xcworkspace").filter { !$0.path.contains("/Pods/") }
 
         if workspaces.count == 1 {
@@ -84,19 +96,5 @@ public final class XcodeProjectLocator {
         return enumerator
             .compactMap { $0 as? URL }
             .filter { $0.pathExtension == ext }
-    }
-
-    private func loadConfig() throws -> BSPConfig? {
-        let configURL = root.appendingPathComponent(configFile)
-        guard FileManager.default.fileExists(atPath: configURL.path) else {
-            return nil
-        }
-        do {
-            let data = try Data(contentsOf: configURL)
-            return try JSONDecoder().decode(BSPConfig.self, from: data)
-        } catch {
-            print(error)
-            return nil
-        }
     }
 }
