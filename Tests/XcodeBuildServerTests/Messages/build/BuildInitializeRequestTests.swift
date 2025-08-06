@@ -203,9 +203,14 @@ struct BuildInitializeRequestTests {
             canReload: true
         )
 
+        // swiftlint:disable:next line_length
+        let indexStorePath = "/Users/test/Library/Developer/Xcode/DerivedData/Hello-fcuisfeafkcytvbjerdcxvnpmzxn/Index.noindex/DataStore"
+        // swiftlint:disable:next line_length
+        let indexDatabasePath = "/Users/test/Library/Developer/Xcode/DerivedData/Hello-fcuisfeafkcytvbjerdcxvnpmzxn/IndexDatabase.noIndex"
+
         let data = BuildInitializeResponse.Result.Data(
-            indexStorePath: "/Users/test/Library/Developer/Xcode/DerivedData/Hello-fcuisfeafkcytvbjerdcxvnpmzxn/Index.noindex/DataStore",
-            indexDatabasePath: "/Users/test/Library/Developer/Xcode/DerivedData/Hello-fcuisfeafkcytvbjerdcxvnpmzxn/IndexDatabase.noIndex",
+            indexStorePath: indexStorePath,
+            indexDatabasePath: indexDatabasePath,
             prepareProvider: true,
             sourceKitOptionsProvider: true,
             watchers: [FileSystemWatcher(globPattern: "/Users/test/project/**/*.swift")]
