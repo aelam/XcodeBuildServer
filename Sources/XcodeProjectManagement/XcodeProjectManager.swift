@@ -6,43 +6,6 @@
 
 import Foundation
 
-/// Utility function to check if xcodebuild is available on the system
-public func isXcodeBuildAvailable() -> Bool {
-    // First check if xcodebuild exists
-    let process = Process()
-    process.executableURL = URL(fileURLWithPath: "/usr/bin/which")
-    process.arguments = ["xcodebuild"]
-
-    let pipe = Pipe()
-    process.standardOutput = pipe
-    process.standardError = pipe
-
-    do {
-        try process.run()
-        process.waitUntilExit()
-        guard process.terminationStatus == 0 else { return false }
-    } catch {
-        return false
-    }
-
-    // Then check if xcodebuild can actually run (test with -version)
-    let testProcess = Process()
-    testProcess.executableURL = URL(fileURLWithPath: "/usr/bin/xcodebuild")
-    testProcess.arguments = ["-version"]
-
-    let testPipe = Pipe()
-    testProcess.standardOutput = testPipe
-    testProcess.standardError = testPipe
-
-    do {
-        try testProcess.run()
-        testProcess.waitUntilExit()
-        return testProcess.terminationStatus == 0
-    } catch {
-        return false
-    }
-}
-
 public struct XcodeProjectInfo: Sendable {
     public let rootURL: URL
     public let projectType: XcodeProjectType
@@ -88,12 +51,16 @@ public struct XcodeProjectInfo: Sendable {
 public actor XcodeProjectManager {
     private let locator: XcodeProjectLocator
     private(set) var currentProject: XcodeProjectInfo?
+    private let toolchain: XcodeToolchain
 
-    public init(rootURL: URL, configFile: String = ".bsp/xcode.json") {
+    public init(rootURL: URL, configFile: String = ".bsp/xcode.json", toolchain: XcodeToolchain = XcodeToolchain()) {
         self.locator = XcodeProjectLocator(root: rootURL, configFile: configFile)
+        self.toolchain = toolchain
     }
 
     public func loadProject(scheme: String? = nil, configuration: String = "Debug") async throws -> XcodeProjectInfo {
+        try await toolchain.initialize()
+
         let projectType = try locator.resolveProject()
         let rootURL = locator.root
 
@@ -217,25 +184,7 @@ public actor XcodeProjectManager {
     }
 
     private func runXcodeBuild(arguments: [String]) async throws -> String? {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/xcodebuild")
-        process.arguments = arguments
-
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = pipe
-
-        return try await withCheckedThrowingContinuation { continuation in
-            process.terminationHandler = { _ in
-                let data = pipe.fileHandleForReading.readDataToEndOfFile()
-                continuation.resume(returning: String(data: data, encoding: .utf8))
-            }
-
-            do {
-                try process.run()
-            } catch {
-                continuation.resume(throwing: error)
-            }
-        }
+        let (output, _) = try await toolchain.executeXcodeBuild(arguments: arguments, workingDirectory: locator.root)
+        return output
     }
 }
