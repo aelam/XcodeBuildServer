@@ -90,11 +90,22 @@ struct XcodeBuildServerCLI {
         
         // Additional check: verify parent process still exists and is not a zombie
         let result = kill(parentProcessID, 0) // Signal 0 just checks if process exists
-        if result != 0 {
-            if ProcessInfo.processInfo.environment["BSP_DEBUG"] != nil {
-                fputs("🔴 Parent process (PID \(parentProcessID)) no longer exists, terminating...\n", stderr)
+        if result == -1 {
+            if errno == ESRCH {
+                if ProcessInfo.processInfo.environment["BSP_DEBUG"] != nil {
+                    fputs("🔴 Parent process (PID \(parentProcessID)) no longer exists (ESRCH), terminating...\n", stderr)
+                }
+                exit(0)
+            } else if errno == EPERM {
+                // Parent exists, but we don't have permission; do not exit
+                if ProcessInfo.processInfo.environment["BSP_DEBUG"] != nil {
+                    fputs("🟡 Parent process (PID \(parentProcessID)) exists but permission denied (EPERM), not terminating.\n", stderr)
+                }
+            } else {
+                if ProcessInfo.processInfo.environment["BSP_DEBUG"] != nil {
+                    fputs("🟠 kill() failed for parent process (PID \(parentProcessID)), errno: \(errno), not terminating.\n", stderr)
+                }
             }
-            exit(0)
         }
     }
 }
