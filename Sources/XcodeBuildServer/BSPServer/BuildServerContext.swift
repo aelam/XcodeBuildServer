@@ -276,6 +276,7 @@ extension BuildServerContext {
         if let uri = try? URI(string: uriString) {
             return BuildTargetIdentifier(uri: uri)
         } else {
+            // swiftlint:disable:next force_try
             let fallbackURI = try! URI(string: "xcode:///unknown/\(targetName)")
             return BuildTargetIdentifier(uri: fallbackURI)
         }
