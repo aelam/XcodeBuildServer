@@ -81,4 +81,15 @@ struct XcodeBuildCommandBuilderTests {
         #expect(command.contains("-destination"))
         #expect(command.contains("-verbose"))
     }
+
+    @Test
+    func listSchemesJSONOption() {
+        let builder = XcodeBuildCommandBuilder(projectInfo: projectInfo)
+        let command = builder.buildCommand(options: .listSchemesJSON)
+
+        #expect(command.contains("-workspace"))
+        #expect(command.contains("/test/Test.xcworkspace"))
+        #expect(command.contains("-list"))
+        #expect(command.contains("-json"))
+    }
 }
