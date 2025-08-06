@@ -1,7 +1,6 @@
 {
   "name": "XcodeBuildServer Swift Development",
   "image": "swift:6.1-jammy",
-  
   "features": {
     "ghcr.io/devcontainers/features/common-utils:2": {
       "installZsh": true,
@@ -20,7 +19,6 @@
       "nodeGypDependencies": true
     }
   },
-
   "customizations": {
     "vscode": {
       "settings": {
@@ -36,25 +34,19 @@
       "extensions": [
         "sswg.swift-lang",
         "ms-vscode.vscode-json",
-        "ms-vscode.cmake-tools",
-        "ms-vscode.cpptools",
-        "GitHub.copilot",
-        "ms-vscode.hexeditor"
+        "ms-vscode.cpptools"
       ]
     }
   },
-
   "postCreateCommand": ".devcontainer/setup.sh",
-  
   "remoteUser": "vscode",
   "workspaceFolder": "/workspace",
-  
   "mounts": [
     "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached"
   ],
-
   "runArgs": [
     "--cap-add=SYS_PTRACE",
-    "--security-opt", "seccomp=unconfined"
+    "--security-opt",
+    "seccomp=unconfined"
   ]
 }
