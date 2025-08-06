@@ -130,27 +130,6 @@ public actor BuildServerContext {
         logger.debug("Settings manager initialized and build settings loaded")
     }
 
-    private func getXcodeBuildBasicArguments() throws -> [String] {
-        let projectInfo = try loadedProjectInfo
-        var arguments: [String] = []
-
-        switch projectInfo.projectType {
-        case let .explicitWorkspace(url):
-            arguments.append(contentsOf: ["-workspace", url.path])
-        case let .implicitProjectWorkspace(url):
-            let projectURL = url.deletingLastPathComponent()
-            arguments.append(contentsOf: ["-project", projectURL.path])
-        }
-
-        if let scheme = projectInfo.scheme {
-            arguments.append(contentsOf: ["-scheme", scheme])
-        }
-
-        arguments.append(contentsOf: ["-configuration", projectInfo.configuration])
-
-        return arguments
-    }
-
     // MARK: - Private
 
     private func getConfigPath(for workspaceFolder: URL? = nil) -> URL? {
@@ -239,9 +218,124 @@ extension BuildServerContext {
             return nil
         }
     }
-}
 
-// MARK: - Private Configuration Helpers
+    // MARK: - BuildTarget Factory Methods
+
+    public func createBuildTargets() async throws -> [BuildTarget] {
+        let projectManager = try loadedProjectManager
+        let projectInfo = try loadedProjectInfo
+
+        let targetInfos = try await projectManager.extractTargetInfo()
+        var buildTargets: [BuildTarget] = []
+
+        for targetInfo in targetInfos {
+            let buildTarget = await createBuildTarget(from: targetInfo, projectInfo: projectInfo)
+            buildTargets.append(buildTarget)
+        }
+
+        return buildTargets
+    }
+
+    private func createBuildTarget(
+        from targetInfo: XcodeTargetInfo,
+        projectInfo: XcodeProjectInfo
+    ) async -> BuildTarget {
+        let targetID = createBuildTargetIdentifier(targetName: targetInfo.name, projectInfo: projectInfo)
+        let baseDirectory = try? URI(string: projectInfo.rootURL.absoluteString)
+        let tags = classifyTarget(targetInfo)
+        let languages = mapLanguages(from: targetInfo.supportedLanguages)
+        let capabilities = createCapabilities(for: targetInfo)
+        let sourceKitData = await createSourceKitData()
+
+        return BuildTarget(
+            id: targetID,
+            displayName: targetInfo.name,
+            baseDirectory: baseDirectory,
+            tags: tags,
+            languageIds: languages,
+            dependencies: [], // TODO: Extract dependencies from build settings
+            capabilities: capabilities,
+            dataKind: .sourceKit,
+            data: sourceKitData?.encodeToLSPAny()
+        )
+    }
+
+    private func createBuildTargetIdentifier(
+        targetName: String,
+        projectInfo: XcodeProjectInfo
+    ) -> BuildTargetIdentifier {
+        let uriString: String
+        switch projectInfo.projectType {
+        case .explicitWorkspace:
+            uriString = "xcode:///\(projectInfo.workspaceName)/\(targetName)"
+        case .implicitProjectWorkspace:
+            let projectName = projectInfo.projectName ?? "Unknown"
+            uriString = "xcode:///\(projectName)/\(targetName)"
+        }
+
+        if let uri = try? URI(string: uriString) {
+            return BuildTargetIdentifier(uri: uri)
+        } else {
+            let fallbackURI = try! URI(string: "xcode:///unknown/\(targetName)")
+            return BuildTargetIdentifier(uri: fallbackURI)
+        }
+    }
+
+    private func classifyTarget(_ targetInfo: XcodeTargetInfo) -> [BuildTargetTag] {
+        var tags: [BuildTargetTag] = []
+
+        if targetInfo.isUITestTarget {
+            tags.append(.integrationTest)
+        } else if targetInfo.isTestTarget {
+            tags.append(.test)
+        } else if targetInfo.isApplicationTarget {
+            tags.append(.application)
+        } else if targetInfo.isLibraryTarget {
+            tags.append(.library)
+        } else {
+            // Default to library for unknown types
+            tags.append(.library)
+        }
+
+        return tags
+    }
+
+    private func mapLanguages(from languageStrings: Set<String>) -> [Language] {
+        languageStrings.compactMap { languageString in
+            switch languageString {
+            case "swift":
+                .swift
+            case "objective-c":
+                .objective_c
+            case "c":
+                .c
+            case "cpp":
+                .cpp
+            default:
+                nil
+            }
+        }
+    }
+
+    private func createCapabilities(for targetInfo: XcodeTargetInfo) -> BuildTargetCapabilities {
+        BuildTargetCapabilities(
+            canCompile: true, // All Xcode targets can compile
+            canTest: targetInfo.isTestTarget,
+            canRun: targetInfo.isRunnableTarget,
+            canDebug: true // Xcode supports debugging for all targets
+        )
+    }
+
+    private func createSourceKitData() async -> SourceKitBuildTarget? {
+        guard let toolchain,
+              let installation = await toolchain.getSelectedInstallation() else {
+            return nil
+        }
+
+        let toolchainURI = try? URI(string: installation.path.absoluteString)
+        return SourceKitBuildTarget(toolchain: toolchainURI)
+    }
+}
 
 private extension BuildServerContext {
     func validateAndNormalizeConfig(_ config: BuildServerConfig, rootURL: URL?) -> BuildServerConfig {
