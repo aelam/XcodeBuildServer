@@ -14,7 +14,7 @@ public final class BuildShutdownRequest: ContextualRequestType, Sendable {
         handler: Handler,
         id: RequestID
     ) async -> ResponseType? where Handler.Context == BuildServerContext {
-        await handler.withContext { context in
+        await handler.withContext { _ in
             BuildShutdownResponse(
                 jsonrpc: "2.0",
                 id: id,

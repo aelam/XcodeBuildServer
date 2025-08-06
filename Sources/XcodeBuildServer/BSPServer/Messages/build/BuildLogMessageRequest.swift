@@ -18,7 +18,7 @@ public struct BuildLogMessageRequest: ContextualRequestType, Sendable {
         handler: Handler,
         id: RequestID
     ) async -> ResponseType? where Handler.Context == BuildServerContext {
-        await handler.withContext { context in
+        await handler.withContext { _ in
             BuildLogMessageResponse(
                 jsonrpc: "2.0",
                 id: self.id,
