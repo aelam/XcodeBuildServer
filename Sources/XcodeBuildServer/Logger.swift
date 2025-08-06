@@ -8,6 +8,6 @@
 
 nonisolated(unsafe) let privacy: OSLogPrivacy = .public
 let logger = Logger(
-    subsystem: "XocdeBuildServer",
+    subsystem: "XcodeBuildServer",
     category: "main"
 )

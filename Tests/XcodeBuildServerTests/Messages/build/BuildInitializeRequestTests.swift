@@ -154,4 +154,86 @@ struct BuildInitializeRequestTests {
 
         #expect(request.params.rootUri == complexUri)
     }
+
+    @Test
+    func realWorldRequestExample() throws {
+        let jsonData = Data("""
+        {
+            "params": {
+                "rootUri": "file:///Users/ST22956/work-vscode/Hello/",
+                "capabilities": {
+                    "languageIds": [
+                        "c",
+                        "cpp",
+                        "objective-c",
+                        "objective-cpp",
+                        "swift"
+                    ]
+                },
+                "version": "1.0",
+                "displayName": "SourceKit-LSP",
+                "bspVersion": "2.0"
+            },
+            "method": "build/initialize",
+            "jsonrpc": "2.0",
+            "id": 1
+        }
+        """.utf8)
+
+        let request = try JSONDecoder().decode(BuildInitializeRequest.self, from: jsonData)
+
+        #expect(request.id == .int(1))
+        #expect(request.params.rootUri == "file:///Users/ST22956/work-vscode/Hello/")
+        #expect(request.params.displayName == "SourceKit-LSP")
+        #expect(request.params.capabilities.languageIds.count == 5)
+    }
+
+    @Test
+    func responseStructure() throws {
+        let capabilities = BuildServerCapabilities(
+            compileProvider: CompileProvider(languageIds: [.swift]),
+            testProvider: TestProvider(languageIds: [.swift]),
+            runProvider: RunProvider(languageIds: [.swift]),
+            debugProvider: DebugProvider(languageIds: [.swift]),
+            inverseSourcesProvider: true,
+            dependencySourcesProvider: true,
+            resourcesProvider: true,
+            outputPathsProvider: true,
+            buildTargetChangedProvider: true,
+            canReload: true
+        )
+
+        let data = BuildInitializeResponse.Result.Data(
+            indexStorePath: "/Users/test/Library/Developer/Xcode/DerivedData/Hello-fcuisfeafkcytvbjerdcxvnpmzxn/Index.noindex/DataStore",
+            indexDatabasePath: "/Users/test/Library/Developer/Xcode/DerivedData/Hello-fcuisfeafkcytvbjerdcxvnpmzxn/IndexDatabase.noIndex",
+            prepareProvider: true,
+            sourceKitOptionsProvider: true,
+            watchers: [FileSystemWatcher(globPattern: "/Users/test/project/**/*.swift")]
+        )
+
+        let result = BuildInitializeResponse.Result(
+            capabilities: capabilities,
+            dataKind: "sourceKit",
+            data: data,
+            rootUri: "file:///Users/test/project/",
+            bspVersion: "2.0",
+            version: "0.1",
+            displayName: "xcode build server"
+        )
+
+        let response = BuildInitializeResponse(
+            jsonrpc: "2.0",
+            id: .int(1),
+            result: result
+        )
+
+        let encoded = try JSONEncoder().encode(response)
+        let decoded = try JSONDecoder().decode(BuildInitializeResponse.self, from: encoded)
+
+        #expect(decoded.jsonrpc == "2.0")
+        #expect(decoded.id == .int(1))
+        #expect(decoded.result.displayName == "xcode build server")
+        #expect(decoded.result.bspVersion == "2.0")
+        #expect(decoded.result.capabilities.compileProvider?.languageIds.contains(.swift) == true)
+    }
 }
