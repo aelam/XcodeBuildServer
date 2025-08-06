@@ -34,7 +34,12 @@ struct XcodeBuildServerCLI {
             killSelfIfParentIsNull()
         }
 
-        await server.listen()
+        do {
+            try await server.listen()
+        } catch {
+            print("Server failed to start: \(error)")
+            exit(1)
+        }
     }
 
     private static func printUsage() {
