@@ -45,7 +45,7 @@ public struct JSONRPCRequest: Codable, Sendable {
     let params: JSONValue?
 }
 
-public struct JSONRPCError: Codable, Sendable {
+public struct JSONRPCError: Codable, Sendable, Error {
     let code: Int
     let message: String
     let data: JSONValue?

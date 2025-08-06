@@ -5,7 +5,7 @@
 //  Created by ST22956 on 2024/11/23.
 //
 
-struct BuildTargetDidChangeNotification: NotificationType, Sendable {
+struct BuildTargetDidChangeNotification: ContextualNotificationType, Sendable {
     typealias RequiredContext = BuildServerContext
 
     static func method() -> String {
@@ -20,7 +20,24 @@ struct BuildTargetDidChangeNotification: NotificationType, Sendable {
     let jsonrpc: String
     let params: Params
 
-    func handle(_ handler: MessageHandler) async throws {}
+    func handle<Handler: ContextualMessageHandler>(_ handler: Handler) async throws
+        where Handler.Context == BuildServerContext {
+        await handler.withContext { context in
+            guard let changes = params.changes else {
+                return
+            }
+            for change in changes {
+                handleBuildTargetChange(change)
+            }
+        }
+    }
+
+    private func handleBuildTargetChange(_ change: BuildTargetEvent) {
+        // Handle the build target change in the context
+        // This could involve updating internal state, notifying observers, etc.
+        // The actual implementation will depend on the specifics of the BuildServerContext
+        // and how it manages build targets.
+    }
 }
 
 public struct BuildTargetEvent: Codable, Hashable, Sendable {

@@ -220,14 +220,11 @@ extension BuildInitializeRequestTests {
             canReload: true
         )
 
-        // swiftlint:disable:next line_length
-        let indexStorePath = "/Users/test/Library/Developer/Xcode/DerivedData/Hello-fcuisfeafkcytvbjerdcxvnpmzxn/Index.noindex/DataStore"
-        // swiftlint:disable:next line_length
-        let indexDatabasePath = "/Users/test/Library/Developer/Xcode/DerivedData/Hello-fcuisfeafkcytvbjerdcxvnpmzxn/IndexDatabase.noIndex"
+        let testPaths = createTestIndexPaths()
 
         let data = BuildInitializeResponse.Result.Data(
-            indexStorePath: indexStorePath,
-            indexDatabasePath: indexDatabasePath,
+            indexStorePath: testPaths.storePath,
+            indexDatabasePath: testPaths.databasePath,
             prepareProvider: true,
             sourceKitOptionsProvider: true,
             watchers: [FileSystemWatcher(globPattern: "/Users/test/project/**/*.swift")]
@@ -247,6 +244,14 @@ extension BuildInitializeRequestTests {
             jsonrpc: "2.0",
             id: .int(1),
             result: result
+        )
+    }
+
+    private func createTestIndexPaths() -> (storePath: String, databasePath: String) {
+        let basePath = "/Users/test/Library/Developer/Xcode/DerivedData/Hello-fcuisfeafkcytvbjerdcxvnpmzxn"
+        return (
+            storePath: "\(basePath)/Index.noindex/DataStore",
+            databasePath: "\(basePath)/IndexDatabase.noIndex"
         )
     }
 }

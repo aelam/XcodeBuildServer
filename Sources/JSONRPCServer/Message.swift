@@ -45,14 +45,20 @@ public protocol NotificationType: MessageType {
     func handle(_ handler: MessageHandler) async throws
 }
 
-public struct VoidResponse: ResponseType, Hashable {
-    public let id: JSONRPCID?
-    public let jsonrpc: String
+/// Enhanced notification type that supports contextual message handlers.
+/// This allows for type-safe context access without requiring downcasting.
+public protocol ContextualNotificationType: NotificationType {
+    /// The type of context this notification requires.
+    associatedtype RequiredContext: Sendable
 
-    public init(id: JSONRPCID?, jsonrpc: String = "2.0") {
-        self.id = id
-        self.jsonrpc = jsonrpc
-    }
+    /// Handle the notification with access to a contextual message handler.
+    /// This method provides type-safe access to the build server context.
+    ///
+    /// - Parameter handler: A contextual message handler that provides scoped context access
+    /// - Throws: Any error thrown by the notification handler or context access failures
+    func handle<Handler: ContextualMessageHandler>(
+        _ handler: Handler
+    ) async throws where Handler.Context == RequiredContext
 }
 
 // MARK: - Response Types

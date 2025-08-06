@@ -15,12 +15,19 @@
  }
  */
 
-public struct OnBuildInitializedNotification: NotificationType, Sendable {
+public struct OnBuildInitializedNotification: ContextualNotificationType, Sendable {
     public typealias RequiredContext = BuildServerContext
 
     public static func method() -> String {
         "build/initialized"
     }
 
-    public func handle(_: MessageHandler) async {}
+    public func handle<Handler: ContextualMessageHandler>(_ handler: Handler) async throws
+        where Handler.Context == BuildServerContext {
+        await handler.withContext { _ in
+            // build/initialized notification handler
+            // This notification is sent after build/initialize request is processed
+            logger.debug("Received build/initialized notification")
+        }
+    }
 }
