@@ -11,27 +11,29 @@ public struct XcodeTargetInfo: Sendable {
     public let productType: String?
     public let buildSettings: [String: String]
 
+    public var xcodeProductType: XcodeProductType? {
+        guard let productType else { return nil }
+        return XcodeProductType(rawValue: productType)
+    }
+
     public var isTestTarget: Bool {
-        name.contains("Test") || productType?.contains("unit-test") == true || productType?
-            .contains("ui-testing") == true
+        xcodeProductType?.isTestType == true
     }
 
     public var isUITestTarget: Bool {
-        name.contains("UITest") || productType?.contains("ui-testing") == true
+        xcodeProductType == .uiTest
     }
 
     public var isRunnableTarget: Bool {
-        productType?.contains("application") == true || productType?.contains("app-extension") == true
+        xcodeProductType?.isRunnableType == true
     }
 
     public var isApplicationTarget: Bool {
-        productType?.contains("application") == true
+        xcodeProductType?.isApplicationType == true
     }
 
     public var isLibraryTarget: Bool {
-        productType?.contains("framework") == true ||
-            productType?.contains("static-library") == true ||
-            productType?.contains("dynamic-library") == true
+        xcodeProductType?.isLibraryType == true
     }
 
     public var supportedLanguages: Set<String> {
