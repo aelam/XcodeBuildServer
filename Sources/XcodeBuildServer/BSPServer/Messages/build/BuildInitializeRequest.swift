@@ -6,31 +6,11 @@
 //
 
 import Foundation
+import JSONRPCServer
 
-/**
- {
- "params": {
- "rootUri": "file:///Users/ST22956/work-vscode/Hello/",
- "capabilities": {
- "languageIds": [
- "c",
- "cpp",
- "objective-c",
- "objective-cpp",
- "swift"
- ]
- },
- "version": "1.0",
- "displayName": "SourceKit-LSP",
- "bspVersion": "2.0"
- },
- "method": "build/initialize",
- "jsonrpc": "2.0",
- "id": 1
- }
- */
+public struct BuildInitializeRequest: ContextualRequestType, Sendable {
+    public typealias RequiredContext = BuildServerContext
 
-public struct BuildInitializeRequest: RequestType, Sendable {
     public static func method() -> String {
         "build/initialize"
     }
@@ -48,118 +28,96 @@ public struct BuildInitializeRequest: RequestType, Sendable {
     let id: JSONRPCID
     let params: Params
 
-    public func handle(
-        handler: any MessageHandler,
+    public func handle<Handler: ContextualMessageHandler>(
+        handler: Handler,
         id: RequestID
-    ) async -> ResponseType? {
-        guard let handler = handler as? XcodeBSPMessageHandler else {
-            return nil
-        }
+    ) async -> ResponseType? where Handler.Context == BuildServerContext {
+        await handler.withContext { context in
+            do {
+                // Initialize the build server context with the project
+                try await context.loadProject(rootURL: URL(filePath: params.rootUri))
 
-        do {
-            try await handler.initialize(rootURL: URL(filePath: params.rootUri))
-            guard
-                let rootURL = URL(string: params.rootUri), // without file://
-                let indexDataStoreURL = await handler.getIndexStoreURL(),
-                let indexDatabaseURL = await handler.getIndexDatabaseURL()
-            else {
-                return nil
-            }
-            logger.debug("indexDataStorePath: \(indexDataStoreURL.path, privacy: .public)")
-            logger.debug("indexDatabasePath: \(indexDatabaseURL.path, privacy: .public)")
-            let globPatternForFileWatch = rootURL.path + "/**/*.swift"
-            logger.debug("globPatternForFileWatch: \(globPatternForFileWatch, privacy: .public)")
+                guard
+                    let rootURL = URL(string: params.rootUri), // without file://
+                    let indexDataStoreURL = await context.indexStoreURL,
+                    let indexDatabaseURL = await context.indexDatabaseURL
+                else {
+                    return JSONRPCErrorResponse(
+                        id: id,
+                        error: JSONRPCError(
+                            code: -32603,
+                            message: "Failed to initialize build server: missing index paths"
+                        )
+                    )
+                }
 
-            return BuildInitializeResponse(
-                jsonrpc: "2.0",
-                id: id,
-                result: .init(
-                    capabilities: BuildServerCapabilities(
-                        compileProvider: CompileProvider(languageIds: [.swift]),
-                        testProvider: TestProvider(languageIds: [.swift]),
-                        runProvider: RunProvider(languageIds: [.swift]),
-                        debugProvider: DebugProvider(languageIds: [.swift]),
-                        inverseSourcesProvider: true,
-                        dependencySourcesProvider: true,
-                        resourcesProvider: true,
-                        outputPathsProvider: true,
-                        buildTargetChangedProvider: true,
-                        canReload: true
-                    ),
-                    dataKind: "sourceKit",
-                    data: .init(
-                        indexStorePath: indexDataStoreURL.path,
-                        indexDatabasePath: indexDatabaseURL.path,
-                        prepareProvider: true,
-                        sourceKitOptionsProvider: true,
-                        watchers: [
-                            FileSystemWatcher(globPattern: globPatternForFileWatch),
-                        ]
-                    ),
-                    rootUri: params.rootUri,
-                    bspVersion: "2.0",
-                    version: "0.1",
-                    displayName: "xcode build server"
+                logger.debug("indexDataStorePath: \(indexDataStoreURL.path, privacy: .public)")
+                logger.debug("indexDatabasePath: \(indexDatabaseURL.path, privacy: .public)")
+                let globPatternForFileWatch = rootURL.path + "/**/*.swift"
+                logger.debug("globPatternForFileWatch: \(globPatternForFileWatch, privacy: .public)")
+
+                // Create server capabilities based on client capabilities
+                let capabilities = createServerCapabilities(
+                    clientCapabilities: params.capabilities
                 )
-            )
-        } catch {
-            logger.debug("Error: \(String(describing: error), privacy: .public)")
-            return nil
+
+                return BuildInitializeResponse(
+                    jsonrpc: "2.0",
+                    id: id,
+                    result: .init(
+                        capabilities: capabilities,
+                        dataKind: "sourceKit",
+                        data: .init(
+                            indexStorePath: indexDataStoreURL.path,
+                            indexDatabasePath: indexDatabaseURL.path,
+                            prepareProvider: true,
+                            sourceKitOptionsProvider: true,
+                            watchers: [
+                                FileSystemWatcher(globPattern: globPatternForFileWatch),
+                            ]
+                        ),
+                        rootUri: params.rootUri,
+                        bspVersion: "2.0",
+                        version: "0.1",
+                        displayName: "xcode build server"
+                    )
+                )
+            } catch {
+                logger.debug("Error: \(String(describing: error), privacy: .public)")
+                return JSONRPCErrorResponse(
+                    id: id,
+                    error: JSONRPCError(
+                        code: -32603,
+                        message: "Failed to initialize build server: \(error.localizedDescription)"
+                    )
+                )
+            }
         }
     }
+
+    /// Create server capabilities based on client capabilities
+    private func createServerCapabilities(
+        clientCapabilities: Params.BuildClientCapabilities
+    ) -> BuildServerCapabilities {
+        let clientLanguages = Set(clientCapabilities.languageIds)
+        let supportedLanguages = Array(xcodeBuildServerSupportedLanguages.intersection(clientLanguages))
+
+        // Create capabilities based on supported languages
+        let hasLanguages = !supportedLanguages.isEmpty
+        return BuildServerCapabilities(
+            compileProvider: hasLanguages ? CompileProvider(languageIds: supportedLanguages) : nil,
+            testProvider: hasLanguages ? TestProvider(languageIds: supportedLanguages) : nil,
+            runProvider: hasLanguages ? RunProvider(languageIds: supportedLanguages) : nil,
+            debugProvider: hasLanguages ? DebugProvider(languageIds: supportedLanguages) : nil,
+            inverseSourcesProvider: true,
+            dependencySourcesProvider: true,
+            resourcesProvider: true,
+            outputPathsProvider: true,
+            buildTargetChangedProvider: true,
+            canReload: true
+        )
+    }
 }
-
-/**
- {
- "id": 1,
- "result": {
- "capabilities": {
- "languageIds": [
- "c",
- "cpp",
- "objective-c",
- "objective-cpp",
- "swift"
- ]
- },
- "data": {
- "indexDatabasePath": "/Users/ST22956/Library/Caches/xcode-build-server/Users-ST22956-work-vscode-Hello/indexDatabasePath",
- "indexStorePath": "/Users/ST22956/Library/Developer/Xcode/DerivedData/Hello-fcuisfeafkcytvbjerdcxvnpmzxn/Index.noindex/DataStore"
- },
- "version": "0.1",
- "displayName": "xcode build server",
- "bspVersion": "2.0",
- "rootUri": "/Users/ST22956/work-vscode/Hello"
- },
- "jsonrpc": "2.0"
- }
- */
-
-/**
- {
- "result": {
- "data": {
- "indexStorePath": "/Users/ST22956/Library/Developer/Xcode/DerivedData/Hello-fcuisfeafkcytvbjerdcxvnpmzxn/Index.noIndex/DataStore",
- "indexDatabasePath": "/Users/ST22956/Library/Developer/Xcode/DerivedData/Hello-fcuisfeafkcytvbjerdcxvnpmzxn/IndexDatabase.noIndex"
- },
- "bspVersion": "2.0",
- "rootUri": "file:///Users/ST22956/work-vscode/Hello/",
- "displayName": "xcode build server",
- "capabilities": {
- "languageIds": [
- "c",
- "cpp",
- "objective-c",
- "objective-cpp",
- "swift"
- ]
- },
- "version": "0.1"
- },
- "jsonrpc": "2.0",
- "id": 1
- }
- */
 
 struct BuildInitializeResponse: ResponseType {
     struct Result: Codable {

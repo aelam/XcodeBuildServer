@@ -1,5 +1,5 @@
 //
-//  BSPConfig.swift
+//  XcodeBSPConfiguration.swift
 //
 //  Copyright © 2024 Wang Lun.
 //
