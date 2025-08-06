@@ -5,7 +5,9 @@
 //  Created by ST22956 on 2024/11/23.
 //
 
-public struct WindowWorkDoneProgressCreateRequest: RequestType {
+public struct WindowWorkDoneProgressCreateRequest: ContextualRequestType {
+    public typealias RequiredContext = BuildServerContext
+
     public static func method() -> String {
         "window/workDoneProgress/create"
     }
@@ -14,7 +16,17 @@ public struct WindowWorkDoneProgressCreateRequest: RequestType {
         let token: ProgressToken
     }
 
-    public func handle(handler: any MessageHandler, id: RequestID) async -> (any ResponseType)? {
-        fatalError("WindowWorkDoneProgressCreate not implemented")
+    public func handle<Handler: ContextualMessageHandler>(
+        handler: Handler,
+        id: RequestID
+    ) async -> ResponseType? where Handler.Context == BuildServerContext {
+        await handler.withContext { _ in
+            WindowWorkDoneProgressCreateResponse(jsonrpc: "2.0", id: id)
+        }
     }
+}
+
+struct WindowWorkDoneProgressCreateResponse: ResponseType, Sendable {
+    let jsonrpc: String
+    let id: JSONRPCID?
 }

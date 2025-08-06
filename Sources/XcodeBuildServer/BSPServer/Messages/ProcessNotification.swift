@@ -8,6 +8,8 @@
 /// `window/workDoneProgress/create`.
 
 struct ProcessNotification: NotificationType, Sendable {
+    typealias RequiredContext = BuildServerContext
+
     static func method() -> String {
         "$/progress"
     }

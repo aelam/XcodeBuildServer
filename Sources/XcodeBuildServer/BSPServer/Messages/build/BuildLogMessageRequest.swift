@@ -5,21 +5,37 @@
 //  Created by ST22956 on 2024/11/24.
 //
 
-public struct BuildLogMessageRequest: RequestType, Sendable {
+public struct BuildLogMessageRequest: ContextualRequestType, Sendable {
+    public typealias RequiredContext = BuildServerContext
+
     public static func method() -> String {
         "build/logMessage"
     }
 
     let id: JSONRPCID
 
-    public func handle(
-        handler: any MessageHandler,
+    public func handle<Handler: ContextualMessageHandler>(
+        handler: Handler,
         id: RequestID
-    ) async -> ResponseType? {
-        guard let handler = handler as? XcodeBSPMessageHandler else {
-            return nil
+    ) async -> ResponseType? where Handler.Context == BuildServerContext {
+        await handler.withContext { _ in
+            BuildLogMessageResponse(
+                jsonrpc: "2.0",
+                id: self.id,
+                message: "",
+                level: ""
+            )
         }
-        _ = handler
-        return nil
     }
+}
+
+struct BuildLogMessageResponse: ResponseType, Sendable {
+    let jsonrpc: String
+    let id: JSONRPCID?
+
+    /// The log message.
+    let message: String
+
+    /// The log level.
+    let level: String
 }
