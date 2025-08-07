@@ -89,12 +89,14 @@ public struct XcodeBuildOptions: Sendable {
 
     public static let buildSettingsJSON = XcodeBuildOptions(
         showBuildSettings: true,
-        json: true
+        json: true,
+        quiet: true
     )
 
     public static let buildSettingsForIndexJSON = XcodeBuildOptions(
         showBuildSettingsForIndex: true,
-        json: true
+        json: true,
+        quiet: true
     )
 
     public static let listSchemes = XcodeBuildOptions(list: true)
@@ -141,11 +143,12 @@ public struct XcodeBuildCommandBuilder {
     }
 
     public func buildSettingsCommand(
+        scheme: String? = nil,
         destination: XcodeBuildDestination? = nil,
         forIndex: Bool = false
     ) -> [String] {
         let options = forIndex ? XcodeBuildOptions.buildSettingsForIndexJSON : XcodeBuildOptions.buildSettingsJSON
-        return buildCommand(destination: destination, options: options)
+        return buildCommand(scheme: scheme, destination: destination, options: options)
     }
 
     public func listSchemesCommand() -> [String] {

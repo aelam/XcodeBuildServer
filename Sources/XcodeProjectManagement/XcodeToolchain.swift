@@ -5,6 +5,7 @@
 //
 
 import Foundation
+import Logger
 
 public enum XcodeToolchainError: Error, LocalizedError {
     case xcodeNotFound
@@ -84,6 +85,10 @@ public actor XcodeToolchain {
         let process = Process()
         process.executableURL = installation.xcodebuildPath
         process.arguments = arguments
+
+        // Log the command being executed
+        let commandString = "\(installation.xcodebuildPath.path) \(arguments.joined(separator: " "))"
+        logger.info("Executing command: \(commandString)")
 
         if let workingDirectory {
             process.currentDirectoryURL = workingDirectory
@@ -338,6 +343,9 @@ private enum XcodePathResolver {
         process.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
         process.arguments = ["--show-sdk-path"]
 
+        // Log the command being executed
+        logger.info("Executing command: /usr/bin/xcrun --show-sdk-path")
+
         let pipe = Pipe()
         process.standardOutput = pipe
 
@@ -369,6 +377,9 @@ private enum XcodePathResolver {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/xcode-select")
         process.arguments = ["--print-path"]
+
+        // Log the command being executed
+        logger.info("Executing command: /usr/bin/xcode-select --print-path")
 
         let pipe = Pipe()
         process.standardOutput = pipe

@@ -1,10 +1,11 @@
 //
-//  XcodeSettingsManager.swift
+//  XcodeSettingsLoader.swift
 //
 //  Copyright © 2024 Wang Lun.
 //
 
 import Foundation
+import Logger
 
 public struct XcodeBuildSettings: Codable, Sendable {
     public let target: String
@@ -64,61 +65,60 @@ public extension XcodeBuildSettingsForIndex {
     }
 }
 
-public actor XcodeSettingsManager {
+public actor XcodeSettingsLoader {
     private let commandBuilder: XcodeBuildCommandBuilder
     private let toolchain: XcodeToolchain
     private let jsonDecoder = JSONDecoder()
-
-    public private(set) var buildSettings: [XcodeBuildSettings]?
-    public private(set) var buildSettingsForIndex: XcodeBuildSettingsForIndex?
-    public private(set) var indexStoreURL: URL?
-    public private(set) var indexDatabaseURL: URL?
 
     public init(commandBuilder: XcodeBuildCommandBuilder, toolchain: XcodeToolchain) {
         self.commandBuilder = commandBuilder
         self.toolchain = toolchain
     }
 
-    public func loadBuildSettings(destination: XcodeBuildDestination = .iOSSimulator) async throws {
-        let command = commandBuilder.buildSettingsCommand(destination: destination, forIndex: false)
+    public func loadBuildSettings(
+        scheme: String? = nil,
+        destination: XcodeBuildDestination = .iOSSimulator
+    ) async throws -> [XcodeBuildSettings] {
+        let command = commandBuilder.buildSettingsCommand(scheme: scheme, destination: destination, forIndex: false)
         let output = try await runXcodeBuild(arguments: command)
-
         guard let jsonString = output, !jsonString.isEmpty else {
             throw XcodeProjectError.invalidConfig("Failed to load build settings")
         }
 
         let data = Data(jsonString.utf8)
         do {
-            buildSettings = try jsonDecoder.decode([XcodeBuildSettings].self, from: data)
+            return try jsonDecoder.decode([XcodeBuildSettings].self, from: data)
         } catch {
             throw XcodeProjectError.invalidConfig("Failed to decode build settings: \(error)")
         }
     }
 
-    public func loadBuildSettingsForIndex() async throws {
-        let command = commandBuilder.buildSettingsCommand(forIndex: true)
+    public func loadBuildSettingsForIndex(scheme: String? = nil) async throws -> XcodeBuildSettingsForIndex {
+        let command = commandBuilder.buildSettingsCommand(scheme: scheme, forIndex: true)
         let output = try await runXcodeBuild(arguments: command)
-
         guard let jsonString = output, !jsonString.isEmpty else {
             throw XcodeProjectError.invalidConfig("Failed to load build settings for index")
         }
 
         let data = Data(jsonString.utf8)
         do {
-            buildSettingsForIndex = try jsonDecoder.decode(XcodeBuildSettingsForIndex.self, from: data)
+            return try jsonDecoder.decode(XcodeBuildSettingsForIndex.self, from: data)
         } catch {
             throw XcodeProjectError.invalidConfig("Failed to decode build settings for index: \(error)")
         }
     }
 
-    public func loadIndexingPaths(scheme: String) async throws {
-        guard let buildSettings = buildSettings?.first(where: {
+    public func loadIndexingPaths(
+        scheme: String,
+        buildSettings: [XcodeBuildSettings]
+    ) async throws -> (indexStoreURL: URL, indexDatabaseURL: URL) {
+        guard let settings = buildSettings.first(where: {
             $0.target == scheme && $0.action == "build"
         })?.buildSettings else {
             throw XcodeProjectError.invalidConfig("No build settings found for scheme: \(scheme)")
         }
 
-        guard let buildFolderPath = buildSettings["BUILD_DIR"] else {
+        guard let buildFolderPath = settings["BUILD_DIR"] else {
             throw XcodeProjectError.invalidConfig("BUILD_DIR not found in build settings")
         }
 
@@ -126,7 +126,7 @@ public actor XcodeSettingsManager {
             .deletingLastPathComponent()
             .deletingLastPathComponent()
 
-        indexStoreURL = outputFolder.appendingPathComponent("Index.noIndex/DataStore")
+        let indexStoreURL = outputFolder.appendingPathComponent("Index.noIndex/DataStore")
         let indexDatabaseURL = outputFolder.appendingPathComponent("IndexDatabase.noIndex")
 
         do {
@@ -137,21 +137,26 @@ public actor XcodeSettingsManager {
             throw XcodeProjectError.invalidConfig("Failed to create index database directory: \(error)")
         }
 
-        self.indexDatabaseURL = indexDatabaseURL
+        return (indexStoreURL: indexStoreURL, indexDatabaseURL: indexDatabaseURL)
     }
 
-    public func getCompileArguments(fileURI: String, scheme: String) -> [String] {
+    public func getCompileArguments(
+        fileURI: String,
+        scheme: String,
+        buildSettingsForIndex: XcodeBuildSettingsForIndex
+    ) -> [String] {
         let filePath = URL(filePath: fileURI).path
-        guard let buildSettingsForIndex else {
-            return []
-        }
-
         let fileBuildSettings = buildSettingsForIndex[scheme]?[filePath]
         return fileBuildSettings?.swiftASTCommandArguments ?? []
     }
 
-    public func getBuildSetting(_ key: String, for target: String, action: String = "build") -> String? {
-        buildSettings?.first { $0.target == target && $0.action == action }?.buildSettings[key]
+    public func getBuildSetting(
+        _ key: String,
+        for target: String,
+        action: String = "build",
+        buildSettings: [XcodeBuildSettings]
+    ) -> String? {
+        buildSettings.first { $0.target == target && $0.action == action }?.buildSettings[key]
     }
 
     private func runXcodeBuild(arguments: [String]) async throws -> String? {

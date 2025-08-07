@@ -43,7 +43,7 @@ public struct BuildInitializeRequest: ContextualRequestType, Sendable {
             do {
                 logger.debug("BuildInitializeRequest: starting loadProject with rootUri: \(self.params.rootUri)")
                 // Initialize the build server context with the project
-                try await context.loadProject(rootURL: URL(filePath: self.params.rootUri))
+                try await context.loadProject(rootURL: URL(string: self.params.rootUri)!)
                 logger.debug("BuildInitializeRequest: loadProject completed successfully")
 
                 logger.debug("BuildInitializeRequest: checking URLs and index paths")

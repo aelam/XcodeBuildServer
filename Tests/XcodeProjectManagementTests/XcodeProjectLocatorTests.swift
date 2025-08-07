@@ -13,22 +13,16 @@ import Testing
 
 struct XcodeProjectLocatorTests {
     @Test(arguments: [
-        ("HelloWorkspace", "workspace"),
-        ("HelloProject", "project"),
+        ("HelloWorkspace", "Hello.xcworkspace"),
+        ("HelloProject", "Hello.xcproje/Project.xcworkspace"),
     ])
-    func xcodeProjectLocator(_ root: String, _ expectedKind: String) throws {
+    func xcodeProjectLocator(_ root: String, _ suffix: String) throws {
         let projectFolder = Bundle.module.resourceURL!
             .appendingPathComponent("DemoProjects")
             .appendingPathComponent(root)
         let locator = XcodeProjectLocator()
         let projectLocation = try locator.resolveProjectType(rootURL: projectFolder)
-        let actualKind = switch projectLocation {
-        case .explicitWorkspace:
-            "workspace"
-        case .implicitProjectWorkspace:
-            "project"
-        }
-        #expect(actualKind == expectedKind)
+        #expect(projectLocation.workspaceURL.path.hasSuffix(suffix))
     }
 
     @Test

@@ -1,8 +1,10 @@
 import Foundation
+import Logger
 
 public enum XcodeProjectError: Error, CustomStringConvertible, Equatable {
     case projectNotFound
     case multipleWorkspaces([URL])
+    case multipleProjectsWithoutWorkspace([URL])
     case invalidConfig(String)
     case schemeNotFound(String)
     case targetNotFound(String)
@@ -19,6 +21,9 @@ public enum XcodeProjectError: Error, CustomStringConvertible, Equatable {
             "Multiple .xcworkspace files found: " +
                 urls.map(\.lastPathComponent).joined(separator: ", ") +
                 ". Please specify one in .bsp/xcode.json"
+        case let .multipleProjectsWithoutWorkspace(urls):
+            "Multiple .xcodeproj files found without a workspace: " +
+                urls.map(\.lastPathComponent).joined(separator: ", ")
         case let .invalidConfig(reason):
             "Invalid configuration: \(reason)"
         case let .schemeNotFound(scheme):
@@ -89,11 +94,14 @@ public final class XcodeProjectLocator {
         rootURL: URL,
         xcodeProjectReference: XcodeProjectReference? = nil
     ) throws -> XcodeProjectLocation {
+        logger.debug("Resolving Xcode project type at \(rootURL.path)")
+        logger.debug("Using reference: \(String(describing: xcodeProjectReference))")
         if let workspace = xcodeProjectReference?.workspace {
             let workspaceURL = rootURL.appendingPathComponent(workspace)
             guard FileManager.default.fileExists(atPath: workspaceURL.path) else {
                 throw XcodeProjectError.invalidConfig("Workspace path does not exist: \(workspace)")
             }
+            logger.debug("Resolved explicit workspace: \(workspaceURL.path)")
             return .explicitWorkspace(workspaceURL)
         } else if let project = xcodeProjectReference?.project {
             let projectURL = rootURL.appendingPathComponent(project)
@@ -101,6 +109,12 @@ public final class XcodeProjectLocator {
                 throw XcodeProjectError.invalidConfig("Project path does not exist: \(project)")
             }
             let implicitWorkspace = projectURL.appendingPathComponent("project.xcworkspace")
+            guard FileManager.default.fileExists(atPath: implicitWorkspace.path) else {
+                throw XcodeProjectError.invalidConfig(
+                    "Implicit workspace path does not exist: \(implicitWorkspace.path)"
+                )
+            }
+            logger.debug("Resolved implicit workspace: " + implicitWorkspace.path)
             return .implicitWorkspace(
                 projectURL: projectURL,
                 workspaceURL: implicitWorkspace
@@ -113,6 +127,7 @@ public final class XcodeProjectLocator {
 
     // Auto-discovery when no explicit configuration is provided
     private func resolveProjectTypeByAutoDiscovery(rootURL: URL) throws -> XcodeProjectLocation {
+        logger.debug("Auto-discovering Xcode project type at \(rootURL.path)")
         let workspaces = findAll(rootURL: rootURL, withExtension: "xcworkspace").filter { !$0.path.contains("/Pods/") }
 
         if workspaces.count == 1 {
@@ -125,12 +140,21 @@ public final class XcodeProjectLocator {
         if projects.count == 1 {
             let projectURL = projects[0]
             let implicitWorkspaceURL = projectURL.appendingPathComponent("project.xcworkspace")
+            guard FileManager.default.fileExists(atPath: implicitWorkspaceURL.path) else {
+                logger.debug("No implicit workspace found for project at \(projectURL.path)")
+                return .explicitWorkspace(projectURL)
+            }
+            logger.debug("Resolved implicit workspace for project: \(implicitWorkspaceURL.path)")
+            // Return implicit workspace created from .xcodeproj
             return .implicitWorkspace(
                 projectURL: projectURL,
                 workspaceURL: implicitWorkspaceURL
             )
+        } else if projects.count > 1 {
+            throw XcodeProjectError.multipleProjectsWithoutWorkspace(projects)
         }
 
+        logger.debug("Not found any .xcodeproj or .xcworkspace files in \(rootURL.path)")
         throw XcodeProjectError.projectNotFound
     }
 
