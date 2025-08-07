@@ -20,10 +20,9 @@ struct XcodeProjectLocatorTests {
         let projectFolder = Bundle.module.resourceURL!
             .appendingPathComponent("DemoProjects")
             .appendingPathComponent(root)
-        print(projectFolder)
-        let locator = XcodeProjectLocator(root: projectFolder)
-        let bspConfig = try locator.resolveProjectByAutoDiscovery()
-        let actualKind = switch bspConfig {
+        let locator = XcodeProjectLocator()
+        let projectType = try locator.resolveProjectType(rootURL: projectFolder)
+        let actualKind = switch projectType {
         case .explicitWorkspace:
             "workspace"
         case .implicitProjectWorkspace:
@@ -37,13 +36,13 @@ struct XcodeProjectLocatorTests {
         let projectFolder = Bundle.module.resourceURL!
             .appendingPathComponent("DemoProjects")
             .appendingPathComponent("NoProjectFile")
-        let locator = XcodeProjectLocator(root: projectFolder)
+        let locator = XcodeProjectLocator()
         do {
-            _ = try locator.resolveProjectByAutoDiscovery()
-            Issue.record("Expected .notFound error")
+            _ = try locator.resolveProjectType(rootURL: projectFolder)
+            Issue.record("Expected .projectNotFound error")
         } catch {
             let xcodeError = try #require(error as? XcodeProjectError)
-            #expect(xcodeError == .notFound)
+            #expect(xcodeError == .projectNotFound)
         }
     }
 }

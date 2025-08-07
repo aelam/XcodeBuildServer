@@ -18,7 +18,7 @@ struct XcodeBuildServerCLI {
         XcodeBuildServer.logger
             .info(
                 "XcodeBuildServer started successfully - PID: \(ProcessInfo.processInfo.processIdentifier) " +
-                "- Environment: \(environment)"
+                    "- Environment: \(environment)"
             )
 
         let arguments = CommandLine.arguments
@@ -122,14 +122,14 @@ struct XcodeBuildServerCLI {
                 // Parent exists, but we don't have permission; do not exit
                 if ProcessInfo.processInfo.environment["BSP_DEBUG"] != nil {
                     let msg = "🟡 Parent process (PID \(parentProcessID)) exists " +
-                     "but permission denied (EPERM), not terminating."
+                        "but permission denied (EPERM), not terminating."
                     fputs("\(msg)\n", stderr)
                     XcodeBuildServer.logger.debug(msg)
                 }
             } else {
                 if ProcessInfo.processInfo.environment["BSP_DEBUG"] != nil {
                     let msg = "🟠 kill() failed for parent process (PID \(parentProcessID)), " +
-                    " errno: \(errno), not terminating."
+                        " errno: \(errno), not terminating."
                     fputs("\(msg)\n", stderr)
                     XcodeBuildServer.logger.debug(msg)
                 }

@@ -62,6 +62,9 @@ public actor XcodeToolchain {
     }
 
     public func initialize() async throws {
+        guard selectedInstallation == nil else {
+            return
+        }
         try await discoverXcodeInstallations()
         try await selectBestInstallation()
     }

@@ -102,17 +102,17 @@ public struct XcodeBuildOptions: Sendable {
     public static let listSchemesJSON = XcodeBuildOptions(json: true, list: true)
 }
 
-public class XcodeBuildCommandBuilder {
-    private let projectInfo: XcodeProjectInfo
-    private let toolchain: XcodeToolchain
+public struct XcodeBuildCommandBuilder {
+    private let projectIdentifer: XcodeProjectIdentifier
 
-    public init(projectInfo: XcodeProjectInfo, toolchain: XcodeToolchain = XcodeToolchain()) {
-        self.projectInfo = projectInfo
-        self.toolchain = toolchain
+    public init(projectIdentifer: XcodeProjectIdentifier) {
+        self.projectIdentifer = projectIdentifer
     }
 
     public func buildCommand(
         action: XcodeBuildAction? = nil,
+        scheme: String? = nil,
+        configuration: String? = nil,
         destination: XcodeBuildDestination? = nil,
         options: XcodeBuildOptions = XcodeBuildOptions()
     ) -> [String] {
@@ -120,12 +120,13 @@ public class XcodeBuildCommandBuilder {
 
         arguments.append(contentsOf: buildWorkspaceOrProjectArguments())
 
-        if let scheme = projectInfo.scheme {
+        if let scheme {
             arguments.append(contentsOf: ["-scheme", scheme])
         }
 
-        arguments.append(contentsOf: ["-configuration", projectInfo.configuration])
-
+        if let configuration {
+            arguments.append(contentsOf: ["-configuration", configuration])
+        }
         if let destination {
             arguments.append(contentsOf: ["-destination", destination.destinationString])
         }
@@ -158,18 +159,17 @@ public class XcodeBuildCommandBuilder {
         let options = XcodeBuildOptions(
             quiet: false,
             verbose: true,
-            derivedDataPath: projectInfo.derivedDataPath?.path
+            derivedDataPath: "TODOC"
         )
         return buildCommand(action: action, destination: destination, options: options)
     }
 
     private func buildWorkspaceOrProjectArguments() -> [String] {
-        switch projectInfo.projectType {
+        switch projectIdentifer.projectType {
         case let .explicitWorkspace(url):
-            return ["-workspace", url.path]
+            ["-workspace", url.path]
         case let .implicitProjectWorkspace(url):
-            let projectURL = url.deletingLastPathComponent()
-            return ["-project", projectURL.path]
+            ["-workspace", url.path]
         }
     }
 
@@ -219,18 +219,5 @@ public class XcodeBuildCommandBuilder {
         arguments.append(contentsOf: options.customFlags)
 
         return arguments
-    }
-
-    public func executeCommand(
-        action: XcodeBuildAction? = nil,
-        destination: XcodeBuildDestination? = nil,
-        options: XcodeBuildOptions = XcodeBuildOptions()
-    ) async throws -> String? {
-        let arguments = buildCommand(action: action, destination: destination, options: options)
-        let (output, _) = try await toolchain.executeXcodeBuild(
-            arguments: arguments,
-            workingDirectory: projectInfo.rootURL
-        )
-        return output
     }
 }

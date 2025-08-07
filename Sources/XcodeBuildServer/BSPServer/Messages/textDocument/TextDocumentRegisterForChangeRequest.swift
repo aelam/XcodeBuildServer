@@ -43,28 +43,8 @@ public struct TextDocumentRegisterForChangeRequest: ContextualRequestType, Senda
         contextualHandler: Handler,
         id: RequestID
     ) async -> ResponseType? where Handler.Context == BuildServerContext {
-        await contextualHandler.withContext { context in
-            guard let fileURL = URL(string: params.uri) else {
-                return TextDocumentRegisterForChangeResponse(
-                    jsonrpc: jsonrpc,
-                    id: id,
-                    result: nil
-                )
-            }
-
-            if params.action == .register {
-                let arguments = await context.getCompileArguments(fileURI: fileURL.path)
-                let workingDirectory = await context.rootURL?.path
-                return TextDocumentRegisterForChangeResponse(
-                    jsonrpc: jsonrpc,
-                    id: id,
-                    result: TextDocumentRegisterForChangeResponse.Result(
-                        compilerArguments: arguments,
-                        workingDirectory: workingDirectory
-                    )
-                )
-            }
-            return TextDocumentRegisterForChangeResponse(
+        await contextualHandler.withContext { _ in
+            TextDocumentRegisterForChangeResponse(
                 jsonrpc: jsonrpc,
                 id: id,
                 result: nil

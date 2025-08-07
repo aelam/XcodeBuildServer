@@ -81,7 +81,7 @@ public final actor JSONRPCServer {
         logger
             .debug(
                 "JSONRPCServer received message: " +
-                "\(String(data: message.rawData, encoding: .utf8) ?? "Unable to decode raw data")"
+                    "\(String(data: message.rawData, encoding: .utf8) ?? "Unable to decode raw data")"
             )
 
         if let requestType = messageRegistry.requestType(for: message.request.method) {
