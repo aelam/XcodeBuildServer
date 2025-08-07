@@ -29,9 +29,9 @@ struct XcodeBuildServerCLI {
             arguments.contains("--debug")
 
         if isDebugMode {
-            print("🔧 BSP Debug Mode Enabled")
-            print("📝 Logging JSON-RPC communication to stderr")
-            print("📡 PID: \(ProcessInfo.processInfo.processIdentifier)")
+            fputs("🔧 BSP Debug Mode Enabled\n", stderr)
+            fputs("📝 Logging JSON-RPC communication to stderr\n", stderr)
+            fputs("📡 PID: \(ProcessInfo.processInfo.processIdentifier)\n", stderr)
         }
 
         let transport = StdioJSONRPCServerTransport()
@@ -41,15 +41,18 @@ struct XcodeBuildServerCLI {
             messageHandler: messageHandler
         )
 
-        // Monitor parent process at a reasonable interval
-        Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
-            killSelfIfParentIsNull()
+        // Monitor parent process at a reasonable interval using Task
+        Task {
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 10_000_000_000) // 10 seconds
+                killSelfIfParentIsNull()
+            }
         }
 
         do {
             try await server.listen()
         } catch {
-            print("Server failed to start: \(error)")
+            fputs("Server failed to start: \(error)\n", stderr)
             exit(1)
         }
     }

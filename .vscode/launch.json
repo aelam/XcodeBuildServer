@@ -32,6 +32,14 @@
             "name": "Debug XcodeBuildServerCLI",
             "program": "${workspaceFolder:XcodeBuildServer}/.build/debug/XcodeBuildServerCLI",
             "preLaunchTask": "swift: Build Debug XcodeBuildServerCLI"
+        },
+        {
+            "type": "lldb",
+            "request": "attach",
+            "name": "Attach to XcodeBuildServerCLI",
+            "program": "${workspaceFolder:XcodeBuildServer}/.build/debug/XcodeBuildServerCLI",
+            "waitFor": true,
+            "preLaunchTask": ""
         }
     ]
 }

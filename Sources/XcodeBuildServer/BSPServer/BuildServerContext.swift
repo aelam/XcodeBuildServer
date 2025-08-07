@@ -68,7 +68,7 @@ public actor BuildServerContext {
     }
 
     func loadProject(rootURL: URL) async throws {
-        logger.debug("Loading project at \(rootURL)")
+        logger.info("Loading project at \(rootURL)")
         self.rootURL = rootURL
 
         // Initialize shared toolchain first

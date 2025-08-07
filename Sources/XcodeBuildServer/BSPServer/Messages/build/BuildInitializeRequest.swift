@@ -51,10 +51,10 @@ public struct BuildInitializeRequest: ContextualRequestType, Sendable {
                     )
                 }
 
-                logger.debug("indexDataStorePath: \(indexDataStoreURL.path, privacy: .public)")
-                logger.debug("indexDatabasePath: \(indexDatabaseURL.path, privacy: .public)")
+                logger.info("indexDataStorePath: \(indexDataStoreURL.path)")
+                logger.info("indexDatabasePath: \(indexDatabaseURL.path)")
                 let globPatternForFileWatch = rootURL.path + "/**/*.swift"
-                logger.debug("globPatternForFileWatch: \(globPatternForFileWatch, privacy: .public)")
+                logger.debug("globPatternForFileWatch: \(globPatternForFileWatch)")
 
                 // Create server capabilities based on client capabilities
                 let capabilities = createServerCapabilities(
@@ -83,7 +83,7 @@ public struct BuildInitializeRequest: ContextualRequestType, Sendable {
                     )
                 )
             } catch {
-                logger.debug("Error: \(String(describing: error), privacy: .public)")
+                logger.debug("Error: \(String(describing: error))")
                 return JSONRPCErrorResponse(
                     id: id,
                     error: JSONRPCError(
