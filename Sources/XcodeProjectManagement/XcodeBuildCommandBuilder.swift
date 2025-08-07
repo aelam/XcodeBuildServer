@@ -103,10 +103,10 @@ public struct XcodeBuildOptions: Sendable {
 }
 
 public struct XcodeBuildCommandBuilder {
-    private let projectIdentifer: XcodeProjectIdentifier
+    private let projectIdentifier: XcodeProjectIdentifier
 
-    public init(projectIdentifer: XcodeProjectIdentifier) {
-        self.projectIdentifer = projectIdentifer
+    public init(projectIdentifier: XcodeProjectIdentifier) {
+        self.projectIdentifier = projectIdentifier
     }
 
     public func buildCommand(
@@ -165,10 +165,10 @@ public struct XcodeBuildCommandBuilder {
     }
 
     private func buildWorkspaceOrProjectArguments() -> [String] {
-        switch projectIdentifer.projectType {
+        switch projectIdentifier.projectLocation {
         case let .explicitWorkspace(url):
             ["-workspace", url.path]
-        case let .implicitProjectWorkspace(url):
+        case let .implicitWorkspace(_, workspaceURL: url):
             ["-workspace", url.path]
         }
     }

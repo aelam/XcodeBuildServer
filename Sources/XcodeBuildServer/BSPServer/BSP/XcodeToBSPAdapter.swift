@@ -84,13 +84,7 @@ public actor XcodeToBSPAdapter {
         scheme: String,
         projectBasicInfo: XcodeProjectBasicInfo
     ) -> String {
-        switch projectBasicInfo.projectType {
-        case .explicitWorkspace:
-            return "xcode:///\(projectBasicInfo.workspaceName)/\(scheme)/\(targetName)"
-        case .implicitProjectWorkspace:
-            let projectName = projectBasicInfo.projectName ?? "Unknown"
-            return "xcode:///\(projectName)/\(scheme)/\(targetName)"
-        }
+        return "xcode:///\(projectBasicInfo.projectLocation.name)/\(scheme)/\(targetName)"
     }
 
     /// Convert string identifier to BuildTargetIdentifier
