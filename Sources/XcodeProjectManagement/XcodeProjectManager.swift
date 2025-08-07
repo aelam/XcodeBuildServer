@@ -6,6 +6,18 @@
 
 import Foundation
 
+public struct XcodeIndexPaths: Sendable {
+    public let derivedDataPath: URL
+    public let indexStoreURL: URL
+    public let indexDatabaseURL: URL
+
+    public init(derivedDataPath: URL, indexStoreURL: URL, indexDatabaseURL: URL) {
+        self.derivedDataPath = derivedDataPath
+        self.indexStoreURL = indexStoreURL
+        self.indexDatabaseURL = indexDatabaseURL
+    }
+}
+
 public struct XcodeListInfo: Codable, Sendable {
     public let workspace: XcodeListWorkspace?
 
@@ -178,7 +190,7 @@ public actor XcodeProjectManager {
         // Get index URLs from the first available scheme (shared per workspace)
         let indexPaths = try await loadIndexURLs(
             scheme: schemesToLoad.first ?? allSchemes.first,
-            commandBuilder: commandBuilder
+            projectLocation: projectLocation
         )
 
         return XcodeProjectBasicInfo(
@@ -237,33 +249,35 @@ public actor XcodeProjectManager {
 
     private func loadIndexURLs(
         scheme: String?,
-        commandBuilder: XcodeBuildCommandBuilder
+        projectLocation: XcodeProjectLocation
     ) async throws -> XcodeIndexPaths {
         guard let scheme else {
             throw XcodeProjectError.indexPathsError("No schemes available to determine index URLs")
         }
 
-        // Get build settings to determine derived data path and index URLs
-        let buildCommand = commandBuilder.buildCommand(
+        let projectIdentifier = XcodeProjectIdentifier(rootURL: rootURL, projectLocation: projectLocation)
+        let settingsCommandBuilder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
+        let settingsLoader = XcodeSettingsLoader(commandBuilder: settingsCommandBuilder, toolchain: toolchain)
+
+        // Load build settings and index paths
+        let buildSettings = try await settingsLoader.loadBuildSettings(scheme: scheme)
+        let (indexStoreURL, indexDatabaseURL) = try await settingsLoader.loadIndexingPaths(
             scheme: scheme,
-            configuration: projectReference?.configuration ?? "Debug",
-            options: XcodeBuildOptions.buildSettingsForIndexJSON
+            buildSettings: buildSettings
         )
 
-        let (output, _) = try await toolchain.executeXcodeBuild(
-            arguments: buildCommand,
-            workingDirectory: rootURL
+        // Extract derived data path from index store URL (go up 2 levels from Index.noIndex/DataStore)
+        // {Path/to/DerivedData}/{Project-hash}/Index.noIndex/DataStore
+        let derivedDataPath = indexStoreURL
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+
+        return XcodeIndexPaths(
+            derivedDataPath: derivedDataPath,
+            indexStoreURL: indexStoreURL,
+            indexDatabaseURL: indexDatabaseURL
         )
-
-        guard let data = output.data(using: .utf8) else {
-            throw XcodeProjectError.buildSettingsNotFound
-        }
-
-        do {
-            return try XcodeIndexPathResolver.resolveIndexPaths(from: data)
-        } catch {
-            throw XcodeProjectError.indexPathsError("Failed to resolve index paths: \(error.localizedDescription)")
-        }
     }
 
     public func getToolchain() -> XcodeToolchain {

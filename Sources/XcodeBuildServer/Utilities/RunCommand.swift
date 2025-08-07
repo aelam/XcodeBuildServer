@@ -5,9 +5,14 @@
 //
 
 import Foundation
+import Logger
 
 func runCommandAsync(_ command: String, arguments: [String] = []) async throws -> String? {
-    try await withCheckedThrowingContinuation { continuation in
+    // Log the command being executed
+    let commandString = "\(command) \(arguments.joined(separator: " "))"
+    logger.info("Executing command: \(commandString)")
+
+    return try await withCheckedThrowingContinuation { continuation in
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
         process.arguments = [command] + arguments
@@ -31,5 +36,9 @@ func runCommandAsync(_ command: String, arguments: [String] = []) async throws -
 
 // run xcodebuild
 func xcodebuild(arguments: [String]) async throws -> String? {
-    try await runCommandAsync("/usr/bin/xcodebuild", arguments: arguments)
+    // Log the command being executed
+    let commandString = "/usr/bin/xcodebuild \(arguments.joined(separator: " "))"
+    logger.info("Executing command: \(commandString)")
+
+    return try await runCommandAsync("/usr/bin/xcodebuild", arguments: arguments)
 }
