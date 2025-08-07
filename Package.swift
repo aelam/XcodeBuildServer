@@ -50,6 +50,7 @@ let package = Package(
         .target(
             name: "XcodeProjectManagement",
             dependencies: [
+                "Logger"
             ],
             resources: [.copy("README.md")]
         ),
