@@ -56,9 +56,29 @@ public struct XcodeProjectReference: Codable, Sendable {
     }
 }
 
-public enum XcodeProjectType: Equatable, Sendable {
+public enum XcodeProjectLocation: Equatable, Sendable {
     case explicitWorkspace(URL) // User provided or auto-detected .xcworkspace
-    case implicitProjectWorkspace(URL) // Converted from .xcodeproj
+    case implicitWorkspace(
+        projectURL: URL,
+        workspaceURL: URL // {projectURL}/project.xcworkspace
+    ) // Converted from .xcodeproj
+    
+    var workspaceURL: URL {
+        switch self {
+        case .explicitWorkspace(let url):
+            return url
+        case .implicitWorkspace(projectURL: _, workspaceURL: let url):
+            return url
+        }
+    }
+    
+    public var name: String {
+        switch self {
+        case .explicitWorkspace(let url),
+                .implicitWorkspace(projectURL: let url, _):
+            return url.lastPathComponent
+        }
+    }
 }
 
 public final class XcodeProjectLocator {
@@ -68,7 +88,7 @@ public final class XcodeProjectLocator {
     public func resolveProjectType(
         rootURL: URL,
         xcodeProjectReference: XcodeProjectReference? = nil
-    ) throws -> XcodeProjectType {
+    ) throws -> XcodeProjectLocation {
         if let workspace = xcodeProjectReference?.workspace {
             let workspaceURL = rootURL.appendingPathComponent(workspace)
             guard FileManager.default.fileExists(atPath: workspaceURL.path) else {
@@ -81,7 +101,10 @@ public final class XcodeProjectLocator {
                 throw XcodeProjectError.invalidConfig("Project path does not exist: \(project)")
             }
             let implicitWorkspace = projectURL.appendingPathComponent("project.xcworkspace")
-            return .implicitProjectWorkspace(implicitWorkspace)
+            return .implicitWorkspace(
+                projectURL: projectURL,
+                workspaceURL: implicitWorkspace
+            )
         }
 
         // If no specific reference provided, fall back to auto-discovery
@@ -89,7 +112,7 @@ public final class XcodeProjectLocator {
     }
 
     // Auto-discovery when no explicit configuration is provided
-    private func resolveProjectTypeByAutoDiscovery(rootURL: URL) throws -> XcodeProjectType {
+    private func resolveProjectTypeByAutoDiscovery(rootURL: URL) throws -> XcodeProjectLocation {
         let workspaces = findAll(rootURL: rootURL, withExtension: "xcworkspace").filter { !$0.path.contains("/Pods/") }
 
         if workspaces.count == 1 {
@@ -100,8 +123,12 @@ public final class XcodeProjectLocator {
 
         let projects = findAll(rootURL: rootURL, withExtension: "xcodeproj")
         if projects.count == 1 {
-            let implicitWorkspace = projects[0].appendingPathComponent("project.xcworkspace")
-            return .implicitProjectWorkspace(implicitWorkspace)
+            let projectURL = projects[0]
+            let implicitWorkspaceURL = projectURL.appendingPathComponent("project.xcworkspace")
+            return .implicitWorkspace(
+                projectURL: projectURL,
+                workspaceURL: implicitWorkspaceURL
+            )
         }
 
         throw XcodeProjectError.projectNotFound

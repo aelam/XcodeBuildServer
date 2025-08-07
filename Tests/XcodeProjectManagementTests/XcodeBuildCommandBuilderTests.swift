@@ -11,12 +11,12 @@ import Testing
 struct XcodeBuildCommandBuilderTests {
     let projectIdentifier = XcodeProjectIdentifier(
         rootURL: URL(fileURLWithPath: "/test"),
-        projectType: .explicitWorkspace(URL(fileURLWithPath: "/test/Test.xcworkspace"))
+        projectLocation: .explicitWorkspace(URL(fileURLWithPath: "/test/Test.xcworkspace"))
     )
 
     @Test
     func buildBasicCommand() {
-        let builder = XcodeBuildCommandBuilder(projectIdentifer: projectIdentifier)
+        let builder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
         let command = builder.buildCommand(
             scheme: "TestScheme",
             configuration: "Debug"
@@ -32,7 +32,7 @@ struct XcodeBuildCommandBuilderTests {
 
     @Test
     func buildSettingsCommand() {
-        let builder = XcodeBuildCommandBuilder(projectIdentifer: projectIdentifier)
+        let builder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
         let command = builder.buildCommand(
             scheme: "TestScheme",
             configuration: "Debug",
@@ -46,7 +46,7 @@ struct XcodeBuildCommandBuilderTests {
 
     @Test
     func buildSettingsForIndexCommand() {
-        let builder = XcodeBuildCommandBuilder(projectIdentifer: projectIdentifier)
+        let builder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
         let command = builder.buildCommand(
             scheme: "TestScheme",
             configuration: "Debug",
@@ -59,7 +59,7 @@ struct XcodeBuildCommandBuilderTests {
 
     @Test
     func listSchemesCommand() {
-        let builder = XcodeBuildCommandBuilder(projectIdentifer: projectIdentifier)
+        let builder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
         let command = builder.buildCommand(options: XcodeBuildOptions.listSchemesJSON)
 
         #expect(command.contains("-list"))
@@ -69,7 +69,7 @@ struct XcodeBuildCommandBuilderTests {
 
     @Test
     func quietBuildCommand() {
-        let builder = XcodeBuildCommandBuilder(projectIdentifer: projectIdentifier)
+        let builder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
         let options = XcodeBuildOptions(quiet: true)
         let command = builder.buildCommand(
             scheme: "TestScheme",

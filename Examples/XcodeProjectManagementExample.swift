@@ -34,16 +34,15 @@ struct XcodeProjectManagementExample {
 
             print("✓ Project loaded successfully")
             print("  - Root URL: \(project.rootURL.path)")
-            print("  - Workspace: \(project.workspaceName)")
-            print("  - Project: \(project.projectName ?? "N/A")")
+            print("  - Workspace: \(project.workspaceURL?.path ?? "N/A")")
             print("  - Schemes: \(project.schemeInfoList.map(\.name).joined(separator: ", "))")
 
             // Create command builder with project identifier
             let projectIdentifier = XcodeProjectIdentifier(
                 rootURL: project.rootURL,
-                projectType: project.projectType
+                projectLocation: project.projectLocation
             )
-            let commandBuilder = XcodeBuildCommandBuilder(projectIdentifer: projectIdentifier)
+            let commandBuilder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
 
             // Generate various commands
             print("\n📋 Available Commands:")

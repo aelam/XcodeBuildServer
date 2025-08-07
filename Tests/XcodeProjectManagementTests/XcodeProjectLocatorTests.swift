@@ -21,8 +21,8 @@ struct XcodeProjectLocatorTests {
             .appendingPathComponent("DemoProjects")
             .appendingPathComponent(root)
         let locator = XcodeProjectLocator()
-        let projectType = try locator.resolveProjectType(rootURL: projectFolder)
-        let actualKind = switch projectType {
+        let projectLocation = try locator.resolveProjectType(rootURL: projectFolder)
+        let actualKind = switch projectLocation {
         case .explicitWorkspace:
             "workspace"
         case .implicitProjectWorkspace:

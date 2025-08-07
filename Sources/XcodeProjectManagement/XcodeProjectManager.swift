@@ -78,7 +78,7 @@ public struct XcodeTargetInfo: Sendable {
 
 public struct XcodeProjectIdentifier: Sendable {
     public let rootURL: URL
-    public let projectType: XcodeProjectType
+    public let projectLocation: XcodeProjectLocation
 }
 
 public struct XcodeProjectBasicInfo: Sendable {
@@ -88,7 +88,7 @@ public struct XcodeProjectBasicInfo: Sendable {
     }
 
     public let rootURL: URL
-    public let projectType: XcodeProjectType
+    public let projectLocation: XcodeProjectLocation
     public let schemeInfoList: [XcodeSchemeInfo]
     public let derivedDataPath: URL
     public let indexStoreURL: URL
@@ -96,14 +96,14 @@ public struct XcodeProjectBasicInfo: Sendable {
 
     public init(
         rootURL: URL,
-        projectType: XcodeProjectType,
+        projectLocation: XcodeProjectLocation,
         schemeInfoList: [XcodeSchemeInfo] = [],
         derivedDataPath: URL,
         indexStoreURL: URL,
         indexDatabaseURL: URL
     ) {
         self.rootURL = rootURL
-        self.projectType = projectType
+        self.projectLocation = projectLocation
         self.schemeInfoList = schemeInfoList
         self.derivedDataPath = derivedDataPath
         self.indexStoreURL = indexStoreURL
@@ -111,22 +111,16 @@ public struct XcodeProjectBasicInfo: Sendable {
     }
 
     public var workspaceURL: URL {
-        switch projectType {
-        case let .explicitWorkspace(url), let .implicitProjectWorkspace(url):
+        switch projectLocation {
+        case let .explicitWorkspace(url), let .implicitWorkspace(_, url):
             url
         }
     }
 
-    public var workspaceName: String {
-        workspaceURL.lastPathComponent
-    }
-
-    public var projectName: String? {
-        switch projectType {
-        case .explicitWorkspace:
-            nil
-        case let .implicitProjectWorkspace(url):
-            url.deletingLastPathComponent().lastPathComponent
+    public var name: String {
+        switch projectLocation {
+        case let .explicitWorkspace(url), let .implicitWorkspace(url, _):
+            url.lastPathComponent
         }
     }
 }
@@ -154,20 +148,20 @@ public actor XcodeProjectManager {
         // Initialize toolchain first
         try await toolchain.initialize()
 
-        let projectType = try locator.resolveProjectType(
+        let projectLocation = try locator.resolveProjectType(
             rootURL: rootURL,
             xcodeProjectReference: projectReference
         )
-        let projectInfo = try await resolveProjectBasic(for: projectType)
+        let projectInfo = try await resolveProjectBasic(for: projectLocation)
         currentProject = projectInfo
         return projectInfo
     }
 
     private func resolveProjectBasic(
-        for projectType: XcodeProjectType
+        for projectLocation: XcodeProjectLocation
     ) async throws -> XcodeProjectBasicInfo {
-        let projectIdentifier = XcodeProjectIdentifier(rootURL: rootURL, projectType: projectType)
-        let commandBuilder = XcodeBuildCommandBuilder(projectIdentifer: projectIdentifier)
+        let projectIdentifier = XcodeProjectIdentifier(rootURL: rootURL, projectLocation: projectLocation)
+        let commandBuilder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
 
         // Get all available schemes from xcodebuild -list
         let allSchemes = try await loadAllSchemes(commandBuilder: commandBuilder)
@@ -189,7 +183,7 @@ public actor XcodeProjectManager {
 
         return XcodeProjectBasicInfo(
             rootURL: rootURL,
-            projectType: projectType,
+            projectLocation: projectLocation,
             schemeInfoList: schemeInfoList,
             derivedDataPath: indexPaths.derivedDataPath,
             indexStoreURL: indexPaths.indexStoreURL,
@@ -285,8 +279,8 @@ public actor XcodeProjectManager {
             throw XcodeProjectError.invalidConfig("Project not loaded. Call loadProjectBasicInfo() first.")
         }
 
-        let projectIdentifier = XcodeProjectIdentifier(rootURL: rootURL, projectType: currentProject.projectType)
-        let commandBuilder = XcodeBuildCommandBuilder(projectIdentifer: projectIdentifier)
+        let projectIdentifier = XcodeProjectIdentifier(rootURL: rootURL, projectLocation: currentProject.projectLocation)
+        let commandBuilder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
 
         let targetScheme = scheme ?? currentProject.schemeInfoList.first?.name
         guard let targetScheme else {

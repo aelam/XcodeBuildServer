@@ -26,7 +26,7 @@ struct XcodeProjectManagerTests {
         #expect(project.rootURL == projectFolder)
         #expect(!project.schemeInfoList.isEmpty)
 
-        switch project.projectType {
+        switch project.projectLocation {
         case let .explicitWorkspace(url):
             #expect(url.lastPathComponent == "Hello.xcworkspace")
         case .implicitProjectWorkspace:
@@ -51,7 +51,7 @@ struct XcodeProjectManagerTests {
         #expect(project.rootURL == projectFolder)
         #expect(!project.schemeInfoList.isEmpty)
 
-        switch project.projectType {
+        switch project.projectLocation {
         case .explicitWorkspace:
             Issue.record("Expected implicit project workspace, got explicit workspace")
         case let .implicitProjectWorkspace(url):

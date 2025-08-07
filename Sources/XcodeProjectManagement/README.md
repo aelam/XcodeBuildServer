@@ -73,9 +73,9 @@ Low-level project discovery with BSP configuration support.
 
 ```swift
 let locator = XcodeProjectLocator(root: projectURL)
-let projectType = try locator.resolveProjectType()
+let projectLocation = try locator.resolveProjectType()
 
-switch projectType {
+switch projectLocation {
 case .explicitWorkspace(let url):
     print("Found workspace: \(url)")
 case .implicitProjectWorkspace(let url):
