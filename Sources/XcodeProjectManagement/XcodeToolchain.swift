@@ -54,6 +54,12 @@ public actor XcodeToolchain {
         self.preferredVersion = preferredVersion
         self.customDeveloperDir = customDeveloperDir
     }
+    
+    deinit {
+        // Clean up any remaining resources
+        selectedInstallation = nil
+        availableInstallations.removeAll()
+    }
 
     public func initialize() async throws {
         try await discoverXcodeInstallations()
@@ -98,6 +104,14 @@ public actor XcodeToolchain {
 
         return try await withCheckedThrowingContinuation { continuation in
             process.terminationHandler = { process in
+                defer {
+                    // Explicitly close file handles to prevent resource leaks
+                    try? outputPipe.fileHandleForReading.close()
+                    try? outputPipe.fileHandleForWriting.close()
+                    try? errorPipe.fileHandleForReading.close()
+                    try? errorPipe.fileHandleForWriting.close()
+                }
+                
                 let outputData = outputPipe.fileHandleForReading.readDataToEndOfFile()
                 let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
 
@@ -112,6 +126,11 @@ public actor XcodeToolchain {
             do {
                 try process.run()
             } catch {
+                // Clean up pipes if process fails to start
+                try? outputPipe.fileHandleForReading.close()
+                try? outputPipe.fileHandleForWriting.close()
+                try? errorPipe.fileHandleForReading.close()
+                try? errorPipe.fileHandleForWriting.close()
                 continuation.resume(throwing: error)
             }
         }

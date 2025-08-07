@@ -24,6 +24,15 @@ public actor BuildServerContext {
     private(set) var indexDatabaseURL: URL?
 
     private let jsonDecoder = JSONDecoder()
+    
+    deinit {
+        // Clean up resources to prevent retain cycles
+        toolchain = nil
+        projectManager = nil
+        projectInfo = nil
+        settingsManager = nil
+        config = nil
+    }
 
     // Computed property to check if the context is properly loaded
     var isLoaded: Bool {
@@ -68,7 +77,7 @@ public actor BuildServerContext {
     }
 
     func loadProject(rootURL: URL) async throws {
-        logger.debug("Loading project at \(rootURL)")
+        logger.info("Loading project at \(rootURL)")
         self.rootURL = rootURL
 
         // Initialize shared toolchain first
