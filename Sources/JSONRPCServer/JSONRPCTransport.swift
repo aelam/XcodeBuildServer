@@ -15,6 +15,8 @@ public enum JSONRPCTransportError: Error, Sendable {
     case acceptFailed
     case invalidMessage
     case transportClosed
+    case timeout
+    case writeFailed(String)
 }
 
 /// Represents a received JSON-RPC message with its raw data
