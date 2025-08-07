@@ -172,7 +172,7 @@ struct BuildInitializeRequestTests {
                 },
                 "version": "1.0",
                 "displayName": "SourceKit-LSP",
-                "bspVersion": "2.0"
+                "bspVersion": "2.2.0"
             },
             "method": "build/initialize",
             "jsonrpc": "2.0",
@@ -198,7 +198,7 @@ struct BuildInitializeRequestTests {
         #expect(decoded.jsonrpc == "2.0")
         #expect(decoded.id == .int(1))
         #expect(decoded.result.displayName == "xcode build server")
-        #expect(decoded.result.bspVersion == "2.0")
+        #expect(decoded.result.bspVersion == "2.2.0")
         #expect(decoded.result.capabilities.compileProvider?.languageIds.contains(.swift) == true)
     }
 }
@@ -235,7 +235,7 @@ extension BuildInitializeRequestTests {
             dataKind: "sourceKit",
             data: data,
             rootUri: "file:///Users/test/project/",
-            bspVersion: "2.0",
+            bspVersion: "2.2.0",
             version: "0.1",
             displayName: "xcode build server"
         )

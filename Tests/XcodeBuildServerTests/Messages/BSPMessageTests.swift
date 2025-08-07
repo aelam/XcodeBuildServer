@@ -26,7 +26,7 @@ final class BSPMessageTests: XCTestCase {
               ]
             },
             "displayName": "Test Client",
-            "bspVersion": "2.0",
+            "bspVersion": "2.2.0",
             "version": "1.0"
           },
           "id": 1

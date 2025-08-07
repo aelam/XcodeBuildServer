@@ -17,10 +17,10 @@ public struct WindowWorkDoneProgressCreateRequest: ContextualRequestType {
     }
 
     public func handle<Handler: ContextualMessageHandler>(
-        handler: Handler,
+        contextualHandler: Handler,
         id: RequestID
     ) async -> ResponseType? where Handler.Context == BuildServerContext {
-        await handler.withContext { _ in
+        await contextualHandler.withContext { _ in
             WindowWorkDoneProgressCreateResponse(jsonrpc: "2.0", id: id)
         }
     }

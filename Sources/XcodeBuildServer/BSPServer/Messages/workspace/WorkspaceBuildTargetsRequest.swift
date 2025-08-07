@@ -24,10 +24,10 @@ public struct WorkspaceBuildTargetsRequest: ContextualRequestType, Sendable {
     public let params: Params?
 
     public func handle<Handler: ContextualMessageHandler>(
-        handler: Handler,
+        contextualHandler: Handler,
         id: RequestID
     ) async -> ResponseType? where Handler.Context == BuildServerContext {
-        await handler.withContext { context in
+        await contextualHandler.withContext { context in
             do {
                 let allBuildTargets = try await context.createBuildTargets()
 

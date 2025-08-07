@@ -30,7 +30,7 @@ public protocol ContextualRequestType: RequestType {
     ///   - id: The request ID for response correlation
     /// - Returns: The response for this request, or nil if the request cannot be handled
     func handle<Handler: ContextualMessageHandler>(
-        handler: Handler,
+        contextualHandler: Handler,
         id: RequestID
     ) async -> ResponseType? where Handler.Context == RequiredContext
 }
@@ -42,7 +42,7 @@ public protocol NotificationType: MessageType {
     /// The name of the request.
     static func method() -> String
 
-    func handle(_ handler: MessageHandler) async throws
+    func handle(handler: MessageHandler) async throws
 }
 
 /// Enhanced notification type that supports contextual message handlers.
@@ -57,7 +57,7 @@ public protocol ContextualNotificationType: NotificationType {
     /// - Parameter handler: A contextual message handler that provides scoped context access
     /// - Throws: Any error thrown by the notification handler or context access failures
     func handle<Handler: ContextualMessageHandler>(
-        _ handler: Handler
+        contextualHandler: Handler
     ) async throws where Handler.Context == RequiredContext
 }
 

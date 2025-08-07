@@ -1,0 +1,19 @@
+{
+    "name": "xcode build server",
+    "version": "0.2",
+    "bspVersion": "2.2.0",
+    "languages": [
+        "objective-c",
+        "objective-cpp",
+        "c",
+        "cpp",
+        "swift"
+    ],
+    "argv": [
+        "../../../../.build/debug/XcodeBuildServerCLI"
+    ],
+    "kind": "xcode",
+    "env": {
+        "BSP_DEBUG": "1"
+    }
+}

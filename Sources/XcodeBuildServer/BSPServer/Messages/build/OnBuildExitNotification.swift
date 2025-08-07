@@ -9,11 +9,14 @@
 /// server to exit its process. The server should exit with success
 /// code 0 if the shutdown request has been received before;
 /// otherwise with error code 1.
-public struct OnBuildExitNotification: NotificationType, Sendable {
+public struct OnBuildExitNotification: ContextualNotificationType, Sendable {
     public typealias RequiredContext = BuildServerContext
+
     public static func method() -> String {
         "build/exit"
     }
 
-    public func handle(_: MessageHandler) async {}
+    public func handle(
+        contextualHandler: some ContextualMessageHandler
+    ) async throws {}
 }

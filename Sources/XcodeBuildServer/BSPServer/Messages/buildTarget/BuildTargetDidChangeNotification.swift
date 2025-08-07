@@ -20,9 +20,10 @@ struct BuildTargetDidChangeNotification: ContextualNotificationType, Sendable {
     let jsonrpc: String
     let params: Params
 
-    func handle<Handler: ContextualMessageHandler>(_ handler: Handler) async throws
-        where Handler.Context == BuildServerContext {
-        await handler.withContext { _ in
+    func handle<Handler: ContextualMessageHandler>(
+        contextualHandler: Handler
+    ) async throws where Handler.Context == BuildServerContext {
+        await contextualHandler.withContext { _ in
             guard let changes = params.changes else {
                 return
             }
