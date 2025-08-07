@@ -165,6 +165,8 @@ public final class StdioJSONRPCServerTransport: JSONRPCServerTransport, @uncheck
         guard !data.isEmpty else {
             return
         }
+        logger.debug("Received data of size: \(data.count)")
+        logger.debug("Raw data: \(String(data: data, encoding: .utf8) ?? "[Invalid UTF-8]")")
 
         do {
             let message = try parseJSONRPCMessage(from: data)
