@@ -24,7 +24,7 @@ public actor BuildServerContext {
     private(set) var indexDatabaseURL: URL?
 
     private let jsonDecoder = JSONDecoder()
-    
+
     deinit {
         // Clean up resources to prevent retain cycles
         toolchain = nil

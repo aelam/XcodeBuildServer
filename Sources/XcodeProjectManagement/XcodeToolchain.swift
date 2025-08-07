@@ -54,7 +54,7 @@ public actor XcodeToolchain {
         self.preferredVersion = preferredVersion
         self.customDeveloperDir = customDeveloperDir
     }
-    
+
     deinit {
         // Clean up any remaining resources
         selectedInstallation = nil
@@ -111,7 +111,7 @@ public actor XcodeToolchain {
                     try? errorPipe.fileHandleForReading.close()
                     try? errorPipe.fileHandleForWriting.close()
                 }
-                
+
                 let outputData = outputPipe.fileHandleForReading.readDataToEndOfFile()
                 let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
 

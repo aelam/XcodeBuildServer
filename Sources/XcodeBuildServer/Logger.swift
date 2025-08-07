@@ -4,8 +4,8 @@
 //  Copyright © 2024 Wang Lun.
 //
 
-@preconcurrency import OSLog
 import Foundation
+@preconcurrency import OSLog
 
 nonisolated(unsafe) let privacy: OSLogPrivacy = .public
 
@@ -26,7 +26,7 @@ final class FileLogger: @unchecked Sendable {
 
     private func writeToFile(_ message: String, level: String) {
         queue.async { [weak self] in
-            guard let self = self else { return }
+            guard let self else { return }
             let formatter = DateFormatter()
             formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
             let timestamp = formatter.string(from: Date())
