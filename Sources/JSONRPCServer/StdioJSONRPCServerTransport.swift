@@ -5,9 +5,10 @@
 //
 
 import Foundation
+import Logger
 
 /// Stream-based stdio transport for JSON-RPC communication
-public final actor StdioJSONRPCServerTransport: JSONRPCServerTransport {
+public final class StdioJSONRPCServerTransport: JSONRPCServerTransport, @unchecked Sendable {
     private let input: FileHandle
     private let output: FileHandle
     private let jsonDecoder = JSONDecoder()
@@ -21,8 +22,36 @@ public final actor StdioJSONRPCServerTransport: JSONRPCServerTransport {
     public let messageStream: AsyncStream<JSONRPCMessage>
     public let errorStream: AsyncStream<JSONRPCTransportError>
 
-    // State management (actor-isolated)
-    private var isListening = false
+    // State management (thread-safe)
+    private let stateLock = NSLock()
+    private var _isListening = false
+    private var _closeContinuation: CheckedContinuation<Void, Never>?
+
+    private var isListening: Bool {
+        get {
+            stateLock.lock()
+            defer { stateLock.unlock() }
+            return _isListening
+        }
+        set {
+            stateLock.lock()
+            defer { stateLock.unlock() }
+            _isListening = newValue
+        }
+    }
+
+    private var closeContinuation: CheckedContinuation<Void, Never>? {
+        get {
+            stateLock.lock()
+            defer { stateLock.unlock() }
+            return _closeContinuation
+        }
+        set {
+            stateLock.lock()
+            defer { stateLock.unlock() }
+            _closeContinuation = newValue
+        }
+    }
 
     public init() {
         input = .standardInput
@@ -52,31 +81,24 @@ public final actor StdioJSONRPCServerTransport: JSONRPCServerTransport {
 
         // Set up file handle reading
         input.readabilityHandler = { [weak self] handle in
-            Task {
-                await self?.handleIncomingData(from: handle)
-            }
+            self?.handleIncomingData(from: handle)
         }
 
         // Start waiting for data
         input.waitForDataInBackgroundAndNotify()
 
-        // Keep the run loop running for stdio transport
+        // Keep the transport running using proper async pattern
         await withTaskCancellationHandler {
+            // Use a continuation that will be resumed when transport is closed
             await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-                // This continuation will be resumed when the transport is closed
-                Task {
-                    while self.isListening {
-                        try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
-                    }
-                    continuation.resume()
-                }
+                self.closeContinuation = continuation
             }
         } onCancel: {
-            Task { await self.close() }
+            Task { self.close() }
         }
     }
 
-    public func close() async {
+    public func close() {
         guard isListening else { return }
 
         isListening = false
@@ -88,6 +110,10 @@ public final actor StdioJSONRPCServerTransport: JSONRPCServerTransport {
 
         messageContinuation = nil
         errorContinuation = nil
+
+        // Resume the listen continuation to exit the listen method
+        closeContinuation?.resume()
+        closeContinuation = nil
 
         // Note: We don't close stdio handles as they are managed by the system
     }
@@ -101,20 +127,36 @@ public final actor StdioJSONRPCServerTransport: JSONRPCServerTransport {
         let header = "Content-Length: \(data.count)\r\n\r\n"
         let headerData = header.data(using: .utf8)!
 
-        // Debug logging
+        // Log response being sent (only if BSP_DEBUG is set)
         if ProcessInfo.processInfo.environment["BSP_DEBUG"] != nil {
-            let timestamp = DateFormatter().string(from: Date())
-            let jsonString = String(data: data, encoding: .utf8) ?? "[Invalid UTF-8]"
-            fputs("🔴 [\(timestamp)] OUTGOING: \(jsonString)\n", stderr)
+            logger.debug("Sending JSON-RPC response: \(String(data: data, encoding: .utf8) ?? "[Invalid UTF-8]")")
         }
 
-        // Perform write operations on a background queue to avoid blocking
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            DispatchQueue.global(qos: .userInitiated).async {
-                self.output.write(headerData)
-                self.output.write(data)
-                continuation.resume()
+        // Perform write operations with timeout to prevent hanging
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            // Add timeout task
+            group.addTask {
+                try await Task.sleep(nanoseconds: 5_000_000_000) // 5 seconds
+                throw JSONRPCTransportError.timeout
             }
+
+            // Add write task
+            group.addTask {
+                // Write operations with timeout protection
+                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                    DispatchQueue.global(qos: .userInitiated).async {
+                        self.output.write(headerData)
+                        self.output.write(data)
+                        // Try to flush the output
+                        fsync(self.output.fileDescriptor)
+                        continuation.resume()
+                    }
+                }
+            }
+
+            // Wait for the first task to complete and cancel the others
+            try await group.next()
+            group.cancelAll()
         }
     }
 

@@ -76,7 +76,7 @@ public actor XcodeSettingsLoader {
     }
 
     public func loadBuildSettings(
-        scheme: String? = nil,
+        scheme: String,
         destination: XcodeBuildDestination = .iOSSimulator
     ) async throws -> [XcodeBuildSettings] {
         let command = commandBuilder.buildSettingsCommand(scheme: scheme, destination: destination, forIndex: false)
