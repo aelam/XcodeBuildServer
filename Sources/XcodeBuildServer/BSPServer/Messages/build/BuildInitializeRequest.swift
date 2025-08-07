@@ -134,7 +134,7 @@ public struct BuildInitializeRequest: ContextualRequestType, Sendable {
     }
 
     /// Create server capabilities based on client capabilities
-    func createServerCapabilities(
+    private func createServerCapabilities(
         clientCapabilities: Params.BuildClientCapabilities
     ) -> BuildServerCapabilities {
         logger.debug("createServerCapabilities: client languages: \(clientCapabilities.languageIds)")
