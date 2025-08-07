@@ -84,7 +84,7 @@ public actor XcodeToBSPAdapter {
         scheme: String,
         projectBasicInfo: XcodeProjectBasicInfo
     ) -> String {
-        return "xcode:///\(projectBasicInfo.projectLocation.name)/\(scheme)/\(targetName)"
+        "xcode:///\(projectBasicInfo.projectLocation.name)/\(scheme)/\(targetName)"
     }
 
     /// Convert string identifier to BuildTargetIdentifier

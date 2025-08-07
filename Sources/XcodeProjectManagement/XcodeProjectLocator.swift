@@ -62,21 +62,21 @@ public enum XcodeProjectLocation: Equatable, Sendable {
         projectURL: URL,
         workspaceURL: URL // {projectURL}/project.xcworkspace
     ) // Converted from .xcodeproj
-    
+
     var workspaceURL: URL {
         switch self {
-        case .explicitWorkspace(let url):
-            return url
+        case let .explicitWorkspace(url):
+            url
         case .implicitWorkspace(projectURL: _, workspaceURL: let url):
-            return url
+            url
         }
     }
-    
+
     public var name: String {
         switch self {
-        case .explicitWorkspace(let url),
-                .implicitWorkspace(projectURL: let url, _):
-            return url.lastPathComponent
+        case let .explicitWorkspace(url),
+             let .implicitWorkspace(projectURL: url, _):
+            url.lastPathComponent
         }
     }
 }

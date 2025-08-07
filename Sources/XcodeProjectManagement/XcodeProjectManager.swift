@@ -279,7 +279,10 @@ public actor XcodeProjectManager {
             throw XcodeProjectError.invalidConfig("Project not loaded. Call loadProjectBasicInfo() first.")
         }
 
-        let projectIdentifier = XcodeProjectIdentifier(rootURL: rootURL, projectLocation: currentProject.projectLocation)
+        let projectIdentifier = XcodeProjectIdentifier(
+            rootURL: rootURL,
+            projectLocation: currentProject.projectLocation
+        )
         let commandBuilder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
 
         let targetScheme = scheme ?? currentProject.schemeInfoList.first?.name
