@@ -25,15 +25,6 @@ public actor BuildServerContext {
 
     private let jsonDecoder = JSONDecoder()
 
-    deinit {
-        // Clean up resources to prevent retain cycles
-        toolchain = nil
-        projectManager = nil
-        projectInfo = nil
-        settingsManager = nil
-        config = nil
-    }
-
     // Computed property to check if the context is properly loaded
     var isLoaded: Bool {
         projectManager != nil && projectInfo != nil && settingsManager != nil
