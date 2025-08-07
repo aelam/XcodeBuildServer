@@ -40,10 +40,10 @@ public struct TextDocumentRegisterForChangeRequest: ContextualRequestType, Senda
     public let params: Params
 
     public func handle<Handler: ContextualMessageHandler>(
-        handler: Handler,
+        contextualHandler: Handler,
         id: RequestID
     ) async -> ResponseType? where Handler.Context == BuildServerContext {
-        await handler.withContext { context in
+        await contextualHandler.withContext { context in
             guard let fileURL = URL(string: params.uri) else {
                 return TextDocumentRegisterForChangeResponse(
                     jsonrpc: jsonrpc,

@@ -5,6 +5,7 @@
 //
 
 import Foundation
+import Logger
 
 /// Stream-based JSON-RPC server that processes messages using async streams
 public final actor JSONRPCServer {
@@ -76,11 +77,21 @@ public final actor JSONRPCServer {
 
     /// Process a single message from the message stream
     private func processMessage(_ message: JSONRPCMessage) async {
+        // Log the original message
+        logger
+            .debug(
+                "JSONRPCServer received message: " +
+                "\(String(data: message.rawData, encoding: .utf8) ?? "Unable to decode raw data")"
+            )
+
         if let requestType = messageRegistry.requestType(for: message.request.method) {
+            logger.debug("Found request type for method: \(message.request.method)")
             await handleRequest(message: message, requestType: requestType)
         } else if let notificationType = messageRegistry.notificationType(for: message.request.method) {
+            logger.debug("Found notification type for method: \(message.request.method)")
             await handleNotification(message: message, notificationType: notificationType)
         } else {
+            logger.warning("No handler found for method: \(message.request.method)")
             if let requestID = message.request.id {
                 await sendErrorResponse(
                     id: requestID,
@@ -93,44 +104,56 @@ public final actor JSONRPCServer {
     /// Handle transport errors from the error stream
     private func handleTransportError(_ error: JSONRPCTransportError) async {
         // Log transport errors but don't propagate them
-        // In a real implementation, you might want to add proper logging
-        print("Transport error: \(error)")
+        logger.error("Transport error: \(error)")
     }
 
     /// Handle a JSON-RPC request
     private func handleRequest(message: JSONRPCMessage, requestType: any RequestType.Type) async {
         guard let requestID = message.request.id else {
+            logger.warning("Request without ID for method: \(message.request.method)")
             return
         }
 
+        logger.debug("Handling request ID: \(requestID) method: \(message.request.method)")
+
         do {
             let typedRequest = try jsonDecoder.decode(requestType, from: message.rawData)
+            logger.debug("Successfully decoded request for method: \(message.request.method)")
 
             if let response = await typedRequest.handle(handler: messageHandler, id: requestID) {
+                logger.debug("Request handler returned response for method: \(message.request.method)")
                 do {
                     try await send(response: response)
+                    logger.debug("Successfully sent response for request ID: \(requestID)")
                 } catch {
-                    // Failed to send response - in a real implementation, consider retry logic
+                    logger.error("Failed to send response for request ID: \(requestID), error: \(error)")
                 }
             } else {
+                logger.error("Handler returned nil response for method: \(message.request.method)")
                 await sendErrorResponse(
                     id: requestID,
                     error: .internalError("Handler failed to process request")
                 )
             }
         } catch {
+            logger.error("Failed to decode request for method: \(message.request.method), error: \(error)")
             await sendErrorResponse(id: requestID, error: .parseError("Invalid request format"))
         }
     }
 
     /// Handle a JSON-RPC notification
     private func handleNotification(message: JSONRPCMessage, notificationType: any NotificationType.Type) async {
+        logger.debug("Handling notification for method: \(message.request.method)")
+
         do {
             let typedNotification = try jsonDecoder.decode(notificationType, from: message.rawData)
-            try await typedNotification.handle(messageHandler)
+            logger.debug("Successfully decoded notification for method: \(message.request.method)")
+
+            try await typedNotification.handle(handler: messageHandler)
+            logger.debug("Successfully handled notification for method: \(message.request.method)")
         } catch {
             // Notifications don't have responses, so we can only log the error
-            print("Notification processing error: \(error)")
+            logger.error("Notification processing error for method: \(message.request.method), error: \(error)")
         }
     }
 
@@ -146,7 +169,7 @@ public final actor JSONRPCServer {
             try await send(response: errorResponse)
         } catch {
             // Failed to send error response
-            print("Failed to send error response: \(error)")
+            logger.error("Failed to send error response: \(error)")
         }
     }
 

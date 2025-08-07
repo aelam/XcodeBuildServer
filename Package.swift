@@ -12,6 +12,10 @@ let package = Package(
             targets: ["JSONRPCServer"]
         ),
         .library(
+            name: "Logger",
+            targets: ["Logger"]
+        ),
+        .library(
             name: "XcodeBuildServer",
             targets: ["XcodeBuildServer"]
         ),
@@ -28,11 +32,19 @@ let package = Package(
         ),
     ],
     dependencies: [
+        .package(url: "https://github.com/SwiftyBeaver/SwiftyBeaver.git", from: "2.0.0"),
     ],
     targets: [
         .target(
             name: "JSONRPCServer",
             dependencies: [
+                "Logger"
+            ]
+        ),
+        .target(
+            name: "Logger",
+            dependencies: [
+                .product(name: "SwiftyBeaver", package: "SwiftyBeaver"),
             ]
         ),
         .target(
@@ -46,12 +58,14 @@ let package = Package(
             dependencies: [
                 "JSONRPCServer",
                 "XcodeProjectManagement",
+                "Logger",
             ]
         ),
         .executableTarget(
             name: "XcodeBuildServerCLI",
             dependencies: [
                 "XcodeBuildServer",
+                "Logger",
             ]
         ),
         .testTarget(

@@ -7,7 +7,7 @@
 /// Notification from the build server to SourceKit-LSP to update a work done progress created using
 /// `window/workDoneProgress/create`.
 
-struct ProcessNotification: NotificationType, Sendable {
+struct ProcessNotification: ContextualNotificationType, Sendable {
     typealias RequiredContext = BuildServerContext
 
     static func method() -> String {
@@ -19,9 +19,9 @@ struct ProcessNotification: NotificationType, Sendable {
         let value: WorkDoneProgressKind
     }
 
-    func handle(_: MessageHandler) async throws {
-        fatalError("ProcessNotification not implemented")
-    }
+    func handle(
+        contextualHandler: some ContextualMessageHandler
+    ) async throws {}
 }
 
 public enum WorkDoneProgressKind: Codable, Hashable, Sendable {

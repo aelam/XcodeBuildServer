@@ -1,12 +1,23 @@
 //
 //  BuildInitializeRequest.swift
-//  XcodeBuildServer
+//         logger.debug("BuildInitializeRequest.handle(ContextualMessageHandler) started for request ID: \(id)")
+        logger.debug("BuildInitializeRequest params - rootUri: \(params.rootUri)")
+
+        return await handler.withContext { context -> ResponseType in
+            do {
+                logger.debug("BuildInitializeRequest: starting loadProject with rootUri: \(self.params.rootUri)")
+                // Initialize the build server context with the project
+                try await context.loadProject(rootURL: URL(filePath: self.params.rootUri))
+                logger.debug("BuildInitializeRequest: loadProject completed successfully")
+
+                logger.debug("BuildInitializeRequest: checking URLs and index paths")Server
 //
 //  Created by ST22956 on 2024/11/17.
 //
 
 import Foundation
 import JSONRPCServer
+import Logger
 
 public struct BuildInitializeRequest: ContextualRequestType, Sendable {
     public typealias RequiredContext = BuildServerContext
@@ -23,33 +34,67 @@ public struct BuildInitializeRequest: ContextualRequestType, Sendable {
         let rootUri: String
         let capabilities: BuildClientCapabilities
         let displayName: String?
+        let version: String?
+        let bspVersion: String?
     }
 
     let id: JSONRPCID
     let params: Params
 
+    // MARK: - ContextualRequestType conformance
+    // swiftlint:disable:next function_body_length
     public func handle<Handler: ContextualMessageHandler>(
-        handler: Handler,
+        contextualHandler: Handler,
         id: RequestID
     ) async -> ResponseType? where Handler.Context == BuildServerContext {
-        await handler.withContext { context in
-            do {
-                // Initialize the build server context with the project
-                try await context.loadProject(rootURL: URL(filePath: params.rootUri))
+        logger.debug("BuildInitializeRequest.handle(ContextualMessageHandler) started for request ID: \(id)")
+        logger.debug("BuildInitializeRequest params - rootUri: \(params.rootUri)")
 
+        return await contextualHandler.withContext { context -> ResponseType in
+            do {
+                logger.debug("BuildInitializeRequest: starting loadProject with rootUri: \(self.params.rootUri)")
+                // Initialize the build server context with the project
+                try await context.loadProject(rootURL: URL(filePath: self.params.rootUri))
+                logger.debug("BuildInitializeRequest: loadProject completed successfully")
+
+                logger.debug("BuildInitializeRequest: checking URLs and index paths")
                 guard
-                    let rootURL = URL(string: params.rootUri), // without file://
-                    let indexDataStoreURL = await context.indexStoreURL,
-                    let indexDatabaseURL = await context.indexDatabaseURL
+                    let rootURL = URL(string: self.params.rootUri) // without file://
                 else {
+                    logger.error("BuildInitializeRequest: failed to create rootURL from: \(self.params.rootUri)")
                     return JSONRPCErrorResponse(
                         id: id,
                         error: JSONRPCError(
                             code: -32603,
-                            message: "Failed to initialize build server: missing index paths"
+                            message: "Failed to initialize build server: invalid root URI"
                         )
                     )
                 }
+                logger.debug("BuildInitializeRequest: rootURL created successfully: \(rootURL)")
+
+                guard let indexDataStoreURL = await context.indexStoreURL else {
+                    logger.error("BuildInitializeRequest: indexStoreURL is nil")
+                    return JSONRPCErrorResponse(
+                        id: id,
+                        error: JSONRPCError(
+                            code: -32603,
+                            message: "Failed to initialize build server: missing index store URL"
+                        )
+                    )
+                }
+                logger.debug("BuildInitializeRequest: indexDataStoreURL obtained: \(indexDataStoreURL)")
+
+                guard let indexDatabaseURL = await context.indexDatabaseURL else {
+                    logger.error("BuildInitializeRequest: indexDatabaseURL is nil")
+                    return JSONRPCErrorResponse(
+                        id: id,
+                        error: JSONRPCError(
+                            code: -32603,
+                            message: "Failed to initialize build server: missing index database URL"
+                        )
+                    )
+                }
+                logger.debug("BuildInitializeRequest: indexDatabaseURL obtained: \(indexDatabaseURL)")
 
                 logger.info("indexDataStorePath: \(indexDataStoreURL.path)")
                 logger.info("indexDatabasePath: \(indexDatabaseURL.path)")
@@ -58,10 +103,11 @@ public struct BuildInitializeRequest: ContextualRequestType, Sendable {
 
                 // Create server capabilities based on client capabilities
                 let capabilities = createServerCapabilities(
-                    clientCapabilities: params.capabilities
+                    clientCapabilities: self.params.capabilities
                 )
 
-                return BuildInitializeResponse(
+                logger.debug("BuildInitializeRequest: creating response")
+                let response = BuildInitializeResponse(
                     jsonrpc: "2.0",
                     id: id,
                     result: .init(
@@ -76,35 +122,43 @@ public struct BuildInitializeRequest: ContextualRequestType, Sendable {
                                 FileSystemWatcher(globPattern: globPatternForFileWatch),
                             ]
                         ),
-                        rootUri: params.rootUri,
-                        bspVersion: "2.0",
+                        rootUri: self.params.rootUri,
+                        bspVersion: "2.2.0",
                         version: "0.1",
                         displayName: "xcode build server"
                     )
                 )
+                logger.debug("BuildInitializeRequest: response created successfully, returning")
+                return response
             } catch {
-                logger.debug("Error: \(String(describing: error))")
-                return JSONRPCErrorResponse(
+                logger.error("BuildInitializeRequest: caught exception: \(String(describing: error))")
+                let errorResponse = JSONRPCErrorResponse(
                     id: id,
                     error: JSONRPCError(
                         code: -32603,
                         message: "Failed to initialize build server: \(error.localizedDescription)"
                     )
                 )
+                logger.debug("BuildInitializeRequest: error response created, returning")
+                return errorResponse
             }
         }
     }
 
     /// Create server capabilities based on client capabilities
-    private func createServerCapabilities(
+    func createServerCapabilities(
         clientCapabilities: Params.BuildClientCapabilities
     ) -> BuildServerCapabilities {
+        logger.debug("createServerCapabilities: client languages: \(clientCapabilities.languageIds)")
         let clientLanguages = Set(clientCapabilities.languageIds)
         let supportedLanguages = Array(xcodeBuildServerSupportedLanguages.intersection(clientLanguages))
+        logger.debug("createServerCapabilities: supported languages: \(supportedLanguages)")
 
         // Create capabilities based on supported languages
         let hasLanguages = !supportedLanguages.isEmpty
-        return BuildServerCapabilities(
+        logger.debug("createServerCapabilities: hasLanguages: \(hasLanguages)")
+
+        let capabilities = BuildServerCapabilities(
             compileProvider: hasLanguages ? CompileProvider(languageIds: supportedLanguages) : nil,
             testProvider: hasLanguages ? TestProvider(languageIds: supportedLanguages) : nil,
             runProvider: hasLanguages ? RunProvider(languageIds: supportedLanguages) : nil,
@@ -116,6 +170,8 @@ public struct BuildInitializeRequest: ContextualRequestType, Sendable {
             buildTargetChangedProvider: true,
             canReload: true
         )
+        logger.debug("createServerCapabilities: capabilities created successfully")
+        return capabilities
     }
 }
 

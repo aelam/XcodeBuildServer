@@ -133,7 +133,7 @@
 /// The request may return `nil` if it doesn't have any build settings for this file in the given target.
 /// server --> client
 /// Deprecated
-public struct BuildSourceKitOptionsChangedNotification: NotificationType, Sendable {
+public struct BuildSourceKitOptionsChangedNotification: ContextualNotificationType, Sendable {
     public typealias RequiredContext = BuildServerContext
 
     public static func method() -> String {
@@ -164,5 +164,7 @@ public struct BuildSourceKitOptionsChangedNotification: NotificationType, Sendab
     public let jsonrpc: String
     public let params: Params
 
-    public func handle(_: MessageHandler) async throws {}
+    public func handle(
+        contextualHandler: some ContextualMessageHandler
+    ) async throws {}
 }

@@ -16,7 +16,7 @@ public struct WorkspaceDidChangeWatchedFilesNotification: NotificationType, Send
     }
 
     public func handle(
-        _: MessageHandler
+        handler: MessageHandler
     ) async {
         fatalError("WorkspaceDidChangeWatchedFilesNotification not implemented")
     }

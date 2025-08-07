@@ -187,10 +187,10 @@ public struct TextDocumentSourceKitOptionsRequest: ContextualRequestType, Sendab
     public let params: Params
 
     public func handle<Handler: ContextualMessageHandler>(
-        handler: Handler,
+        contextualHandler: Handler,
         id: RequestID
     ) async -> ResponseType? where Handler.Context == BuildServerContext {
-        await handler.withContext { context in
+        await contextualHandler.withContext { context in
             // Get file URL from the textDocument parameter
             guard let fileURL = URL(string: params.textDocument.uri.stringValue) else {
                 return TextDocumentSourceKitOptionsResponse(

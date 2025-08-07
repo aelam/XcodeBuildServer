@@ -50,7 +50,7 @@ cp .build/release/XcodeBuildServerCLI /usr/local/bin/XcodeBuildServerCLI
    {
       "name": "XcodeBuildServer",
       "version": "0.2",
-      "bspVersion": "2.0",
+      "bspVersion": "2.2.0",
       "languages": [
          "objective-c",
          "objective-cpp",

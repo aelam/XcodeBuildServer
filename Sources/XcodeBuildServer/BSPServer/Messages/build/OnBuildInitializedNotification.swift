@@ -22,9 +22,10 @@ public struct OnBuildInitializedNotification: ContextualNotificationType, Sendab
         "build/initialized"
     }
 
-    public func handle<Handler: ContextualMessageHandler>(_ handler: Handler) async throws
-        where Handler.Context == BuildServerContext {
-        await handler.withContext { _ in
+    public func handle<Handler: ContextualMessageHandler>(
+        contextualHandler: Handler
+    ) async throws where Handler.Context == BuildServerContext {
+        await contextualHandler.withContext { _ in
             // build/initialized notification handler
             // This notification is sent after build/initialize request is processed
             logger.debug("Received build/initialized notification")

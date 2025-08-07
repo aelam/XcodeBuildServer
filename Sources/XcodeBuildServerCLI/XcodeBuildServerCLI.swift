@@ -5,11 +5,22 @@
 
 import Foundation
 import JSONRPCServer
+import SwiftyBeaver
 import XcodeBuildServer
 
 @main
 struct XcodeBuildServerCLI {
     static func main() async {
+        // Initialize SwiftyBeaver logging
+        let environment = ProcessInfo.processInfo.environment["BSP_ENVIRONMENT"] ?? "development"
+
+        // Log startup message
+        XcodeBuildServer.logger
+            .info(
+                "XcodeBuildServer started successfully - PID: \(ProcessInfo.processInfo.processIdentifier) " +
+                "- Environment: \(environment)"
+            )
+
         let arguments = CommandLine.arguments
 
         // Parse command line arguments - only for help
@@ -29,9 +40,10 @@ struct XcodeBuildServerCLI {
             arguments.contains("--debug")
 
         if isDebugMode {
-            fputs("🔧 BSP Debug Mode Enabled\n", stderr)
+            let debugMsg = "🔧 BSP Debug Mode Enabled - PID: \(ProcessInfo.processInfo.processIdentifier)"
+            fputs("\(debugMsg)\n", stderr)
             fputs("📝 Logging JSON-RPC communication to stderr\n", stderr)
-            fputs("📡 PID: \(ProcessInfo.processInfo.processIdentifier)\n", stderr)
+            XcodeBuildServer.logger.debug(debugMsg)
         }
 
         let transport = StdioJSONRPCServerTransport()
@@ -52,7 +64,10 @@ struct XcodeBuildServerCLI {
         do {
             try await server.listen()
         } catch {
-            fputs("Server failed to start: \(error)\n", stderr)
+            // Log error
+            let errorMsg = "Server failed to start: \(error)"
+            XcodeBuildServer.logger.error(errorMsg)
+            fputs("\(errorMsg)\n", stderr)
             exit(1)
         }
     }
@@ -86,7 +101,9 @@ struct XcodeBuildServerCLI {
         // Check if parent process is init (PID 1) or doesn't exist
         if parentProcessID == 1 {
             if ProcessInfo.processInfo.environment["BSP_DEBUG"] != nil {
-                fputs("🔴 Parent process became init (PID 1), terminating...\n", stderr)
+                let msg = "🔴 Parent process became init (PID 1), terminating..."
+                fputs("\(msg)\n", stderr)
+                XcodeBuildServer.logger.warning(msg)
             }
             exit(0)
         }
@@ -96,28 +113,25 @@ struct XcodeBuildServerCLI {
         if result == -1 {
             if errno == ESRCH {
                 if ProcessInfo.processInfo.environment["BSP_DEBUG"] != nil {
-                    fputs(
-                        "🔴 Parent process (PID \(parentProcessID)) no longer exists (ESRCH), terminating...\n",
-                        stderr
-                    )
+                    let msg = "🔴 Parent process (PID \(parentProcessID)) no longer exists (ESRCH), " + "terminating..."
+                    fputs("\(msg)\n", stderr)
+                    XcodeBuildServer.logger.warning(msg)
                 }
                 exit(0)
             } else if errno == EPERM {
                 // Parent exists, but we don't have permission; do not exit
                 if ProcessInfo.processInfo.environment["BSP_DEBUG"] != nil {
-                    fputs(
-                        "🟡 Parent process (PID \(parentProcessID)) exists but permission denied (EPERM), " +
-                            "not terminating.\n",
-                        stderr
-                    )
+                    let msg = "🟡 Parent process (PID \(parentProcessID)) exists " +
+                     "but permission denied (EPERM), not terminating."
+                    fputs("\(msg)\n", stderr)
+                    XcodeBuildServer.logger.debug(msg)
                 }
             } else {
                 if ProcessInfo.processInfo.environment["BSP_DEBUG"] != nil {
-                    fputs(
-                        "🟠 kill() failed for parent process (PID \(parentProcessID)), errno: \(errno), " +
-                            "not terminating.\n",
-                        stderr
-                    )
+                    let msg = "🟠 kill() failed for parent process (PID \(parentProcessID)), " +
+                    " errno: \(errno), not terminating."
+                    fputs("\(msg)\n", stderr)
+                    XcodeBuildServer.logger.debug(msg)
                 }
             }
         }

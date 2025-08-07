@@ -15,10 +15,10 @@ public struct BuildLogMessageRequest: ContextualRequestType, Sendable {
     let id: JSONRPCID
 
     public func handle<Handler: ContextualMessageHandler>(
-        handler: Handler,
+        contextualHandler: Handler,
         id: RequestID
     ) async -> ResponseType? where Handler.Context == BuildServerContext {
-        await handler.withContext { _ in
+        await contextualHandler.withContext { _ in
             BuildLogMessageResponse(
                 jsonrpc: "2.0",
                 id: self.id,
