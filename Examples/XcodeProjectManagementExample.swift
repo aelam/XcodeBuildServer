@@ -21,57 +21,58 @@ struct XcodeProjectManagementExample {
 
         do {
             // Initialize the project manager
-            let manager = XcodeProjectManager(rootURL: projectURL)
+            let projectManager = XcodeProjectManager(
+                rootURL: projectURL,
+                projectReference: nil,
+                toolchain: XcodeToolchain(),
+                locator: XcodeProjectLocator()
+            )
 
             // Load the project
             print("Loading Xcode project from: \(projectPath)")
-            let project = try await manager.loadProject()
+            let project = try await manager.loadProjectBasicInfo()
 
             print("✓ Project loaded successfully")
             print("  - Root URL: \(project.rootURL.path)")
             print("  - Workspace: \(project.workspaceName)")
             print("  - Project: \(project.projectName ?? "N/A")")
-            print("  - Scheme: \(project.scheme ?? "N/A")")
-            print("  - Configuration: \(project.configuration)")
+            print("  - Schemes: \(project.schemeInfoList.map(\.name).joined(separator: ", "))")
 
-            // Create command builder
-            let commandBuilder = XcodeBuildCommandBuilder(projectInfo: project)
+            // Create command builder with project identifier
+            let projectIdentifier = XcodeProjectIdentifier(
+                rootURL: project.rootURL,
+                projectType: project.projectType
+            )
+            let commandBuilder = XcodeBuildCommandBuilder(projectIdentifer: projectIdentifier)
 
             // Generate various commands
             print("\n📋 Available Commands:")
 
-            let buildCommand = commandBuilder.buildCommand(
-                action: .build,
-                destination: .iOSSimulator
-            )
-            print("Build command: xcodebuild \(buildCommand.joined(separator: " "))")
+            if let firstScheme = project.schemeInfoList.first {
+                let buildCommand = commandBuilder.buildCommand(
+                    scheme: firstScheme.name,
+                    configuration: firstScheme.configuration ?? "Debug",
+                    options: XcodeBuildOptions.build
+                )
+                print("Build command: xcodebuild \(buildCommand.joined(separator: " "))")
 
-            let settingsCommand = commandBuilder.buildSettingsCommand()
-            print("Build settings command: xcodebuild \(settingsCommand.joined(separator: " "))")
+                let settingsCommand = commandBuilder.buildCommand(
+                    scheme: firstScheme.name,
+                    configuration: firstScheme.configuration ?? "Debug",
+                    options: XcodeBuildOptions.buildSettingsJSON
+                )
+                print("Build settings command: xcodebuild \(settingsCommand.joined(separator: " "))")
 
-            let bspCommand = commandBuilder.buildForBSP()
-            print("BSP build command: xcodebuild \(bspCommand.joined(separator: " "))")
-
-            // Initialize settings manager
-            let settingsManager = XcodeSettingsManager(commandBuilder: commandBuilder)
-
-            print("\n⚙️ Loading build settings...")
-            try await settingsManager.loadBuildSettings()
-            try await settingsManager.loadBuildSettingsForIndex()
-
-            if let scheme = project.scheme {
-                try await settingsManager.loadIndexingPaths(scheme: scheme)
-                print("✓ Settings loaded for scheme: \(scheme)")
-
-                // Example of getting compile arguments
-                let sampleFile = "file://\(projectURL.path)/Sample.swift"
-                let compileArgs = settingsManager.getCompileArguments(fileURI: sampleFile, scheme: scheme)
-                if !compileArgs.isEmpty {
-                    print("  - Compile arguments for \(sampleFile): \(compileArgs.joined(separator: " "))")
-                } else {
-                    print("  - No compile arguments found for sample file")
-                }
+                print("✓ Example commands generated for scheme: \(firstScheme.name)")
+            } else {
+                print("No schemes found in project")
             }
+
+            // Show indexing paths
+            print("\n🗂️ Indexing Information:")
+            print("  - Index Store URL: \(project.indexStoreURL.path)")
+            print("  - Index Database URL: \(project.indexDatabaseURL.path)")
+            print("  - Derived Data Path: \(project.derivedDataPath.path)")
 
         } catch {
             print("❌ Error: \(error)")

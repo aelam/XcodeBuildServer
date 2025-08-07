@@ -1,5 +1,5 @@
 //
-//  BuildInitializeRequestServer.swift
+//  BuildInitializeRequest.swift
 //  Created by ST22956 on 2024/11/17.
 //
 
@@ -30,6 +30,7 @@ public struct BuildInitializeRequest: ContextualRequestType, Sendable {
     let params: Params
 
     // MARK: - ContextualRequestType conformance
+
     // swiftlint:disable:next function_body_length
     public func handle<Handler: ContextualMessageHandler>(
         contextualHandler: Handler,
@@ -60,29 +61,21 @@ public struct BuildInitializeRequest: ContextualRequestType, Sendable {
                 }
                 logger.debug("BuildInitializeRequest: rootURL created successfully: \(rootURL)")
 
-                guard let indexDataStoreURL = await context.indexStoreURL else {
+                guard
+                    let indexDataStoreURL = try? await context.getIndexStoreURL(),
+                    let indexDatabaseURL = try? await context.getIndexDatabaseURL()
+                else {
                     logger.error("BuildInitializeRequest: indexStoreURL is nil")
                     return JSONRPCErrorResponse(
                         id: id,
                         error: JSONRPCError(
                             code: -32603,
-                            message: "Failed to initialize build server: missing index store URL"
+                            message: "Failed to initialize build server: missing index store URL or index database URL"
                         )
                     )
                 }
-                logger.debug("BuildInitializeRequest: indexDataStoreURL obtained: \(indexDataStoreURL)")
 
-                guard let indexDatabaseURL = await context.indexDatabaseURL else {
-                    logger.error("BuildInitializeRequest: indexDatabaseURL is nil")
-                    return JSONRPCErrorResponse(
-                        id: id,
-                        error: JSONRPCError(
-                            code: -32603,
-                            message: "Failed to initialize build server: missing index database URL"
-                        )
-                    )
-                }
-                logger.debug("BuildInitializeRequest: indexDatabaseURL obtained: \(indexDatabaseURL)")
+                logger.debug("BuildInitializeRequest: indexDataStoreURL obtained: \(indexDataStoreURL)")
 
                 logger.info("indexDataStorePath: \(indexDataStoreURL.path)")
                 logger.info("indexDatabasePath: \(indexDatabaseURL.path)")

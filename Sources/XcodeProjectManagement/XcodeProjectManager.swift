@@ -7,12 +7,11 @@
 import Foundation
 
 public struct XcodeListInfo: Codable, Sendable {
-    public let project: XcodeListProject?
+    public let workspace: XcodeListWorkspace?
 
-    public struct XcodeListProject: Codable, Sendable {
+    public struct XcodeListWorkspace: Codable, Sendable {
+        public let name: String
         public let schemes: [String]
-        public let targets: [String]
-        public let configurations: [String]
     }
 }
 
@@ -77,25 +76,38 @@ public struct XcodeTargetInfo: Sendable {
     }
 }
 
-public struct XcodeProjectInfo: Sendable {
+public struct XcodeProjectIdentifier: Sendable {
     public let rootURL: URL
     public let projectType: XcodeProjectType
-    public let scheme: String?
-    public let configuration: String
-    public let derivedDataPath: URL?
+}
+
+public struct XcodeProjectBasicInfo: Sendable {
+    public struct XcodeSchemeInfo: Sendable {
+        public let name: String
+        public let configuration: String?
+    }
+
+    public let rootURL: URL
+    public let projectType: XcodeProjectType
+    public let schemeInfoList: [XcodeSchemeInfo]
+    public let derivedDataPath: URL
+    public let indexStoreURL: URL
+    public let indexDatabaseURL: URL
 
     public init(
         rootURL: URL,
         projectType: XcodeProjectType,
-        scheme: String?,
-        configuration: String = "Debug",
-        derivedDataPath: URL? = nil
+        schemeInfoList: [XcodeSchemeInfo] = [],
+        derivedDataPath: URL,
+        indexStoreURL: URL,
+        indexDatabaseURL: URL
     ) {
         self.rootURL = rootURL
         self.projectType = projectType
-        self.scheme = scheme
-        self.configuration = configuration
+        self.schemeInfoList = schemeInfoList
         self.derivedDataPath = derivedDataPath
+        self.indexStoreURL = indexStoreURL
+        self.indexDatabaseURL = indexDatabaseURL
     }
 
     public var workspaceURL: URL {
@@ -120,172 +132,205 @@ public struct XcodeProjectInfo: Sendable {
 }
 
 public actor XcodeProjectManager {
+    public let rootURL: URL
     private let locator: XcodeProjectLocator
-    private(set) var currentProject: XcodeProjectInfo?
+    private(set) var currentProject: XcodeProjectBasicInfo?
     private let toolchain: XcodeToolchain
+    private let projectReference: XcodeProjectReference?
 
-    public init(rootURL: URL, toolchain: XcodeToolchain = XcodeToolchain()) {
-        self.locator = XcodeProjectLocator(root: rootURL)
+    public init(
+        rootURL: URL,
+        projectReference: XcodeProjectReference? = nil,
+        toolchain: XcodeToolchain,
+        locator: XcodeProjectLocator
+    ) {
+        self.rootURL = rootURL
+        self.projectReference = projectReference
         self.toolchain = toolchain
+        self.locator = locator
     }
 
-    public func loadProject(scheme: String? = nil, configuration: String = "Debug") async throws -> XcodeProjectInfo {
+    public func loadProjectBasicInfo() async throws -> XcodeProjectBasicInfo {
+        // Initialize toolchain first
         try await toolchain.initialize()
 
-        let projectType = try locator.resolveProjectByAutoDiscovery()
-        let rootURL = locator.root
+        let projectType = try locator.resolveProjectType(
+            rootURL: rootURL,
+            xcodeProjectReference: projectReference
+        )
+        let projectInfo = try await resolveProjectBasic(for: projectType)
+        currentProject = projectInfo
+        return projectInfo
+    }
 
-        let resolvedScheme = try await resolveScheme(for: projectType, fallback: scheme)
-        let project = XcodeProjectInfo(
+    private func resolveProjectBasic(
+        for projectType: XcodeProjectType
+    ) async throws -> XcodeProjectBasicInfo {
+        let projectIdentifier = XcodeProjectIdentifier(rootURL: rootURL, projectType: projectType)
+        let commandBuilder = XcodeBuildCommandBuilder(projectIdentifer: projectIdentifier)
+
+        // Get all available schemes from xcodebuild -list
+        let allSchemes = try await loadAllSchemes(commandBuilder: commandBuilder)
+
+        // Determine which schemes to load based on projectReference
+        let schemesToLoad = try determineSchemesToLoad(allSchemes: allSchemes)
+
+        // Load scheme information for selected schemes
+        let schemeInfoList = try await loadSchemeInfoList(
+            schemes: schemesToLoad,
+            commandBuilder: commandBuilder
+        )
+
+        // Get index URLs from the first available scheme (shared per workspace)
+        let indexPaths = try await loadIndexURLs(
+            scheme: schemesToLoad.first ?? allSchemes.first,
+            commandBuilder: commandBuilder
+        )
+
+        return XcodeProjectBasicInfo(
             rootURL: rootURL,
             projectType: projectType,
-            scheme: resolvedScheme,
-            configuration: configuration
+            schemeInfoList: schemeInfoList,
+            derivedDataPath: indexPaths.derivedDataPath,
+            indexStoreURL: indexPaths.indexStoreURL,
+            indexDatabaseURL: indexPaths.indexDatabaseURL
+        )
+    }
+
+    private func loadAllSchemes(commandBuilder: XcodeBuildCommandBuilder) async throws -> [String] {
+        let arguments = commandBuilder.buildCommand(options: XcodeBuildOptions.listSchemesJSON)
+        let (output, _) = try await toolchain.executeXcodeBuild(
+            arguments: arguments,
+            workingDirectory: rootURL
         )
 
-        self.currentProject = project
-        return project
+        guard let data = output.data(using: .utf8) else {
+            throw XcodeProjectError.buildSettingsNotFound
+        }
+
+        do {
+            let listInfo = try JSONDecoder().decode(XcodeListInfo.self, from: data)
+            return listInfo.workspace?.schemes ?? []
+        } catch {
+            throw XcodeProjectError.dataParsingError("Failed to parse schemes: \(error.localizedDescription)")
+        }
     }
 
-    public func loadProject(from reference: XcodeProjectReference) async throws -> XcodeProjectInfo {
-        try await toolchain.initialize()
-
-        let projectType = try locator.resolveProject(from: reference)
-        let rootURL = locator.root
-
-        let resolvedScheme = try await resolveScheme(for: projectType, fallback: reference.scheme)
-        let resolvedConfiguration = reference.configuration ?? "Debug"
-
-        let project = XcodeProjectInfo(
-            rootURL: rootURL,
-            projectType: projectType,
-            scheme: resolvedScheme,
-            configuration: resolvedConfiguration
-        )
-
-        self.currentProject = project
-        return project
-    }
-
-    public func getAvailableSchemes() async throws -> [String] {
-        guard let project = currentProject else {
-            throw XcodeProjectError.notFound
-        }
-
-        let commandBuilder = XcodeBuildCommandBuilder(projectInfo: project, toolchain: toolchain)
-        let output = try await commandBuilder.executeCommand(options: .listSchemesJSON)
-
-        guard let output, let data = output.data(using: .utf8) else {
-            return []
-        }
-
-        let listInfo = try JSONDecoder().decode(XcodeListInfo.self, from: data)
-        return listInfo.project?.schemes ?? []
-    }
-
-    public func getAvailableConfigurations() async throws -> [String] {
-        guard let project = currentProject else {
-            throw XcodeProjectError.notFound
-        }
-
-        let commandBuilder = XcodeBuildCommandBuilder(projectInfo: project, toolchain: toolchain)
-        let output = try await commandBuilder.executeCommand(options: .listSchemesJSON)
-
-        guard let output, let data = output.data(using: .utf8) else {
-            return []
-        }
-
-        let listInfo = try JSONDecoder().decode(XcodeListInfo.self, from: data)
-        return listInfo.project?.configurations ?? []
-    }
-
-    public func getAvailableTargets() async throws -> [String] {
-        guard let project = currentProject else {
-            throw XcodeProjectError.notFound
-        }
-
-        let commandBuilder = XcodeBuildCommandBuilder(projectInfo: project, toolchain: toolchain)
-        let output = try await commandBuilder.executeCommand(options: .listSchemesJSON)
-
-        guard let output, let data = output.data(using: .utf8) else {
-            return []
-        }
-
-        let listInfo = try JSONDecoder().decode(XcodeListInfo.self, from: data)
-        return listInfo.project?.targets ?? []
-    }
-
-    public func getTargetBuildSettings(target: String) async throws -> [String: String] {
-        guard let project = currentProject else {
-            throw XcodeProjectError.notFound
-        }
-
-        let commandBuilder = XcodeBuildCommandBuilder(projectInfo: project, toolchain: toolchain)
-        let options = XcodeBuildOptions(showBuildSettings: true, customFlags: ["-target", target])
-        let output = try await commandBuilder.executeCommand(options: options)
-        return parseBuildSettings(from: output ?? "")
-    }
-
-    public func extractTargetInfo() async throws -> [XcodeTargetInfo] {
-        let targets = try await getAvailableTargets()
-        var targetInfos: [XcodeTargetInfo] = []
-
-        for target in targets {
-            let buildSettings = try await getTargetBuildSettings(target: target)
-            let productType = buildSettings["PRODUCT_TYPE"]
-
-            let targetInfo = XcodeTargetInfo(
-                name: target,
-                productType: productType,
-                buildSettings: buildSettings
-            )
-            targetInfos.append(targetInfo)
-        }
-
-        return targetInfos
-    }
-
-    private func resolveScheme(for projectType: XcodeProjectType, fallback: String?) async throws -> String? {
-        if let fallback {
-            return fallback
-        }
-
-        let tempProject = XcodeProjectInfo(
-            rootURL: locator.root,
-            projectType: projectType,
-            scheme: nil,
-            configuration: "Debug"
-        )
-
-        let tempCommandBuilder = XcodeBuildCommandBuilder(projectInfo: tempProject, toolchain: toolchain)
-        let output = try await tempCommandBuilder.executeCommand(options: .listSchemesJSON)
-
-        guard let output, let data = output.data(using: .utf8) else {
-            return nil
-        }
-
-        let listInfo = try JSONDecoder().decode(XcodeListInfo.self, from: data)
-        return listInfo.project?.schemes.first
-    }
-
-    private func parseBuildSettings(from output: String) -> [String: String] {
-        let lines = output.components(separatedBy: .newlines)
-        var buildSettings: [String: String] = [:]
-
-        for line in lines {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-
-            // Look for lines with format "KEY = value"
-            if let equalIndex = trimmed.firstIndex(of: "=") {
-                let key = String(trimmed[..<equalIndex]).trimmingCharacters(in: .whitespaces)
-                let value = String(trimmed[trimmed.index(after: equalIndex)...]).trimmingCharacters(in: .whitespaces)
-
-                if !key.isEmpty {
-                    buildSettings[key] = value
-                }
+    private func determineSchemesToLoad(allSchemes: [String]) throws -> [String] {
+        if let specifiedScheme = projectReference?.scheme {
+            // If xcodeProjectReference provides a specific scheme, only load that one
+            guard allSchemes.contains(specifiedScheme) else {
+                throw XcodeProjectError.schemeNotFound(specifiedScheme)
             }
+            return [specifiedScheme]
+        } else {
+            // Otherwise, load all schemes to provide as BSP targets
+            return allSchemes
+        }
+    }
+
+    private func loadSchemeInfoList(
+        schemes: [String],
+        commandBuilder: XcodeBuildCommandBuilder
+    ) async throws -> [XcodeProjectBasicInfo.XcodeSchemeInfo] {
+        schemes.map { scheme in
+            XcodeProjectBasicInfo.XcodeSchemeInfo(
+                name: scheme,
+                configuration: projectReference?.configuration
+            )
+        }
+    }
+
+    private func loadIndexURLs(
+        scheme: String?,
+        commandBuilder: XcodeBuildCommandBuilder
+    ) async throws -> XcodeIndexPaths {
+        guard let scheme else {
+            throw XcodeProjectError.indexPathsError("No schemes available to determine index URLs")
         }
 
-        return buildSettings
+        // Get build settings to determine derived data path and index URLs
+        let buildCommand = commandBuilder.buildCommand(
+            scheme: scheme,
+            configuration: projectReference?.configuration ?? "Debug",
+            options: XcodeBuildOptions.buildSettingsForIndexJSON
+        )
+
+        let (output, _) = try await toolchain.executeXcodeBuild(
+            arguments: buildCommand,
+            workingDirectory: rootURL
+        )
+
+        guard let data = output.data(using: .utf8) else {
+            throw XcodeProjectError.buildSettingsNotFound
+        }
+
+        do {
+            return try XcodeIndexPathResolver.resolveIndexPaths(from: data)
+        } catch {
+            throw XcodeProjectError.indexPathsError("Failed to resolve index paths: \(error.localizedDescription)")
+        }
+    }
+
+    public func getToolchain() -> XcodeToolchain {
+        toolchain
+    }
+
+    public var currentProjectInfo: XcodeProjectBasicInfo? {
+        currentProject
+    }
+
+    public func loadTargets(for scheme: String? = nil) async throws -> [XcodeTargetInfo] {
+        guard let currentProject else {
+            throw XcodeProjectError.invalidConfig("Project not loaded. Call loadProjectBasicInfo() first.")
+        }
+
+        let projectIdentifier = XcodeProjectIdentifier(rootURL: rootURL, projectType: currentProject.projectType)
+        let commandBuilder = XcodeBuildCommandBuilder(projectIdentifer: projectIdentifier)
+
+        let targetScheme = scheme ?? currentProject.schemeInfoList.first?.name
+        guard let targetScheme else {
+            throw XcodeProjectError.schemeNotFound("No scheme available for loading targets")
+        }
+
+        // Get build settings for the scheme to extract target information
+        let buildCommand = commandBuilder.buildCommand(
+            scheme: targetScheme,
+            configuration: projectReference?.configuration ?? "Debug",
+            options: XcodeBuildOptions.buildSettingsJSON
+        )
+
+        let (output, _) = try await toolchain.executeXcodeBuild(
+            arguments: buildCommand,
+            workingDirectory: rootURL
+        )
+
+        guard let data = output.data(using: .utf8) else {
+            throw XcodeProjectError.buildSettingsNotFound
+        }
+
+        // Parse build settings to extract target information
+        return try parseTargetsFromBuildSettings(data: data)
+    }
+
+    private func parseTargetsFromBuildSettings(data: Data) throws -> [XcodeTargetInfo] {
+        do {
+            let json = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] ?? []
+
+            return json.compactMap { targetSettings in
+                guard let targetName = targetSettings["TARGET_NAME"] as? String else { return nil }
+
+                let productType = targetSettings["PRODUCT_TYPE"] as? String
+                let buildSettings = targetSettings.compactMapValues { $0 as? String }
+
+                return XcodeTargetInfo(
+                    name: targetName,
+                    productType: productType,
+                    buildSettings: buildSettings
+                )
+            }
+        } catch {
+            throw XcodeProjectError.dataParsingError("Failed to parse build settings: \(error.localizedDescription)")
+        }
     }
 }

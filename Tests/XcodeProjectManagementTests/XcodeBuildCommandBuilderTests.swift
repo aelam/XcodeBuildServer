@@ -9,17 +9,18 @@ import Testing
 @testable import XcodeProjectManagement
 
 struct XcodeBuildCommandBuilderTests {
-    let projectInfo = XcodeProjectInfo(
+    let projectIdentifier = XcodeProjectIdentifier(
         rootURL: URL(fileURLWithPath: "/test"),
-        projectType: .explicitWorkspace(URL(fileURLWithPath: "/test/Test.xcworkspace")),
-        scheme: "TestScheme",
-        configuration: "Debug"
+        projectType: .explicitWorkspace(URL(fileURLWithPath: "/test/Test.xcworkspace"))
     )
 
     @Test
     func buildBasicCommand() {
-        let builder = XcodeBuildCommandBuilder(projectInfo: projectInfo)
-        let command = builder.buildCommand()
+        let builder = XcodeBuildCommandBuilder(projectIdentifer: projectIdentifier)
+        let command = builder.buildCommand(
+            scheme: "TestScheme",
+            configuration: "Debug"
+        )
 
         #expect(command.contains("-workspace"))
         #expect(command.contains("/test/Test.xcworkspace"))
@@ -30,35 +31,27 @@ struct XcodeBuildCommandBuilderTests {
     }
 
     @Test
-    func buildCommandWithAction() {
-        let builder = XcodeBuildCommandBuilder(projectInfo: projectInfo)
-        let command = builder.buildCommand(action: .build)
-
-        #expect(command.contains("build"))
-    }
-
-    @Test
-    func buildCommandWithDestination() {
-        let builder = XcodeBuildCommandBuilder(projectInfo: projectInfo)
-        let command = builder.buildCommand(destination: .iOSSimulator)
-
-        #expect(command.contains("-destination"))
-        #expect(command.contains("generic/platform=iOS Simulator"))
-    }
-
-    @Test
     func buildSettingsCommand() {
-        let builder = XcodeBuildCommandBuilder(projectInfo: projectInfo)
-        let command = builder.buildSettingsCommand()
+        let builder = XcodeBuildCommandBuilder(projectIdentifer: projectIdentifier)
+        let command = builder.buildCommand(
+            scheme: "TestScheme",
+            configuration: "Debug",
+            options: XcodeBuildOptions.buildSettingsJSON
+        )
 
         #expect(command.contains("-showBuildSettings"))
         #expect(command.contains("-json"))
+        #expect(command.contains("TestScheme"))
     }
 
     @Test
     func buildSettingsForIndexCommand() {
-        let builder = XcodeBuildCommandBuilder(projectInfo: projectInfo)
-        let command = builder.buildSettingsCommand(forIndex: true)
+        let builder = XcodeBuildCommandBuilder(projectIdentifer: projectIdentifier)
+        let command = builder.buildCommand(
+            scheme: "TestScheme",
+            configuration: "Debug",
+            options: XcodeBuildOptions.buildSettingsForIndexJSON
+        )
 
         #expect(command.contains("-showBuildSettingsForIndex"))
         #expect(command.contains("-json"))
@@ -66,30 +59,25 @@ struct XcodeBuildCommandBuilderTests {
 
     @Test
     func listSchemesCommand() {
-        let builder = XcodeBuildCommandBuilder(projectInfo: projectInfo)
-        let command = builder.listSchemesCommand()
+        let builder = XcodeBuildCommandBuilder(projectIdentifer: projectIdentifier)
+        let command = builder.buildCommand(options: XcodeBuildOptions.listSchemesJSON)
 
-        #expect(command.contains("-list"))
-    }
-
-    @Test
-    func buildForBSPCommand() {
-        let builder = XcodeBuildCommandBuilder(projectInfo: projectInfo)
-        let command = builder.buildForBSP()
-
-        #expect(command.contains("build"))
-        #expect(command.contains("-destination"))
-        #expect(command.contains("-verbose"))
-    }
-
-    @Test
-    func listSchemesJSONOption() {
-        let builder = XcodeBuildCommandBuilder(projectInfo: projectInfo)
-        let command = builder.buildCommand(options: .listSchemesJSON)
-
-        #expect(command.contains("-workspace"))
-        #expect(command.contains("/test/Test.xcworkspace"))
         #expect(command.contains("-list"))
         #expect(command.contains("-json"))
+        #expect(command.contains("-workspace"))
+    }
+
+    @Test
+    func quietBuildCommand() {
+        let builder = XcodeBuildCommandBuilder(projectIdentifer: projectIdentifier)
+        let options = XcodeBuildOptions(quiet: true)
+        let command = builder.buildCommand(
+            scheme: "TestScheme",
+            configuration: "Debug",
+            options: options
+        )
+
+        #expect(command.contains("-quiet"))
+        #expect(command.contains("TestScheme"))
     }
 }

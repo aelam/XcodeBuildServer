@@ -32,17 +32,17 @@ public struct WorkspaceBuildTargetsRequest: ContextualRequestType, Sendable {
                 let allBuildTargets = try await context.createBuildTargets()
 
                 // Filter targets if specific targets were requested
-                let filteredTargets: [BuildTarget] = if let requestedTargets = params?.targets,
-                                                        !requestedTargets.isEmpty {
-                    allBuildTargets.filter { buildTarget in
-                        requestedTargets.contains { targetFilter in
-                            buildTarget.id.uri.stringValue.contains(targetFilter) ||
-                                buildTarget.displayName?.contains(targetFilter) == true
+                let filteredTargets: [BuildTarget] =
+                    if let requestedTargets = params?.targets, !requestedTargets.isEmpty {
+                        allBuildTargets.filter { buildTarget in
+                            requestedTargets.contains { targetFilter in
+                                buildTarget.id.uri.stringValue.contains(targetFilter) ||
+                                    buildTarget.displayName?.contains(targetFilter) == true
+                            }
                         }
+                    } else {
+                        allBuildTargets
                     }
-                } else {
-                    allBuildTargets
-                }
 
                 return WorkspaceBuildTargetsResponse(
                     id: id,
@@ -50,6 +50,7 @@ public struct WorkspaceBuildTargetsRequest: ContextualRequestType, Sendable {
                     targets: filteredTargets
                 )
             } catch {
+                logger.error("Failed to get build targets: \(error)")
                 return JSONRPCErrorResponse(
                     id: id,
                     error: JSONRPCError(

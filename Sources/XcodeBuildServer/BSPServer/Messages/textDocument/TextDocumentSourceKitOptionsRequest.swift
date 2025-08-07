@@ -190,33 +190,34 @@ public struct TextDocumentSourceKitOptionsRequest: ContextualRequestType, Sendab
         contextualHandler: Handler,
         id: RequestID
     ) async -> ResponseType? where Handler.Context == BuildServerContext {
-        await contextualHandler.withContext { context in
+        await contextualHandler.withContext { _ in
             // Get file URL from the textDocument parameter
-            guard let fileURL = URL(string: params.textDocument.uri.stringValue) else {
-                return TextDocumentSourceKitOptionsResponse(
-                    id: id,
-                    jsonrpc: "2.0",
-                    result: nil
-                )
-            }
-
-            // Get compile arguments for the specific file
-            let compilerArguments = await context.getCompileArguments(fileURI: fileURL.path)
-
-            // Get working directory from context
-            let workingDirectory = await context.rootURL?.path
-
-            // Create and return the response
-            let result = TextDocumentSourceKitOptionsResponse.Result(
-                compilerArguments: compilerArguments,
-                workingDirectory: workingDirectory
-            )
-
-            return TextDocumentSourceKitOptionsResponse(
+            TextDocumentSourceKitOptionsResponse(
                 id: id,
                 jsonrpc: "2.0",
-                result: result
+                result: nil
             )
+
+//            // Get compile arguments for the specific file using BSP target
+//            let compilerArguments = await context.getCompileArguments(
+//                target: params.target,
+//                fileURI: fileURL.path
+//            )
+
+            // Get working directory from context
+//            let workingDirectory = await context.rootURL?.path
+//
+//            // Create and return the response
+//            let result = TextDocumentSourceKitOptionsResponse.Result(
+//                compilerArguments: compilerArguments,
+//                workingDirectory: workingDirectory
+//            )
+//
+//            return TextDocumentSourceKitOptionsResponse(
+//                id: id,
+//                jsonrpc: "2.0",
+//                result: result
+//            )
         }
     }
 }
