@@ -77,7 +77,9 @@ struct BuildInitializeRequestTests {
         let params = BuildInitializeRequest.Params(
             rootUri: "file:///Users/test/project",
             capabilities: capabilities,
-            displayName: "Test Client"
+            displayName: "Test Client",
+            version: nil,
+            bspVersion: "2.2.0"
         )
         let request = BuildInitializeRequest(
             id: .int(42),
