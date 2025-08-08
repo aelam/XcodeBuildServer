@@ -97,14 +97,24 @@ public final class XcodeProjectLocator {
         logger.debug("Resolving Xcode project type at \(rootURL.path)")
         logger.debug("Using reference: \(String(describing: xcodeProjectReference))")
         if let workspace = xcodeProjectReference?.workspace {
-            let workspaceURL = rootURL.appendingPathComponent(workspace)
+            let workspaceURL: URL = if workspace.hasPrefix("/"), let workspaceURL = URL(string: workspace)  {
+                workspaceURL
+            } else {
+                rootURL.appendingPathComponent(workspace)
+            }
+
             guard FileManager.default.fileExists(atPath: workspaceURL.path) else {
                 throw XcodeProjectError.invalidConfig("Workspace path does not exist: \(workspace)")
             }
             logger.debug("Resolved explicit workspace: \(workspaceURL.path)")
             return .explicitWorkspace(workspaceURL)
         } else if let project = xcodeProjectReference?.project {
-            let projectURL = rootURL.appendingPathComponent(project)
+            let projectURL: URL = if project.hasPrefix("/"), let projectURL = URL(string: project) {
+                projectURL
+            } else {
+                rootURL.appendingPathComponent(project)
+            }
+            
             guard FileManager.default.fileExists(atPath: projectURL.path) else {
                 throw XcodeProjectError.invalidConfig("Project path does not exist: \(project)")
             }

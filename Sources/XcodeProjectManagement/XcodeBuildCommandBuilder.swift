@@ -144,7 +144,7 @@ public struct XcodeBuildCommandBuilder {
 
     public func buildSettingsCommand(
         scheme: String? = nil,
-        destination: XcodeBuildDestination? = nil,
+        destination: XcodeBuildDestination?,
         forIndex: Bool = false
     ) -> [String] {
         let options = forIndex ? XcodeBuildOptions.buildSettingsForIndexJSON : XcodeBuildOptions.buildSettingsJSON
@@ -153,6 +153,10 @@ public struct XcodeBuildCommandBuilder {
 
     public func listSchemesCommand() -> [String] {
         buildCommand(options: XcodeBuildOptions.listSchemes)
+    }
+
+    public func showDestinationsCommand(scheme: String) -> [String] {
+        return buildCommand(scheme: scheme, options: XcodeBuildOptions(showdestinations: true))
     }
 
     public func buildForBSP(
@@ -168,12 +172,8 @@ public struct XcodeBuildCommandBuilder {
     }
 
     private func buildWorkspaceOrProjectArguments() -> [String] {
-        switch projectIdentifier.projectLocation {
-        case let .explicitWorkspace(url):
-            ["-workspace", url.path]
-        case let .implicitWorkspace(_, workspaceURL: url):
-            ["-workspace", url.path]
-        }
+        let workspacePath = projectIdentifier.projectLocation.workspaceURL.path
+        return ["-workspace", workspacePath]
     }
 
     private func buildOptionsArguments(options: XcodeBuildOptions) -> [String] {
