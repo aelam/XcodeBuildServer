@@ -97,7 +97,7 @@ public final class XcodeProjectLocator {
         logger.debug("Resolving Xcode project type at \(rootURL.path)")
         logger.debug("Using reference: \(String(describing: xcodeProjectReference))")
         if let workspace = xcodeProjectReference?.workspace {
-            let workspaceURL: URL = if workspace.hasPrefix("/"), let workspaceURL = URL(string: workspace)  {
+            let workspaceURL: URL = if workspace.hasPrefix("/"), let workspaceURL = URL(string: workspace) {
                 workspaceURL
             } else {
                 rootURL.appendingPathComponent(workspace)
@@ -114,7 +114,7 @@ public final class XcodeProjectLocator {
             } else {
                 rootURL.appendingPathComponent(project)
             }
-            
+
             guard FileManager.default.fileExists(atPath: projectURL.path) else {
                 throw XcodeProjectError.invalidConfig("Project path does not exist: \(project)")
             }
