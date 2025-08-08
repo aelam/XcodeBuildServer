@@ -185,11 +185,8 @@ public actor XcodeSettingsLoader {
             (["platform:tvOS", "platform=tvOS Simulator"], .tvOSSimulator)
         ]
 
-        // iOS 优先于 MacOS
-        for (patterns, destination) in platformMappings {
-            if patterns.contains(where: destinationsOutput.contains) {
-                return destination
-            }
+        for (patterns, destination) in platformMappings where patterns.contains(where: destinationsOutput.contains) {
+            return destination
         }
 
         // Check for visionOS (custom handling)
