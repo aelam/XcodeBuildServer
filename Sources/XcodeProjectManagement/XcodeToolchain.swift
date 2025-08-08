@@ -7,6 +7,7 @@
 import Foundation
 import Logger
 
+// swiftlint:disable file_length
 public enum XcodeToolchainError: Error, LocalizedError {
     case xcodeNotFound
     case xcodeVersionNotSupported(String)
