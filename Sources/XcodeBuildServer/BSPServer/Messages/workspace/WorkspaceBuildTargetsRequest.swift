@@ -4,6 +4,12 @@
 //  Copyright © 2024 Wang Lun.
 //
 
+///
+/// 
+///   {
+/// "method":"workspace/buildTargets","id":2,"jsonrpc":"2.0","params":{}}
+
+/// 
 public struct WorkspaceBuildTargetsRequest: ContextualRequestType, Sendable {
     public typealias RequiredContext = BuildServerContext
 
@@ -12,11 +18,6 @@ public struct WorkspaceBuildTargetsRequest: ContextualRequestType, Sendable {
     }
 
     public struct Params: Codable, Sendable {
-        public var targets: [String]
-
-        public init(targets: [String] = []) {
-            self.targets = targets
-        }
     }
 
     public let id: JSONRPCID
@@ -30,24 +31,10 @@ public struct WorkspaceBuildTargetsRequest: ContextualRequestType, Sendable {
         await contextualHandler.withContext { context in
             do {
                 let allBuildTargets = try await context.createBuildTargets()
-
-                // Filter targets if specific targets were requested
-                let filteredTargets: [BuildTarget] =
-                    if let requestedTargets = params?.targets, !requestedTargets.isEmpty {
-                        allBuildTargets.filter { buildTarget in
-                            requestedTargets.contains { targetFilter in
-                                buildTarget.id.uri.stringValue.contains(targetFilter) ||
-                                    buildTarget.displayName?.contains(targetFilter) == true
-                            }
-                        }
-                    } else {
-                        allBuildTargets
-                    }
-
                 return WorkspaceBuildTargetsResponse(
                     id: id,
                     jsonrpc: "2.0",
-                    targets: filteredTargets
+                    targets: allBuildTargets
                 )
             } catch {
                 logger.error("Failed to get build targets: \(error)")

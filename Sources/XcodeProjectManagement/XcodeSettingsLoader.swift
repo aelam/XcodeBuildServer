@@ -79,7 +79,11 @@ public actor XcodeSettingsLoader {
         scheme: String,
         destination: XcodeBuildDestination = .iOSSimulator
     ) async throws -> [XcodeBuildSettings] {
-        let command = commandBuilder.buildSettingsCommand(scheme: scheme, destination: destination, forIndex: false)
+        let command = commandBuilder.buildSettingsCommand(
+            scheme: scheme,
+            destination: destination,
+            forIndex: false
+        )
         let output = try await runXcodeBuild(arguments: command)
         guard let jsonString = output, !jsonString.isEmpty else {
             throw XcodeProjectError.invalidConfig("Failed to load build settings")
@@ -94,7 +98,11 @@ public actor XcodeSettingsLoader {
     }
 
     public func loadBuildSettingsForIndex(scheme: String? = nil) async throws -> XcodeBuildSettingsForIndex {
-        let command = commandBuilder.buildSettingsCommand(scheme: scheme, forIndex: true)
+        let command = commandBuilder.buildSettingsCommand(
+            scheme: scheme,
+            destination: nil, // No destination needed for index settings
+            forIndex: true
+        )
         let output = try await runXcodeBuild(arguments: command)
         guard let jsonString = output, !jsonString.isEmpty else {
             throw XcodeProjectError.invalidConfig("Failed to load build settings for index")
@@ -157,6 +165,41 @@ public actor XcodeSettingsLoader {
         buildSettings: [XcodeBuildSettings]
     ) -> String? {
         buildSettings.first { $0.target == target && $0.action == action }?.buildSettings[key]
+    }
+
+    public func detectDestination(scheme: String) async throws -> XcodeBuildDestination {
+        // Use showdestinations command to detect supported platforms
+        let command = commandBuilder.showDestinationsCommand(scheme: scheme)
+        let output = try await runXcodeBuild(arguments: command)
+
+        guard let destinationsOutput = output, !destinationsOutput.isEmpty else {
+            // Fallback to iOS Simulator if detection fails
+            return .iOSSimulator
+        }
+
+        // Parse -showdestinations output for platform indicators
+        let platformMappings: [(patterns: [String], destination: XcodeBuildDestination)] = [
+            (["platform:iOS", "platform=iOS Simulator"], .iOSSimulator),
+            (["platform:watchOS", "platform=watchOS Simulator"], .watchOSSimulator),
+            (["platform:macOS", "platform=macOS"], .macOS),
+            (["platform:tvOS", "platform=tvOS Simulator"], .tvOSSimulator)
+        ]
+
+        // iOS 优先于 MacOS
+        for (patterns, destination) in platformMappings {
+            if patterns.contains(where: destinationsOutput.contains) {
+                return destination
+            }
+        }
+
+        // Check for visionOS (custom handling)
+        if destinationsOutput.contains("platform:visionOS") ||
+           destinationsOutput.contains("platform=visionOS") {
+            return .custom("generic/platform=visionOS Simulator")
+        }
+
+        // Default fallback
+        return .iOSSimulator
     }
 
     private func runXcodeBuild(arguments: [String]) async throws -> String? {

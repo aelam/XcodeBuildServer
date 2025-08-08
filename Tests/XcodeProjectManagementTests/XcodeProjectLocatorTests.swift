@@ -14,7 +14,7 @@ import Testing
 struct XcodeProjectLocatorTests {
     @Test(arguments: [
         ("HelloWorkspace", "Hello.xcworkspace"),
-        ("HelloProject", "Hello.xcproje/Project.xcworkspace"),
+        ("HelloProject", "Hello.xcodeproj/project.xcworkspace"),
     ])
     func xcodeProjectLocator(_ root: String, _ suffix: String) throws {
         let projectFolder = Bundle.module.resourceURL!

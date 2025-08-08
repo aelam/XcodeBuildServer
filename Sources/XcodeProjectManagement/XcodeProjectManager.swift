@@ -259,8 +259,11 @@ public actor XcodeProjectManager {
         let settingsCommandBuilder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
         let settingsLoader = XcodeSettingsLoader(commandBuilder: settingsCommandBuilder, toolchain: toolchain)
 
-        // Load build settings and index paths
-        let buildSettings = try await settingsLoader.loadBuildSettings(scheme: scheme)
+        // Auto-detect the appropriate destination for this scheme
+        let destination = try await settingsLoader.detectDestination(scheme: scheme)
+
+        // Load build settings and index paths with correct destination
+        let buildSettings = try await settingsLoader.loadBuildSettings(scheme: scheme, destination: destination)
         let (indexStoreURL, indexDatabaseURL) = try await settingsLoader.loadIndexingPaths(
             scheme: scheme,
             buildSettings: buildSettings
