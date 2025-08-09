@@ -20,13 +20,12 @@ public actor XcodeToBSPAdapter {
         let currentProject = try await getCurrentProject()
         var buildTargets: [BuildTarget] = []
 
+        // Create one BSP BuildTarget for each scheme-target combination
         for schemeInfo in currentProject.schemeInfoList {
-            let targets = try await projectManager.loadTargets(for: schemeInfo.name)
-
-            for targetInfo in targets {
+            for schemeTargetInfo in schemeInfo.targets {
                 let buildTarget = await createBuildTarget(
-                    from: targetInfo,
-                    scheme: schemeInfo.name,
+                    from: schemeTargetInfo,
+                    scheme: schemeInfo,
                     projectBasicInfo: currentProject
                 )
                 buildTargets.append(buildTarget)
@@ -44,24 +43,24 @@ public actor XcodeToBSPAdapter {
         return currentProject
     }
 
-    /// Create a single BuildTarget directly from XcodeTargetInfo
+    /// Create a single BuildTarget for a specific scheme-target combination
     private func createBuildTarget(
-        from targetInfo: XcodeTargetInfo,
-        scheme: String,
+        from targetInfo: XcodeSchemeTargetInfo,
+        scheme: XcodeSchemeInfo,
         projectBasicInfo: XcodeProjectBasicInfo
     ) async -> BuildTarget {
-        // Create BSP target identifier
+        // Create BSP target identifier for this specific scheme-target combination
         let targetIdentifier = createBSPTargetIdentifier(
-            targetName: targetInfo.name,
-            scheme: scheme,
+            targetName: targetInfo.targetName,
+            primaryScheme: scheme.name,
             projectBasicInfo: projectBasicInfo
         )
         let targetID = createBuildTargetIdentifier(from: targetIdentifier)
 
         let baseDirectory = try? URI(string: projectBasicInfo.rootURL.absoluteString)
-        let displayName = "\(scheme)/\(targetInfo.name)"
+        let displayName = "\(scheme.name)/\(targetInfo.targetName)"
         let tags = classifyTarget(targetInfo)
-        let languages = mapLanguages(from: targetInfo.supportedLanguages)
+        let languages: [Language] = [] // TODO: Get languages from target build settings
         let capabilities = createCapabilities(for: targetInfo)
         let sourceKitData = await createSourceKitData()
 
@@ -77,14 +76,15 @@ public actor XcodeToBSPAdapter {
             data: sourceKitData?.encodeToLSPAny()
         )
     }
+    
 
     /// Create BSP target identifier string from XcodeProjectBasicInfo and target details
     private func createBSPTargetIdentifier(
         targetName: String,
-        scheme: String,
+        primaryScheme: String,
         projectBasicInfo: XcodeProjectBasicInfo
     ) -> String {
-        "xcode:///\(projectBasicInfo.projectLocation.name)/\(scheme)/\(targetName)"
+        "xcode:///\(projectBasicInfo.projectLocation.name)/\(primaryScheme)/\(targetName)"
     }
 
     /// Convert string identifier to BuildTargetIdentifier
@@ -98,20 +98,20 @@ public actor XcodeToBSPAdapter {
         }
     }
 
-    /// Classify target into BuildTargetTag categories
-    private func classifyTarget(_ targetInfo: XcodeTargetInfo) -> [BuildTargetTag] {
+    /// Classify target into BuildTargetTag categories based on scheme configuration
+    private func classifyTarget(_ targetInfo: XcodeSchemeTargetInfo) -> [BuildTargetTag] {
         var tags: [BuildTargetTag] = []
 
-        if targetInfo.name.contains("UITest") {
+        if targetInfo.targetName.contains("UITest") {
             tags.append(.integrationTest)
-        } else if targetInfo.isTestTarget {
+        } else if targetInfo.buildForTesting && !targetInfo.buildForRunning {
+            // Pure test target (only builds for testing)
             tags.append(.test)
-        } else if targetInfo.isApplicationTarget {
+        } else if targetInfo.buildForRunning {
+            // Runnable target (application or executable)
             tags.append(.application)
-        } else if targetInfo.isLibraryTarget {
-            tags.append(.library)
         } else {
-            // Default to library for unknown types
+            // Default to library for targets that are neither test nor runnable
             tags.append(.library)
         }
 
@@ -136,12 +136,12 @@ public actor XcodeToBSPAdapter {
         }
     }
 
-    /// Create capabilities for BSP target
-    private func createCapabilities(for targetInfo: XcodeTargetInfo) -> BuildTargetCapabilities {
-        BuildTargetCapabilities(
+    /// Create capabilities for BSP target based on scheme configuration
+    private func createCapabilities(for targetInfo: XcodeSchemeTargetInfo) -> BuildTargetCapabilities {
+        return BuildTargetCapabilities(
             canCompile: true, // All Xcode targets can compile
-            canTest: targetInfo.isTestTarget,
-            canRun: targetInfo.isRunnableTarget,
+            canTest: targetInfo.buildForTesting,
+            canRun: targetInfo.buildForRunning,
             canDebug: true // Xcode supports debugging for all targets
         )
     }

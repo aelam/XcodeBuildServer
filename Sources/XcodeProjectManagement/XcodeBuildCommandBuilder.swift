@@ -113,7 +113,8 @@ public struct XcodeBuildCommandBuilder {
 
     public func buildCommand(
         action: XcodeBuildAction? = nil,
-        scheme: String? = nil,
+        scheme: String? = nil, // required for workspace project
+        target: String? = nil, // only work with non-workspace
         configuration: String? = nil,
         destination: XcodeBuildDestination? = nil,
         options: XcodeBuildOptions = XcodeBuildOptions()
@@ -125,7 +126,9 @@ public struct XcodeBuildCommandBuilder {
         if let scheme {
             arguments.append(contentsOf: ["-scheme", scheme])
         }
-
+        if let target {
+            arguments.append(contentsOf: ["-target", target])
+        }
         if let configuration {
             arguments.append(contentsOf: ["-configuration", configuration])
         }
@@ -141,14 +144,14 @@ public struct XcodeBuildCommandBuilder {
 
         return arguments
     }
-
+    
     public func buildSettingsCommand(
-        scheme: String? = nil,
-        destination: XcodeBuildDestination?,
+        target: String,
+        destination: XcodeBuildDestination? = nil,
         forIndex: Bool = false
     ) -> [String] {
         let options = forIndex ? XcodeBuildOptions.buildSettingsForIndexJSON : XcodeBuildOptions.buildSettingsJSON
-        return buildCommand(scheme: scheme, destination: destination, options: options)
+        return buildCommand(target: target, destination: destination, options: options)
     }
 
     public func listSchemesCommand() -> [String] {
@@ -161,6 +164,7 @@ public struct XcodeBuildCommandBuilder {
 
     public func buildForBSP(
         action: XcodeBuildAction = .build,
+        target: String? = nil,
         destination: XcodeBuildDestination = .iOSSimulator
     ) -> [String] {
         let options = XcodeBuildOptions(
@@ -168,12 +172,16 @@ public struct XcodeBuildCommandBuilder {
             verbose: true,
             derivedDataPath: "TODOC"
         )
-        return buildCommand(action: action, destination: destination, options: options)
+        return buildCommand(action: action, target: target, destination: destination, options: options)
     }
 
     private func buildWorkspaceOrProjectArguments() -> [String] {
-        let workspacePath = projectIdentifier.projectLocation.workspaceURL.path
-        return ["-workspace", workspacePath]
+        switch projectIdentifier.projectLocation {
+        case .explicitWorkspace(let workspaceURL):
+            return ["-workspace", workspaceURL.path]
+        case .implicitWorkspace(let projectURL, _):
+            return ["-project", projectURL.path]
+        }
     }
 
     private func buildOptionsArguments(options: XcodeBuildOptions) -> [String] {

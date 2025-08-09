@@ -30,11 +30,11 @@ struct XcodeProjectManagementExample {
 
             // Load the project
             print("Loading Xcode project from: \(projectPath)")
-            let project = try await manager.loadProjectBasicInfo()
+            let project = try await projectManager.loadProjectBasicInfo()
 
             print("✓ Project loaded successfully")
             print("  - Root URL: \(project.rootURL.path)")
-            print("  - Workspace: \(project.workspaceURL?.path ?? "N/A")")
+            print("  - Workspace: \(project.workspaceURL.path)")
             print("  - Schemes: \(project.schemeInfoList.map(\.name).joined(separator: ", "))")
 
             // Create command builder with project identifier
