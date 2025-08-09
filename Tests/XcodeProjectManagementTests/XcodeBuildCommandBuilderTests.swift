@@ -18,14 +18,14 @@ struct XcodeBuildCommandBuilderTests {
     func buildBasicCommand() {
         let builder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
         let command = builder.buildCommand(
-            scheme: "TestScheme",
+            target: "TestTarget",
             configuration: "Debug"
         )
 
         #expect(command.contains("-workspace"))
         #expect(command.contains("/test/Test.xcworkspace"))
-        #expect(command.contains("-scheme"))
-        #expect(command.contains("TestScheme"))
+        #expect(command.contains("-target"))
+        #expect(command.contains("TestTarget"))
         #expect(command.contains("-configuration"))
         #expect(command.contains("Debug"))
     }
@@ -34,21 +34,21 @@ struct XcodeBuildCommandBuilderTests {
     func buildSettingsCommand() {
         let builder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
         let command = builder.buildCommand(
-            scheme: "TestScheme",
+            target: "TestTarget",
             configuration: "Debug",
             options: XcodeBuildOptions.buildSettingsJSON
         )
 
         #expect(command.contains("-showBuildSettings"))
         #expect(command.contains("-json"))
-        #expect(command.contains("TestScheme"))
+        #expect(command.contains("TestTarget"))
     }
 
     @Test
     func buildSettingsForIndexCommand() {
         let builder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
         let command = builder.buildCommand(
-            scheme: "TestScheme",
+            target: "TestTarget",
             configuration: "Debug",
             options: XcodeBuildOptions.buildSettingsForIndexJSON
         )
@@ -72,12 +72,12 @@ struct XcodeBuildCommandBuilderTests {
         let builder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
         let options = XcodeBuildOptions(quiet: true)
         let command = builder.buildCommand(
-            scheme: "TestScheme",
+            target: "TestTarget",
             configuration: "Debug",
             options: options
         )
 
         #expect(command.contains("-quiet"))
-        #expect(command.contains("TestScheme"))
+        #expect(command.contains("TestTarget"))
     }
 }

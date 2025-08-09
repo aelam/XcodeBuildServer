@@ -33,6 +33,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/SwiftyBeaver/SwiftyBeaver.git", from: "2.0.0"),
+        .package(url: "https://github.com/yahoojapan/SwiftyXMLParser.git", from: "5.6.0")
     ],
     targets: [
         .target(
@@ -50,6 +51,10 @@ let package = Package(
         .target(
             name: "XcodeProjectManagement",
             dependencies: [
+                .product(
+                    name: "SwiftyXMLParser", 
+                    package: "SwiftyXMLParser"
+                ),
                 "Logger"
             ],
             resources: [.copy("README.md")]

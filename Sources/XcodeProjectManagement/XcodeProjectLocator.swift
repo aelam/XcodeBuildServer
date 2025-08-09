@@ -46,17 +46,20 @@ public struct XcodeProjectReference: Codable, Sendable {
     public let workspace: String?
     public let project: String?
     public let scheme: String?
+    public let target: String?
     public let configuration: String?
 
     public init(
         workspace: String? = nil,
         project: String? = nil,
         scheme: String? = nil,
+        target: String? = nil,
         configuration: String? = nil
     ) {
         self.workspace = workspace
         self.project = project
         self.scheme = scheme
+        self.target = target
         self.configuration = configuration
     }
 }

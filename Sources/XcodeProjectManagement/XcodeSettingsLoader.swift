@@ -76,11 +76,11 @@ public actor XcodeSettingsLoader {
     }
 
     public func loadBuildSettings(
-        scheme: String,
+        target: String,
         destination: XcodeBuildDestination = .iOSSimulator
     ) async throws -> [XcodeBuildSettings] {
         let command = commandBuilder.buildSettingsCommand(
-            scheme: scheme,
+            target: target,
             destination: destination,
             forIndex: false
         )
@@ -97,9 +97,16 @@ public actor XcodeSettingsLoader {
         }
     }
 
-    public func loadBuildSettingsForIndex(scheme: String? = nil) async throws -> XcodeBuildSettingsForIndex {
+    public func loadBuildSettingsForIndex(target: String? = nil) async throws -> XcodeBuildSettingsForIndex {
+        // If no target provided, get any available target
+        let targetToUse: String
+        if let target = target {
+            targetToUse = target
+        } else {
+            targetToUse = try await getAnyAvailableTarget()
+        }
         let command = commandBuilder.buildSettingsCommand(
-            scheme: scheme,
+            target: targetToUse,
             destination: nil, // No destination needed for index settings
             forIndex: true
         )
@@ -117,13 +124,13 @@ public actor XcodeSettingsLoader {
     }
 
     public func loadIndexingPaths(
-        scheme: String,
+        target: String,
         buildSettings: [XcodeBuildSettings]
     ) async throws -> (indexStoreURL: URL, indexDatabaseURL: URL) {
         guard let settings = buildSettings.first(where: {
-            $0.target == scheme && $0.action == "build"
+            $0.target == target && $0.action == "build"
         })?.buildSettings else {
-            throw XcodeProjectError.invalidConfig("No build settings found for scheme: \(scheme)")
+            throw XcodeProjectError.invalidConfig("No build settings found for target: \(target)")
         }
 
         guard let buildFolderPath = settings["BUILD_DIR"] else {
@@ -167,9 +174,18 @@ public actor XcodeSettingsLoader {
         buildSettings.first { $0.target == target && $0.action == action }?.buildSettings[key]
     }
 
-    public func detectDestination(scheme: String) async throws -> XcodeBuildDestination {
+    public func detectDestination(scheme: String? = nil) async throws -> XcodeBuildDestination {
         // Use showdestinations command to detect supported platforms
-        let command = commandBuilder.showDestinationsCommand(scheme: scheme)
+        // If no scheme provided, we'll need to get one from the project
+        let schemeToUse: String
+        if let scheme = scheme {
+            schemeToUse = scheme
+        } else {
+            // Get any available scheme for platform detection
+            schemeToUse = try await getAnyAvailableScheme()
+        }
+
+        let command = commandBuilder.showDestinationsCommand(scheme: schemeToUse)
         let output = try await runXcodeBuild(arguments: command)
 
         guard let destinationsOutput = output, !destinationsOutput.isEmpty else {
@@ -197,6 +213,79 @@ public actor XcodeSettingsLoader {
 
         // Default fallback
         return .iOSSimulator
+    }
+
+    private func getAnyAvailableTarget() async throws -> String {
+        // Get targets by using build settings without specific target filter
+        let command = commandBuilder.buildCommand(options: XcodeBuildOptions.buildSettingsJSON)
+        let output = try await runXcodeBuild(arguments: command)
+
+        guard let jsonString = output, !jsonString.isEmpty else {
+            throw XcodeProjectError.invalidConfig("Failed to list targets for target selection")
+        }
+
+        let data = Data(jsonString.utf8)
+        do {
+            // Parse build settings to extract target names
+            let json = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] ?? []
+
+            // Extract target names
+            let targetNames = json.compactMap { targetSettings in
+                targetSettings["TARGET_NAME"] as? String
+            }
+
+            // Prefer non-test targets
+            let nonTestTargets = targetNames.filter { targetName in
+                !isTestTarget(targetName)
+            }
+
+            if let nonTestTarget = nonTestTargets.first {
+                return nonTestTarget
+            }
+
+            // Fallback to any target
+            guard let firstTarget = targetNames.first else {
+                throw XcodeProjectError.invalidConfig("No targets found in project")
+            }
+
+            return firstTarget
+
+        } catch {
+            throw XcodeProjectError.dataParsingError("Failed to parse targets: \(error)")
+        }
+    }
+
+    private func isTestTarget(_ targetName: String) -> Bool {
+        let testPatterns = [
+            "Test", "Tests", "test", "tests",
+            "UITest", "UITests", "uiTest", "uiTests",
+            "UnitTest", "UnitTests", "unitTest", "unitTests"
+        ]
+
+        return testPatterns.contains { pattern in
+            targetName.contains(pattern)
+        }
+    }
+
+    private func getAnyAvailableScheme() async throws -> String {
+        let command = commandBuilder.listSchemesCommand()
+        let output = try await runXcodeBuild(arguments: command)
+
+        guard let jsonString = output, !jsonString.isEmpty else {
+            throw XcodeProjectError.invalidConfig("Failed to list schemes for platform detection")
+        }
+
+        let data = Data(jsonString.utf8)
+        do {
+            let decoder = JSONDecoder()
+            let listInfo = try decoder.decode(XcodeListInfo.self, from: data)
+            guard let firstScheme = listInfo.workspace?.schemes.first else {
+                throw XcodeProjectError.schemeNotFound("No schemes available for platform detection")
+            }
+            return firstScheme
+        } catch {
+            throw XcodeProjectError.dataParsingError("Failed to decode schemes for platform detection: \(error)")
+        }
     }
 
     private func runXcodeBuild(arguments: [String]) async throws -> String? {
