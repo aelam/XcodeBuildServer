@@ -102,69 +102,23 @@ struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
         projectInfo: XcodeProjectInfo,
         sourceDiscovery: XcodeSourceFileDiscovery
     ) async -> SourcesItem {
-        do {
-            // Create target info from build settings
-            let target = XcodeTargetInfo(
-                name: xcodeTarget.target,
-                productType: xcodeTarget.buildSettings["PRODUCT_TYPE"],
-                buildSettings: xcodeTarget.buildSettings
-            )
+        // Get source files from buildSettingsForIndex
+        let sourceItems = await buildSourceItemsFromIndexSettings(
+            targetName: xcodeTarget.target,
+            projectInfo: projectInfo
+        )
 
-            // Discover source files for this target
-            let discoveredFiles = try await sourceDiscovery.discoverSourceFiles(
-                for: target,
-                projectInfo: projectInfo
-            )
+        // Get source roots from build settings
+        let sourceRoots = extractSourceRoots(
+            from: xcodeTarget.buildSettings,
+            projectRoot: projectInfo.rootURL
+        )
 
-            // Convert to SourceItem objects
-            let sourceItems = convertToSourceItems(discoveredFiles)
-
-            // Get source roots
-            let sourceRootURLs = sourceDiscovery.getSourceRoots(
-                for: target,
-                projectInfo: projectInfo
-            )
-            let sourceRoots = sourceRootURLs.compactMap { try? URI(string: $0.absoluteString) }
-
-            return SourcesItem(
-                target: targetId,
-                sources: sourceItems,
-                roots: sourceRoots
-            )
-        } catch {
-            return createEmptySourcesItem(for: targetId)
-        }
-    }
-
-    private func convertToSourceItems(_ discoveredFiles: [DiscoveredSourceFile]) -> [SourceItem] {
-        discoveredFiles.compactMap { discoveredFile in
-            let conversionResult = discoveredFile.toBSPFormat()
-
-            guard let uri = try? URI(string: conversionResult.uri) else {
-                return nil
-            }
-
-            // Create SourceKit data
-            let sourceKitData = SourceKitSourceItemData(
-                language: Language(rawValue: conversionResult.data?["language"] ?? ""),
-                kind: SourceKitSourceItemKind(
-                    rawValue: conversionResult.data?["kind"] ?? "source"
-                ),
-                outputPath: nil // TODO: Add output path from build settings if available
-            )
-
-            return SourceItem(
-                uri: uri,
-                kind: conversionResult.kind == 1 ? .file : .directory,
-                generated: conversionResult.generated,
-                dataKind: .sourceKit,
-                data: sourceKitData.encodeToLSPAny()
-            )
-        }
-    }
-
-    private func createEmptySourcesItem(for targetId: BuildTargetIdentifier) -> SourcesItem {
-        SourcesItem(target: targetId, sources: [], roots: nil)
+        return SourcesItem(
+            target: targetId,
+            sources: sourceItems,
+            roots: sourceRoots
+        )
     }
 
     /// Parse target identifier URI to extract target information
@@ -193,6 +147,157 @@ struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
             schemeName: pathComponents[1],
             targetName: pathComponents[2]
         )
+    }
+}
+
+// MARK: - Private Extension for Source Item Creation
+
+private extension BuiltTargetSourcesRequest {
+    func createEmptySourcesItem(for targetId: BuildTargetIdentifier) -> SourcesItem {
+        SourcesItem(
+            target: targetId,
+            sources: [],
+            roots: []
+        )
+    }
+
+    func buildSourceItemsFromIndexSettings(
+        targetName: String,
+        projectInfo: XcodeProjectInfo
+    ) async -> [SourceItem] {
+        guard let indexSettings = projectInfo.buildSettingsForIndex,
+              let targetFiles = indexSettings[targetName] else {
+            return []
+        }
+
+        var sourceItems: [SourceItem] = []
+
+        for (filePath, fileInfo) in targetFiles {
+            guard let sourceItem = createSourceItem(
+                filePath: filePath,
+                fileInfo: fileInfo,
+                projectRoot: projectInfo.rootURL
+            ) else {
+                continue
+            }
+            sourceItems.append(sourceItem)
+        }
+
+        return sourceItems
+    }
+
+    func extractSourceRoots(
+        from buildSettings: [String: String],
+        projectRoot: URL
+    ) -> [URI] {
+        var roots: [URI] = []
+
+        // Add SRCROOT if available
+        if let srcRoot = buildSettings["SRCROOT"] {
+            let srcRootURL = URL(fileURLWithPath: srcRoot, relativeTo: projectRoot)
+            if let uri = try? URI(string: srcRootURL.absoluteString) {
+                roots.append(uri)
+            }
+        }
+
+        // Add PROJECT_DIR if different from SRCROOT
+        if let projectDir = buildSettings["PROJECT_DIR"],
+           projectDir != buildSettings["SRCROOT"] {
+            let projectDirURL = URL(fileURLWithPath: projectDir, relativeTo: projectRoot)
+            if let uri = try? URI(string: projectDirURL.absoluteString) {
+                roots.append(uri)
+            }
+        }
+
+        // If no specific roots found, use project root
+        if roots.isEmpty {
+            if let uri = try? URI(string: projectRoot.absoluteString) {
+                roots.append(uri)
+            }
+        }
+
+        return roots
+    }
+
+    func createSourceItem(
+        filePath: String,
+        fileInfo: XcodeFileBuildSettingInfo,
+        projectRoot: URL
+    ) -> SourceItem? {
+        let fileURL: URL = if filePath.hasPrefix("/") {
+            URL(fileURLWithPath: filePath)
+        } else {
+            projectRoot.appendingPathComponent(filePath)
+        }
+
+        guard let uri = try? URI(string: fileURL.absoluteString) else {
+            return nil
+        }
+
+        // Determine if the file is generated
+        let generated = filePath.contains("DerivedData") ||
+            filePath.contains("Build/") ||
+            filePath.hasSuffix(".generated.swift")
+
+        // Determine language based on file type
+        let language: Language? = switch fileInfo.languageDialect {
+        case .swift:
+            .swift
+        case .objc:
+            .objective_c
+        case .interfaceBuilder:
+            nil // Interface Builder files might not have a specific BSP language
+        case .other:
+            detectLanguageFromExtension(fileURL.pathExtension)
+        }
+
+        // Create SourceKitSourceItemData
+        let sourceKitData = SourceKitSourceItemData(
+            language: language,
+            kind: determineSourceKind(fileURL: fileURL, generated: generated),
+            outputPath: fileInfo.outputFilePath
+        )
+
+        return SourceItem(
+            uri: uri,
+            kind: .file,
+            generated: generated,
+            dataKind: .sourceKit,
+            data: sourceKitData.encodeToLSPAny()
+        )
+    }
+
+    func detectLanguageFromExtension(_ ext: String) -> Language? {
+        switch ext.lowercased() {
+        case "swift":
+            .swift
+        case "c":
+            .c
+        case "cpp", "cc", "cxx", "c++":
+            .cpp
+        case "m":
+            .objective_c
+        case "mm":
+            .objective_cpp
+        case "h", "hpp", "hxx", "h++":
+            .c // Could be C or C++, default to C
+        default:
+            nil
+        }
+    }
+
+    func determineSourceKind(fileURL: URL, generated: Bool) -> SourceKitSourceItemKind {
+        let ext = fileURL.pathExtension.lowercased()
+        switch ext {
+        case "h", "hpp", "hxx", "h++":
+            return .header
+        case "swift", "c", "cpp", "cc", "cxx", "c++", "m", "mm":
+            return .source
+        case "json", "plist", "xcassets":
+            return .source
+        default:
+            return .source
+        }
     }
 }
 

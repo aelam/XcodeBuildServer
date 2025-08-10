@@ -70,6 +70,11 @@ public struct FileSystemScanner: Sendable {
                 }
             }
 
+            // Check if file belongs to this target based on path
+            if !isFileForTarget(fileURL: fileURL, targetInfo: targetInfo) {
+                continue
+            }
+
             // Check if file is a supported source file
             if let sourceFile = createSourceFile(
                 from: fileURL,
@@ -173,6 +178,76 @@ public struct FileSystemScanner: Sendable {
             if packageDirectories.contains(lastComponent) {
                 return true
             }
+        }
+
+        return false
+    }
+
+    /// Determine if a file belongs to a specific target based on path patterns
+    private func isFileForTarget(fileURL: URL, targetInfo: XcodeTargetInfo) -> Bool {
+        let filePath = fileURL.path
+        let targetName = targetInfo.name
+        let fileName = fileURL.lastPathComponent
+
+        // Test targets - should only include files from test directories
+        if targetName.hasSuffix("Tests") || targetName.hasSuffix("UITests") {
+            // Check for test target directory or test file patterns
+            let testPatterns = [
+                "/\(targetName)/", // e.g., /HelloTests/
+                "/\(targetName).swift", // e.g., /HelloTests.swift
+                "\(targetName).swift" // e.g., HelloTests.swift (filename match)
+            ]
+
+            return testPatterns.contains { pattern in
+                filePath.contains(pattern)
+            } || fileName == "\(targetName).swift" // Direct filename match
+        }
+
+        // Regular targets - be more specific about what belongs to each target
+        // 1. Exclude all test files first
+        let excludePatterns = [
+            "Tests/",
+            "UITests/",
+            "Tests.swift",
+            "UITests.swift"
+        ]
+
+        for pattern in excludePatterns where filePath.contains(pattern) {
+            return false
+        }
+
+        // 2. For specific target directories, include files from that directory
+        if filePath.contains("/\(targetName)/") {
+            return true
+        }
+
+        // 3. For files that match the target name pattern
+        if fileName.hasPrefix(targetName), !fileName.hasSuffix("Tests.swift") {
+            return true
+        }
+
+        // 3. For root-level files, only include them in the main target (usually the first one)
+        // Exclude project-wide config files from individual targets
+        let projectWideFiles = [
+            "buildServer.json",
+            "hello.json",
+            ".gitignore",
+            "Package.swift",
+            "README.md"
+        ]
+
+        if projectWideFiles.contains(fileName) {
+            // Only include project-wide files in the main target (usually the one matching project name)
+            // You can adjust this logic based on your project structure
+            return targetName == "Hello" // Adjust this to match your main target name
+        }
+
+        // 4. App-specific files should only be in their respective targets
+        if fileName.contains("App.swift") {
+            // HelloApp.swift should only be in Hello target
+            // WorldApp.swift should only be in World target
+            let appTargetName = fileName.replacingOccurrences(of: "App.swift", with: "")
+            return appTargetName == targetName
         }
 
         return false

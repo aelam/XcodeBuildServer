@@ -17,7 +17,15 @@ public struct SourcePathResolver: Sendable {
     ) -> [URL] {
         var paths: [URL] = []
 
-        // Add project directory as primary source path
+        // Try to get target-specific source paths first
+        if let targetBuildDir = buildSettings["TARGET_BUILD_DIR"] {
+            let targetPath = URL(fileURLWithPath: targetBuildDir, relativeTo: projectInfo.rootURL)
+            if FileManager.default.fileExists(atPath: targetPath.path) {
+                paths.append(targetPath)
+            }
+        }
+
+        // Add project directory, but we'll filter files later by target
         paths.append(projectInfo.rootURL)
 
         // Extract paths from common build setting keys
