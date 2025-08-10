@@ -124,7 +124,7 @@ public final actor JSONRPCServer {
                 do {
                     logger.debug(
                         "Request handler returned response for method: \(message.request.method), " +
-                        "response type: \(type(of: response))"
+                            "response type: \(type(of: response))"
                     )
                     try await send(response: response)
                     logger.debug("Successfully sent response for request ID: \(requestID)")

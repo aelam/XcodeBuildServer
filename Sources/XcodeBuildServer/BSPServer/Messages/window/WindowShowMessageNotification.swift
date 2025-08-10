@@ -62,10 +62,10 @@ public enum MessageType: Int, Codable, Sendable {
 
     var description: String {
         switch self {
-        case .error: return "ERROR"
-        case .warning: return "WARNING"
-        case .info: return "INFO"
-        case .log: return "LOG"
+        case .error: "ERROR"
+        case .warning: "WARNING"
+        case .info: "INFO"
+        case .log: "LOG"
         }
     }
 }

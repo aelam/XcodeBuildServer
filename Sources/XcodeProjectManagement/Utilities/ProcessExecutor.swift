@@ -199,7 +199,6 @@ public extension ProcessExecutor {
         logger.debug("ProcessExecutor: Executing command: \(executable) \(arguments.joined(separator: " "))")
 
         return try await withThrowingTaskGroup(of: ProcessExecutionResult?.self) { group in
-
             // 主执行任务
             group.addTask {
                 let process = Process()
@@ -226,8 +225,8 @@ public extension ProcessExecutor {
 
                 process.waitUntilExit()
 
-                let output = String(data: (try await outputData) ?? Data(), encoding: .utf8) ?? ""
-                let errorString = String(data: (try await errorData) ?? Data(), encoding: .utf8) ?? ""
+                let output = try await String(data: outputData ?? Data(), encoding: .utf8) ?? ""
+                let errorString = try await String(data: errorData ?? Data(), encoding: .utf8) ?? ""
                 let error = errorString.isEmpty ? nil : errorString
 
                 logger.debug("ProcessExecutor: Command completed with exit code: \(process.terminationStatus)")
@@ -251,7 +250,7 @@ public extension ProcessExecutor {
 
             // 等待第一个完成的任务
             for try await result in group {
-                if let result = result {
+                if let result {
                     group.cancelAll()
                     return result
                 }

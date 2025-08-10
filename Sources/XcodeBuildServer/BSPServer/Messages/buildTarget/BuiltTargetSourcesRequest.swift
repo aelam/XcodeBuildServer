@@ -17,14 +17,14 @@ struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
         let targets: [BuildTargetIdentifier]
     }
 
-    let targets: [BuildTargetIdentifier]
+    let params: Params
 
     func handle<Handler: ContextualMessageHandler>(
         contextualHandler: Handler,
         id: RequestID
     ) async -> ResponseType? where Handler.Context == BuildServerContext {
         await contextualHandler.withContext { context in
-            await handleBuildTargetSources(context: context, targetIds: targets)
+            await handleBuildTargetSources(context: context, targetIds: params.targets)
         }
     }
 

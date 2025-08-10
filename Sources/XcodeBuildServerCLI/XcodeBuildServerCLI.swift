@@ -109,8 +109,8 @@ struct XcodeBuildServerCLI {
         let result = kill(parentProcessID, 0) // Signal 0 just checks if process exists
         if result == -1 {
             if errno == ESRCH {
-                    let msg = "🔴 Parent process (PID \(parentProcessID)) no longer exists (ESRCH), " + "terminating..."
-                    logger.warning(msg)
+                let msg = "🔴 Parent process (PID \(parentProcessID)) no longer exists (ESRCH), " + "terminating..."
+                logger.warning(msg)
                 exit(0)
             } else if errno == EPERM {
                 // Parent exists, but we don't have permission; do not exit
