@@ -199,7 +199,7 @@ public actor XcodeSettingsLoader {
         logger.debug("runXcodeBuild: command completed with exit code: \(exitCode)")
         logger.debug("runXcodeBuild: output isEmpty: \(output.isEmpty)")
         logger.debug("runXcodeBuild: output length: \(output.count)")
-        
+
         if !output.isEmpty {
             logger.debug("runXcodeBuild: output preview: \(String(output.prefix(200)))")
         } else {

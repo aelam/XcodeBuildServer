@@ -127,10 +127,8 @@ public final class StdioJSONRPCServerTransport: JSONRPCServerTransport, @uncheck
         let header = "Content-Length:\(data.count)\r\n\r\n"
         let headerData = header.data(using: .utf8)!
 
-        // Log response being sent (only if BSP_DEBUG is set)
-        if ProcessInfo.processInfo.environment["BSP_DEBUG"] != nil {
-            logger.debug("Sending JSON-RPC response: \(String(data: data, encoding: .utf8) ?? "[Invalid UTF-8]")")
-        }
+        // 现在可以安全地记录日志，因为ConsoleDestination已被禁用
+        logger.debug("Sending JSON-RPC response: \(String(data: data, encoding: .utf8) ?? "[Invalid UTF-8]")")
 
         // Perform write operations with timeout to prevent hanging
         try await withThrowingTaskGroup(of: Void.self) { group in
@@ -200,12 +198,7 @@ public final class StdioJSONRPCServerTransport: JSONRPCServerTransport, @uncheck
             throw JSONRPCTransportError.invalidMessage
         }
 
-        // Debug logging
-        if ProcessInfo.processInfo.environment["BSP_DEBUG"] != nil {
-            let timestamp = DateFormatter().string(from: Date())
-            fputs("🔵 [\(timestamp)] INCOMING: \(jsonContent)\n", stderr)
-        }
-
+        logger.debug("Parsed JSON content: \(jsonContent)")
         // Decode JSON-RPC request
         do {
             let request = try jsonDecoder.decode(JSONRPCRequest.self, from: rawData)
