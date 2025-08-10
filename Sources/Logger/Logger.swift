@@ -33,20 +33,44 @@ public final class SwiftyBeaverLogger: @unchecked Sendable {
         log.addDestination(file)
     }
 
-    public func info(_ message: String) {
-        log.info(message)
+    public func info(
+        _ message: String,
+        file: String = #file,
+        function: String = #function,
+        line: Int = #line,
+        context: Any? = nil
+    ) {
+        log.info(message, file: file, function: function, line: line, context: context)
     }
 
-    public func debug(_ message: String) {
-        log.debug(message)
+    public func debug(
+        _ message: String,
+        file: String = #file,
+        function: String = #function,
+        line: Int = #line,
+        context: Any? = nil
+    ) {
+        log.debug(message, file: file, function: function, line: line, context: context)
     }
 
-    public func error(_ message: String) {
-        log.error(message)
+    public func error(
+        _ message: String,
+        file: String = #file,
+        function: String = #function,
+        line: Int = #line,
+        context: Any? = nil
+    ) {
+        log.error(message, file: file, function: function, line: line, context: context)
     }
 
-    public func warning(_ message: String) {
-        log.warning(message)
+    public func warning(
+        _ message: String,
+        file: String = #file,
+        function: String = #function,
+        line: Int = #line,
+        context: Any? = nil
+    ) {
+        log.warning(message, file: file, function: function, line: line, context: context)
     }
 }
 

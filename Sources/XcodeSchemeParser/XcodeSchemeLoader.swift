@@ -281,17 +281,6 @@ public struct XcodeSchemeLoader: Sendable {
             throw XcodeSchemeError.invalidConfig("No schemes found in project")
         }
 
-        // Check for duplicate scheme names
-//        let schemeNames = schemes.map(\.name)
-//        let uniqueSchemeNames = Set(schemeNames)
-//
-//        if schemeNames.count != uniqueSchemeNames.count {
-//            let duplicates = schemeNames.filter { name in
-//                schemeNames.filter { $0 == name }.count > 1
-//            }
-//            throw XcodeSchemeError.invalidConfig("Duplicate scheme names found: \(Set(duplicates))")
-//        }
-
         // Validate each scheme has at least one target
         for scheme in schemes where scheme.targets.isEmpty {
             logger.warning("Scheme '\(scheme.name)' has no targets")

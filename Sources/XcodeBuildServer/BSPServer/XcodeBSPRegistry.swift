@@ -32,6 +32,9 @@ private let notificationTypes: [NotificationType.Type] = [
 
     // build
     BuildSourceKitOptionsChangedNotification.self,
+
+    // window
+    WindowShowMessageNotification.self,
 ]
 
 public let bspRegistry = MessageRegistry(requests: requestTypes, notifications: notificationTypes)

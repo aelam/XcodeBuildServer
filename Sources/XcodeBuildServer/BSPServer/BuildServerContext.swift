@@ -17,6 +17,7 @@ public enum BuildServerContextState: Sendable {
         public let config: XcodeBSPConfiguration?
         public let projectManager: XcodeProjectManager
         public let bspAdapter: XcodeToBSPAdapter
+        public let xcodeProjectInfo: XcodeProjectInfo
     }
 }
 
@@ -65,29 +66,40 @@ public actor BuildServerContext {
             logger.debug("No BSP config found, using project manager auto-discovery")
         }
 
+        let xcodeToolchain = XcodeToolchain()
         // Create project manager (it will manage its own toolchain)
         let projectManager = XcodeProjectManager(
             rootURL: rootURL,
             xcodeProjectReference: config?.projectReference,
-            toolchain: XcodeToolchain(),
+            toolchain: xcodeToolchain,
             locator: XcodeProjectLocator()
         )
 
         try await projectManager.initialize()
         // Load project basic info (this will initialize toolchain internally)
-        _ = try await projectManager.resolveProjectInfo()
+        logger.debug(">>> Resolving project info")
+        do {
+            let xcodeProjectInfo = try await projectManager.resolveProjectInfo()
+            logger.debug(">>> Project info resolved")
 
-        // Initialize BSP adapter
-        let bspAdapter = XcodeToBSPAdapter(
-            projectManager: projectManager
-        )
+            // Initialize BSP adapter
+            let bspAdapter = XcodeToBSPAdapter(
+                xcodeProjectInfo: xcodeProjectInfo,
+                xcodeToolchain: xcodeToolchain
+            )
 
-        self.state = .loaded(BuildServerContextState.LoadedState(
-            rootURL: rootURL,
-            config: config,
-            projectManager: projectManager,
-            bspAdapter: bspAdapter
-        ))
+            self.state = .loaded(BuildServerContextState.LoadedState(
+                rootURL: rootURL,
+                config: config,
+                projectManager: projectManager,
+                bspAdapter: bspAdapter,
+                xcodeProjectInfo: xcodeProjectInfo
+            ))
+
+        } catch {
+            logger.error(">>> Failed to resolve project info: \(error)")
+            throw error
+        }
     }
 }
 
@@ -99,12 +111,8 @@ public extension BuildServerContext {
         return try await state.bspAdapter.createBuildTargets()
     }
 
-    func getProjectBasicInfo() async throws -> XcodeProjectInfo {
-        let state = try loadedState
-        guard let projectInfo = await state.projectManager.currentProjectInfo else {
-            throw BuildServerError.invalidConfiguration("Project not loaded")
-        }
-        return projectInfo
+    func getProjectBasicInfo() throws -> XcodeProjectInfo {
+        try loadedState.xcodeProjectInfo
     }
 
     func getProjectManager() throws -> XcodeProjectManager {

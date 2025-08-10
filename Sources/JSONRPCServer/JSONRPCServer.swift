@@ -122,7 +122,10 @@ public final actor JSONRPCServer {
 
             if let response = await typedRequest.handle(handler: messageHandler, id: requestID) {
                 do {
-                    logger.debug("Request handler returned response for method: \(message.request.method)")
+                    logger.debug(
+                        "Request handler returned response for method: \(message.request.method), " +
+                        "response type: \(type(of: response))"
+                    )
                     try await send(response: response)
                     logger.debug("Successfully sent response for request ID: \(requestID)")
                 } catch {

@@ -166,14 +166,23 @@ public actor XcodeProjectManager {
         let projectIdentifier = XcodeProjectIdentifier(rootURL: rootURL, projectLocation: projectLocation)
         let settingsCommandBuilder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
         let settingsLoader = XcodeSettingsLoader(commandBuilder: settingsCommandBuilder, toolchain: toolchain)
-
+        logger.debug("created settingsLoader, checking toolchain status...")
+        logger.debug("about to call toolchain.getSelectedInstallation()...")
+        let toolchainInstallation = await toolchain.getSelectedInstallation()
+        logger.debug("got toolchain installation: \(toolchainInstallation?.path.path ?? "none")")
+        logger.debug("toolchain installation check completed")
+        logger.debug("getting xcodeListInfo...")
         let xcodeListInfo = try await settingsLoader.listInfo()
+        logger.debug("got xcodeListInfo: \(xcodeListInfo)")
+
         // Load build settings and index paths with correct destination
+        logger.debug("getting buildSettingsList...")
         let buildSettingsList = try await settingsLoader.loadBuildSettings(
             scheme: xcodeListInfo.schemes.first,
             target: nil,
             destination: nil
         )
+        logger.debug("got buildSettingsList: \(buildSettingsList.count)")
 
         // Get index URLs using the first available scheme (shared per workspace)
         let indexPaths = try await loadIndexURLs(
@@ -181,6 +190,8 @@ public actor XcodeProjectManager {
             projectLocation: projectLocation,
             buildSettingsList: buildSettingsList
         )
+
+        logger.debug("got indexPaths.derivedDataPath: \(indexPaths.derivedDataPath)")
 
         let filterSchemes: [String] = if let xcodeProjectReference, let scheme = xcodeProjectReference.scheme {
             [scheme]
@@ -191,10 +202,13 @@ public actor XcodeProjectManager {
             from: projectLocation,
             filterBy: filterSchemes
         )
+        logger.info("schemesToLoad.count: \(schemesToLoad.count)")
 
         // Validate loaded schemes
         try schemeLoader.validateSchemes(schemesToLoad)
 
+        logger.info("resolve project successfully")
+        logger.info("schemesToLoad: \(schemesToLoad.count)")
         return XcodeProjectInfo(
             rootURL: rootURL,
             projectLocation: projectLocation,
@@ -235,10 +249,6 @@ public actor XcodeProjectManager {
         toolchain
     }
 
-    public var currentProjectInfo: XcodeProjectInfo? {
-        currentProject
-    }
-
     /// Get the scheme loader for advanced scheme operations
     public func getSchemeLoader() -> XcodeSchemeLoader {
         schemeLoader
@@ -269,14 +279,6 @@ public actor XcodeProjectManager {
         }
 
         return schemeLoader.getPreferredScheme(for: targetName, from: currentProject.schemeInfoList)
-    }
-
-    private func getAnyAvailableScheme() async throws -> String {
-        guard let currentProject else {
-            throw XcodeProjectError.invalidConfig("Project not loaded. Call resolveProjectInfo() first.")
-        }
-
-        return try schemeLoader.getAnyAvailableScheme(from: currentProject.schemeInfoList)
     }
 
     private func parseTargetsFromBuildSettings(data: Data) throws -> [XcodeTargetInfo] {
