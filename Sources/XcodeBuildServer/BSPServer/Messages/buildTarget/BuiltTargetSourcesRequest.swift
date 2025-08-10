@@ -14,19 +14,35 @@ struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
     }
 
     struct Params: Codable, Sendable {
-        let language: LanguageId?
-        let isHeader: Bool?
+        let targets: [BuildTargetIdentifier]
     }
+
+    let targets: [BuildTargetIdentifier]
 
     func handle<Handler: ContextualMessageHandler>(
         contextualHandler: Handler,
         id: RequestID
     ) async -> ResponseType? where Handler.Context == BuildServerContext {
-        await contextualHandler.withContext { _ in
-            BuildTargetSourcesResponse(
-                items: []
+        await contextualHandler.withContext { context in
+            await handleBuildTargetSources(context: context, targetIds: targets)
+        }
+    }
+
+    private func handleBuildTargetSources(
+        context: BuildServerContext,
+        targetIds: [BuildTargetIdentifier]
+    ) async -> BuildTargetSourcesResponse {
+        // TODO: Implement actual source file discovery logic
+        // For now, return empty sources for each target
+        let items = targetIds.map { targetId in
+            SourcesItem(
+                target: targetId,
+                sources: [], // Will be populated with actual source files
+                roots: nil
             )
         }
+
+        return BuildTargetSourcesResponse(items: items)
     }
 }
 
