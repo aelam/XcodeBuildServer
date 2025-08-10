@@ -95,6 +95,7 @@ public struct XcodeProjectInfo: Sendable {
     public let derivedDataPath: URL
     public let indexStoreURL: URL
     public let indexDatabaseURL: URL
+    public let buildSettingsForIndex: XcodeBuildSettingsForIndex?
 
     public init(
         rootURL: URL,
@@ -104,7 +105,8 @@ public struct XcodeProjectInfo: Sendable {
         schemeInfoList: [XcodeSchemeInfo] = [],
         derivedDataPath: URL,
         indexStoreURL: URL,
-        indexDatabaseURL: URL
+        indexDatabaseURL: URL,
+        buildSettingsForIndex: XcodeBuildSettingsForIndex? = nil
     ) {
         self.rootURL = rootURL
         self.projectLocation = projectLocation
@@ -114,6 +116,7 @@ public struct XcodeProjectInfo: Sendable {
         self.derivedDataPath = derivedDataPath
         self.indexStoreURL = indexStoreURL
         self.indexDatabaseURL = indexDatabaseURL
+        self.buildSettingsForIndex = buildSettingsForIndex
     }
 
     public var workspaceURL: URL {
@@ -184,6 +187,11 @@ public actor XcodeProjectManager {
         )
         logger.debug("got buildSettingsList: \(buildSettingsList.count)")
 
+        // Load buildSettingsForIndex for source file discovery
+        logger.debug("getting buildSettingsForIndex...")
+        let buildSettingsForIndex = try? await settingsLoader.loadBuildSettingsForIndex()
+        logger.debug("got buildSettingsForIndex with \(buildSettingsForIndex?.count ?? 0) targets")
+
         // Get index URLs using the first available scheme (shared per workspace)
         let indexPaths = try await loadIndexURLs(
             settingsLoader: settingsLoader,
@@ -217,7 +225,8 @@ public actor XcodeProjectManager {
             schemeInfoList: schemesToLoad,
             derivedDataPath: indexPaths.derivedDataPath,
             indexStoreURL: indexPaths.indexStoreURL,
-            indexDatabaseURL: indexPaths.indexDatabaseURL
+            indexDatabaseURL: indexPaths.indexDatabaseURL,
+            buildSettingsForIndex: buildSettingsForIndex
         )
     }
 

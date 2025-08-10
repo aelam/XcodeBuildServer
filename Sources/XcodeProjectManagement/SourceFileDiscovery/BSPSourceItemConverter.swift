@@ -29,7 +29,14 @@ public struct BSPSourceItemConverter: Sendable {
         case .documentation:
             sourceKitData["kind"] = "doccCatalog"
         case .resource:
-            sourceKitData["kind"] = "source"
+            // Use specific kinds for different resource types
+            if sourceFile.language == "json" {
+                sourceKitData["kind"] = "resource"
+            } else if sourceFile.language == "asset-catalog" {
+                sourceKitData["kind"] = "resource"
+            } else {
+                sourceKitData["kind"] = "resource"
+            }
         }
 
         return SourceItemConversionResult(
