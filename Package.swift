@@ -16,6 +16,10 @@ let package = Package(
             targets: ["Logger"]
         ),
         .library(
+            name: "XcodeSchemeParser",
+            targets: ["XcodeSchemeParser"]
+        ),
+        .library(
             name: "XcodeBuildServer",
             targets: ["XcodeBuildServer"]
         ),
@@ -49,12 +53,19 @@ let package = Package(
             ]
         ),
         .target(
-            name: "XcodeProjectManagement",
+            name: "XcodeSchemeParser",
             dependencies: [
                 .product(
-                    name: "SwiftyXMLParser", 
+                    name: "SwiftyXMLParser",
                     package: "SwiftyXMLParser"
                 ),
+                "Logger"
+            ]
+        ),
+        .target(
+            name: "XcodeProjectManagement",
+            dependencies: [
+                "XcodeSchemeParser",
                 "Logger"
             ],
             resources: [.copy("README.md")]
@@ -79,6 +90,13 @@ let package = Package(
             dependencies: ["XcodeBuildServer"],
             resources: [
                 .copy("DemoProjects")
+            ]
+        ),
+        .testTarget(
+            name: "XcodeSchemeParserTests",
+            dependencies: ["XcodeSchemeParser"],
+            resources: [
+                .copy("Resources")
             ]
         ),
         .testTarget(

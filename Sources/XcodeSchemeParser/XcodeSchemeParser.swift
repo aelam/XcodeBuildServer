@@ -30,53 +30,6 @@ public struct XcodeSchemeParser: Sendable {
         return try parseScheme(schemeAccessor, name: name)
     }
 
-    /// Find scheme files in a container URL (workspace or project)
-    public func findSchemeFiles(in containerURL: URL) -> [URL] {
-        let sharedSchemesURL = containerURL
-            .appendingPathComponent("xcshareddata")
-            .appendingPathComponent("xcschemes")
-
-        var schemeFiles: [URL] = []
-
-        // Find shared schemes
-        if FileManager.default.fileExists(atPath: sharedSchemesURL.path) {
-            do {
-                let sharedSchemes = try FileManager.default
-                    .contentsOfDirectory(at: sharedSchemesURL, includingPropertiesForKeys: nil)
-                    .filter { $0.pathExtension == "xcscheme" }
-                schemeFiles += sharedSchemes
-            } catch {
-                logger.debug("Failed to read shared schemes: \(error)")
-            }
-        }
-
-        // Find user schemes
-        let userSchemesURL = containerURL.appendingPathComponent("xcuserdata")
-
-        if FileManager.default.fileExists(atPath: userSchemesURL.path) {
-            do {
-                let userDirs = try FileManager.default.contentsOfDirectory(
-                    at: userSchemesURL,
-                    includingPropertiesForKeys: nil
-                )
-
-                for userDir in userDirs {
-                    let userSchemesPath = userDir.appendingPathComponent("xcschemes")
-                    if FileManager.default.fileExists(atPath: userSchemesPath.path) {
-                        let userSchemes = try FileManager.default
-                            .contentsOfDirectory(at: userSchemesPath, includingPropertiesForKeys: nil)
-                            .filter { $0.pathExtension == "xcscheme" }
-                        schemeFiles += userSchemes
-                    }
-                }
-            } catch {
-                logger.debug("Failed to read user schemes: \(error)")
-            }
-        }
-
-        return schemeFiles
-    }
-
     // MARK: - Private Parsing Methods
 
     private func parseScheme(_ schemeAccessor: XML.Accessor, name: String) throws -> XcodeSchemeInfo {

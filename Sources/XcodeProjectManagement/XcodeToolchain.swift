@@ -78,7 +78,7 @@ public actor XcodeToolchain {
     public func executeXcodeBuild(
         arguments: [String],
         workingDirectory: URL? = nil
-    ) async throws -> (output: String, exitCode: Int32) {
+    ) async throws -> (output: String, error: String?, exitCode: Int32) {
         guard let installation = selectedInstallation else {
             throw XcodeToolchainError.xcodeNotFound
         }
@@ -124,12 +124,11 @@ public actor XcodeToolchain {
                 let outputData = outputPipe.fileHandleForReading.readDataToEndOfFile()
                 let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
 
-                var output = String(data: outputData, encoding: .utf8) ?? ""
-                if let errorOutput = String(data: errorData, encoding: .utf8), !errorOutput.isEmpty {
-                    output += "\n" + errorOutput
-                }
+                let output = String(data: outputData, encoding: .utf8) ?? ""
+                let errorString = String(data: errorData, encoding: .utf8) ?? ""
+                let error = errorString.isEmpty ? nil : errorString
 
-                continuation.resume(returning: (output: output, exitCode: process.terminationStatus))
+                continuation.resume(returning: (output: output, error: error, exitCode: process.terminationStatus))
             }
 
             do {
@@ -150,9 +149,10 @@ public actor XcodeToolchain {
             throw XcodeToolchainError.xcodeNotFound
         }
 
-        let (output, exitCode) = try await executeXcodeBuild(arguments: ["-version"])
+        let (output, error, exitCode) = try await executeXcodeBuild(arguments: ["-version"])
         guard exitCode == 0 else {
-            throw XcodeToolchainError.toolchainSelectionFailed("xcodebuild -version failed")
+            let errorMessage = error ?? "xcodebuild -version failed"
+            throw XcodeToolchainError.toolchainSelectionFailed(errorMessage)
         }
 
         return output.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -204,7 +204,7 @@ public actor XcodeToolchain {
     }
 
     private func createInstallation(from xcodeURL: URL, isDeveloperDirSet: Bool) async throws -> XcodeInstallation {
-        try await XcodeInstallationFactory.createInstallation(from: xcodeURL, isDeveloperDirSet: isDeveloperDirSet)
+        try XcodeInstallationFactory.createInstallation(from: xcodeURL, isDeveloperDirSet: isDeveloperDirSet)
     }
 
     private func findActiveXcodePath() async throws -> String? {
@@ -320,7 +320,7 @@ public func isXcodeBuildAvailable() async -> Bool {
 // MARK: - Helper Classes
 
 private enum XcodeInstallationFactory {
-    static func createInstallation(from xcodeURL: URL, isDeveloperDirSet: Bool) async throws -> XcodeInstallation {
+    static func createInstallation(from xcodeURL: URL, isDeveloperDirSet: Bool) throws -> XcodeInstallation {
         let infoPlistURL = xcodeURL.appendingPathComponent("Contents/Info.plist")
         guard let plistData = try? Data(contentsOf: infoPlistURL),
               let plist = try? PropertyListSerialization.propertyList(from: plistData, format: nil) as? [String: Any],

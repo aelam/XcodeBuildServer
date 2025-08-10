@@ -17,11 +17,11 @@ struct XcodeProjectManagerTests {
 
         let projectManager = XcodeProjectManager(
             rootURL: projectFolder,
-            projectReference: nil,
             toolchain: XcodeToolchain(),
             locator: XcodeProjectLocator()
         )
-        let project = try await projectManager.loadProjectBasicInfo()
+        try await projectManager.initialize()
+        let project = try await projectManager.resolveProjectInfo()
 
         #expect(project.rootURL == projectFolder)
         #expect(!project.schemeInfoList.isEmpty)
@@ -42,11 +42,11 @@ struct XcodeProjectManagerTests {
 
         let projectManager = XcodeProjectManager(
             rootURL: projectFolder,
-            projectReference: nil,
             toolchain: XcodeToolchain(),
             locator: XcodeProjectLocator()
         )
-        let project = try await projectManager.loadProjectBasicInfo()
+        try await projectManager.initialize()
+        let project = try await projectManager.resolveProjectInfo()
 
         #expect(project.rootURL == projectFolder)
         #expect(!project.schemeInfoList.isEmpty)
@@ -65,13 +65,13 @@ struct XcodeProjectManagerTests {
             .appendingPathComponent("DemoProjects")
             .appendingPathComponent("HelloProject")
 
-        let manager = XcodeProjectManager(
+        let projectManager = XcodeProjectManager(
             rootURL: projectFolder,
-            projectReference: nil,
             toolchain: XcodeToolchain(),
             locator: XcodeProjectLocator()
         )
-        let basicInfo = try await manager.loadProjectBasicInfo()
+        try await projectManager.initialize()
+        let basicInfo = try await projectManager.resolveProjectInfo()
         let schemeNames = basicInfo.schemeInfoList.map(\.name)
         #expect(!schemeNames.isEmpty)
         #expect(schemeNames.contains("Hello"))
@@ -83,13 +83,13 @@ struct XcodeProjectManagerTests {
             .appendingPathComponent("DemoProjects")
             .appendingPathComponent("HelloProject")
 
-        let manager = XcodeProjectManager(
+        let projectManager = XcodeProjectManager(
             rootURL: projectFolder,
-            projectReference: nil,
             toolchain: XcodeToolchain(),
             locator: XcodeProjectLocator()
         )
-        let basicInfo = try await manager.loadProjectBasicInfo()
+        try await projectManager.initialize()
+        let basicInfo = try await projectManager.resolveProjectInfo()
 
         // Note: Configuration testing would require actual xcodebuild execution
         // For now, we'll just verify the project loaded successfully

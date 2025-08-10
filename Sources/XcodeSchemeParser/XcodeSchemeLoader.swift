@@ -10,9 +10,14 @@ import Logger
 /// Loader for Xcode schemes that handles parsing and caching
 public struct XcodeSchemeLoader: Sendable {
     private let parser: XcodeSchemeParser
+    private let containerParser: XcodeContainerParser
 
-    public init(parser: XcodeSchemeParser = XcodeSchemeParser()) {
+    public init(
+        parser: XcodeSchemeParser = XcodeSchemeParser(),
+        containerParser: XcodeContainerParser = XcodeContainerParser()
+    ) {
         self.parser = parser
+        self.containerParser = containerParser
     }
 
     /// Load a single scheme from its file URL
@@ -27,25 +32,43 @@ public struct XcodeSchemeLoader: Sendable {
         return try parser.parseScheme(data: data, name: name)
     }
 
-    /// Load schemes from a container URL with optional filtering by scheme name
+    /// Load schemes from workspace URL with optional filtering by scheme name
     public func loadSchemes(
-        from containerURL: URL,
-        filteredBy schemeName: String? = nil
-    ) async throws -> [XcodeSchemeInfo] {
-        let schemeFiles = parser.findSchemeFiles(in: containerURL)
-        logger.debug("[scheme parser]found \(schemeFiles.count) scheme files")
+        fromWorkspace workspaceURL: URL,
+        filterBy schemeNames: [String] = []
+    ) throws -> [XcodeSchemeInfo] {
+        let schemeFileURLs = containerParser.getSchemeFileURLs(from: workspaceURL)
+        return try loadSchemes(from: schemeFileURLs, filterBy: schemeNames)
+    }
 
-        // Filter scheme files by name if specified
+    /// Load schemes from project URL with optional filtering by scheme name
+    public func loadSchemes(
+        fromProject projectURL: URL,
+        filterBy schemeNames: [String] = []
+    ) throws -> [XcodeSchemeInfo] {
+        let schemeFileURLs = containerParser.getSchemeFileURLs(from: projectURL)
+        return try loadSchemes(from: schemeFileURLs, filterBy: schemeNames)
+    }
+
+    /// Load schemes from scheme file URLs with optional filtering by scheme names
+    func loadSchemes(
+        from schemeFileURLs: [URL],
+        filterBy schemeNames: [String] = []
+    ) throws -> [XcodeSchemeInfo] {
+        logger.debug("[scheme parser]found \(schemeFileURLs.count) scheme files")
+
+        // Filter scheme files by names if specified
         let filteredSchemeFiles: [URL]
-        if let schemeName {
-            filteredSchemeFiles = schemeFiles.filter { url in
-                url.deletingPathExtension().lastPathComponent == schemeName
+        if !schemeNames.isEmpty {
+            filteredSchemeFiles = schemeFileURLs.filter { url in
+                let fileName = url.deletingPathExtension().lastPathComponent
+                return schemeNames.contains(fileName)
             }
             guard !filteredSchemeFiles.isEmpty else {
-                throw XcodeSchemeError.schemeNotFound(schemeName)
+                throw XcodeSchemeError.schemeNotFound(schemeNames.joined(separator: ", "))
             }
         } else {
-            filteredSchemeFiles = schemeFiles
+            filteredSchemeFiles = schemeFileURLs
         }
 
         var schemes: [XcodeSchemeInfo] = []
@@ -259,15 +282,15 @@ public struct XcodeSchemeLoader: Sendable {
         }
 
         // Check for duplicate scheme names
-        let schemeNames = schemes.map(\.name)
-        let uniqueSchemeNames = Set(schemeNames)
-
-        if schemeNames.count != uniqueSchemeNames.count {
-            let duplicates = schemeNames.filter { name in
-                schemeNames.filter { $0 == name }.count > 1
-            }
-            throw XcodeSchemeError.invalidConfig("Duplicate scheme names found: \(Set(duplicates))")
-        }
+//        let schemeNames = schemes.map(\.name)
+//        let uniqueSchemeNames = Set(schemeNames)
+//
+//        if schemeNames.count != uniqueSchemeNames.count {
+//            let duplicates = schemeNames.filter { name in
+//                schemeNames.filter { $0 == name }.count > 1
+//            }
+//            throw XcodeSchemeError.invalidConfig("Duplicate scheme names found: \(Set(duplicates))")
+//        }
 
         // Validate each scheme has at least one target
         for scheme in schemes where scheme.targets.isEmpty {

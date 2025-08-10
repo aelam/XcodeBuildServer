@@ -5,11 +5,11 @@
 //
 
 ///
-/// 
+///
 ///   {
 /// "method":"workspace/buildTargets","id":2,"jsonrpc":"2.0","params":{}}
 
-/// 
+///
 public struct WorkspaceBuildTargetsRequest: ContextualRequestType, Sendable {
     public typealias RequiredContext = BuildServerContext
 
@@ -17,8 +17,7 @@ public struct WorkspaceBuildTargetsRequest: ContextualRequestType, Sendable {
         "workspace/buildTargets"
     }
 
-    public struct Params: Codable, Sendable {
-    }
+    public struct Params: Codable, Sendable {}
 
     public let id: JSONRPCID
     public let jsonrpc: String

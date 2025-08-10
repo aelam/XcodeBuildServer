@@ -264,30 +264,6 @@ struct XcodeSchemeParserTests {
     }
 
     @Test
-    func findSchemeFilesInExplicitWorkspace() throws {
-        let workspaceDir = createTemporaryWorkspaceStructure()
-        defer { try? FileManager.default.removeItem(at: workspaceDir) }
-
-        let schemeFiles = parser.findSchemeFiles(in: workspaceDir)
-
-        #expect(schemeFiles.count == 2) // App.xcscheme and Tests.xcscheme
-        #expect(schemeFiles.contains { $0.lastPathComponent == "App.xcscheme" })
-        #expect(schemeFiles.contains { $0.lastPathComponent == "Tests.xcscheme" })
-    }
-
-    @Test
-    func findSchemeFilesInImplicitWorkspace() throws {
-        let projectDir = createTemporaryProjectStructure()
-        defer { try? FileManager.default.removeItem(at: projectDir) }
-
-        let workspaceURL = projectDir.appendingPathComponent("project.xcworkspace")
-        let schemeFiles = parser.findSchemeFiles(in: projectDir)
-
-        #expect(schemeFiles.count == 1) // MyProject.xcscheme
-        #expect(schemeFiles.first?.lastPathComponent == "MyProject.xcscheme")
-    }
-
-    @Test
     func parseRealSchemeContent() throws {
         // Create a complete scheme with TestAction that has Testables
         let realSchemeXML = """
@@ -396,17 +372,6 @@ struct XcodeSchemeParserTests {
         #expect(schemeInfo.testTargets.count == 1) // Only actual testable targets
         #expect(schemeInfo.runTargets.count == 1) // Only main target runs
         #expect(schemeInfo.firstBuildableTarget?.targetName == "XcodeBuildServer")
-    }
-
-    @Test
-    func findSchemeFilesIncludesUserSchemes() throws {
-        let workspaceDir = createTemporaryWorkspaceWithUserSchemes()
-        defer { try? FileManager.default.removeItem(at: workspaceDir) }
-
-        let schemeFiles = parser.findSchemeFiles(in: workspaceDir)
-
-        #expect(schemeFiles.count == 3) // 2 shared + 1 user scheme
-        #expect(schemeFiles.contains { $0.lastPathComponent == "UserScheme.xcscheme" })
     }
 
     // MARK: - Helper Methods

@@ -99,8 +99,6 @@ public struct XcodeBuildOptions: Sendable {
         quiet: true
     )
 
-    public static let listSchemes = XcodeBuildOptions(list: true)
-
     public static let listSchemesJSON = XcodeBuildOptions(json: true, list: true)
 }
 
@@ -144,22 +142,28 @@ public struct XcodeBuildCommandBuilder {
 
         return arguments
     }
-    
+
     public func buildSettingsCommand(
-        target: String,
+        scheme: String?,
+        target: String?,
         destination: XcodeBuildDestination? = nil,
         forIndex: Bool = false
     ) -> [String] {
         let options = forIndex ? XcodeBuildOptions.buildSettingsForIndexJSON : XcodeBuildOptions.buildSettingsJSON
-        return buildCommand(target: target, destination: destination, options: options)
+        return buildCommand(
+            scheme: scheme,
+            target: target,
+            destination: destination,
+            options: options
+        )
     }
 
     public func listSchemesCommand() -> [String] {
-        buildCommand(options: XcodeBuildOptions.listSchemes)
+        buildCommand(options: XcodeBuildOptions.listSchemesJSON)
     }
 
     public func showDestinationsCommand(scheme: String) -> [String] {
-        return buildCommand(scheme: scheme, options: XcodeBuildOptions(showdestinations: true))
+        buildCommand(scheme: scheme, options: XcodeBuildOptions(showdestinations: true))
     }
 
     public func buildForBSP(
@@ -177,10 +181,10 @@ public struct XcodeBuildCommandBuilder {
 
     private func buildWorkspaceOrProjectArguments() -> [String] {
         switch projectIdentifier.projectLocation {
-        case .explicitWorkspace(let workspaceURL):
-            return ["-workspace", workspaceURL.path]
-        case .implicitWorkspace(let projectURL, _):
-            return ["-project", projectURL.path]
+        case let .explicitWorkspace(workspaceURL):
+            ["-workspace", workspaceURL.path]
+        case let .implicitWorkspace(projectURL, _):
+            ["-project", projectURL.path]
         }
     }
 
