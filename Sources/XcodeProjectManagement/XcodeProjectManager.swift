@@ -6,6 +6,7 @@
 
 import Foundation
 import Logger
+import XcodeSchemeParser
 
 public struct XcodeIndexPaths: Sendable {
     public let derivedDataPath: URL
@@ -16,15 +17,6 @@ public struct XcodeIndexPaths: Sendable {
         self.derivedDataPath = derivedDataPath
         self.indexStoreURL = indexStoreURL
         self.indexDatabaseURL = indexDatabaseURL
-    }
-}
-
-public struct XcodeListInfo: Codable, Sendable {
-    public let workspace: XcodeListWorkspace?
-
-    public struct XcodeListWorkspace: Codable, Sendable {
-        public let name: String
-        public let schemes: [String]
     }
 }
 
@@ -94,9 +86,11 @@ public struct XcodeProjectIdentifier: Sendable {
     public let projectLocation: XcodeProjectLocation
 }
 
-public struct XcodeProjectBasicInfo: Sendable {
+public struct XcodeProjectInfo: Sendable {
     public let rootURL: URL
     public let projectLocation: XcodeProjectLocation
+    public let xcodeListInfo: XcodeListInfo
+    public let buildSettingsList: [XcodeBuildSettings]
     public let schemeInfoList: [XcodeSchemeInfo]
     public let derivedDataPath: URL
     public let indexStoreURL: URL
@@ -105,6 +99,8 @@ public struct XcodeProjectBasicInfo: Sendable {
     public init(
         rootURL: URL,
         projectLocation: XcodeProjectLocation,
+        xcodeListInfo: XcodeListInfo,
+        buildSettingsList: [XcodeBuildSettings],
         schemeInfoList: [XcodeSchemeInfo] = [],
         derivedDataPath: URL,
         indexStoreURL: URL,
@@ -112,6 +108,8 @@ public struct XcodeProjectBasicInfo: Sendable {
     ) {
         self.rootURL = rootURL
         self.projectLocation = projectLocation
+        self.xcodeListInfo = xcodeListInfo
+        self.buildSettingsList = buildSettingsList
         self.schemeInfoList = schemeInfoList
         self.derivedDataPath = derivedDataPath
         self.indexStoreURL = indexStoreURL
@@ -137,65 +135,71 @@ public actor XcodeProjectManager {
     public let rootURL: URL
     private let locator: XcodeProjectLocator
     private let schemeLoader: XcodeSchemeLoader
-    private(set) var currentProject: XcodeProjectBasicInfo?
     private let toolchain: XcodeToolchain
-    private let projectReference: XcodeProjectReference?
+    private let xcodeProjectReference: XcodeProjectReference?
+
+    private(set) var currentProject: XcodeProjectInfo?
 
     public init(
         rootURL: URL,
-        projectReference: XcodeProjectReference? = nil,
+        xcodeProjectReference: XcodeProjectReference? = nil,
         toolchain: XcodeToolchain,
         locator: XcodeProjectLocator,
         schemeLoader: XcodeSchemeLoader = XcodeSchemeLoader()
     ) {
         self.rootURL = rootURL
-        self.projectReference = projectReference
+        self.xcodeProjectReference = xcodeProjectReference
         self.toolchain = toolchain
         self.locator = locator
         self.schemeLoader = schemeLoader
     }
 
-    public func loadProjectBasicInfo() async throws -> XcodeProjectBasicInfo {
-        // Initialize toolchain first
+    public func initialize() async throws {
         try await toolchain.initialize()
-
-        let projectLocation = try locator.resolveProjectType(
-            rootURL: rootURL,
-            xcodeProjectReference: projectReference
-        )
-        let projectInfo = try await resolveProjectBasic(
-            for: projectLocation,
-            xcodeProjectReference: projectReference
-        )
-        currentProject = projectInfo
-        return projectInfo
     }
 
-    private func resolveProjectBasic(
-        for projectLocation: XcodeProjectLocation,
-        xcodeProjectReference: XcodeProjectReference? = nil
-    ) async throws -> XcodeProjectBasicInfo {
-        let schemesToLoad = try await schemeLoader.loadSchemes(
-            from: projectLocation,
-            filteredBy: xcodeProjectReference
+    public func resolveProjectInfo() async throws -> XcodeProjectInfo {
+        let projectLocation = try locator.resolveProjectType(
+            rootURL: rootURL,
+            xcodeProjectReference: xcodeProjectReference
         )
-        
-        guard let firstScheme = schemesToLoad.first else {
-            throw XcodeProjectError.schemeNotFound("empty schemes list")
+        let projectIdentifier = XcodeProjectIdentifier(rootURL: rootURL, projectLocation: projectLocation)
+        let settingsCommandBuilder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
+        let settingsLoader = XcodeSettingsLoader(commandBuilder: settingsCommandBuilder, toolchain: toolchain)
+
+        let xcodeListInfo = try await settingsLoader.listInfo()
+        // Load build settings and index paths with correct destination
+        let buildSettingsList = try await settingsLoader.loadBuildSettings(
+            scheme: xcodeListInfo.schemes.first,
+            target: nil,
+            destination: nil
+        )
+
+        // Get index URLs using the first available scheme (shared per workspace)
+        let indexPaths = try await loadIndexURLs(
+            settingsLoader: settingsLoader,
+            projectLocation: projectLocation,
+            buildSettingsList: buildSettingsList
+        )
+
+        let filterSchemes: [String] = if let xcodeProjectReference, let scheme = xcodeProjectReference.scheme {
+            [scheme]
+        } else {
+            []
         }
+        let schemesToLoad = try schemeLoader.loadSchemes(
+            from: projectLocation,
+            filterBy: filterSchemes
+        )
 
         // Validate loaded schemes
         try schemeLoader.validateSchemes(schemesToLoad)
 
-        // Get index URLs using the first available scheme (shared per workspace)  
-        let indexPaths = try await loadIndexURLs(
-            scheme: firstScheme.name,
-            projectLocation: projectLocation
-        )
-
-        return XcodeProjectBasicInfo(
+        return XcodeProjectInfo(
             rootURL: rootURL,
             projectLocation: projectLocation,
+            xcodeListInfo: xcodeListInfo,
+            buildSettingsList: buildSettingsList,
             schemeInfoList: schemesToLoad,
             derivedDataPath: indexPaths.derivedDataPath,
             indexStoreURL: indexPaths.indexStoreURL,
@@ -204,24 +208,13 @@ public actor XcodeProjectManager {
     }
 
     private func loadIndexURLs(
-        scheme: String,
-        projectLocation: XcodeProjectLocation
+        settingsLoader: XcodeSettingsLoader,
+        projectLocation: XcodeProjectLocation,
+        scheme: String? = nil,
+        buildSettingsList: [XcodeBuildSettings]
     ) async throws -> XcodeIndexPaths {
-        let projectIdentifier = XcodeProjectIdentifier(rootURL: rootURL, projectLocation: projectLocation)
-        let settingsCommandBuilder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
-        let settingsLoader = XcodeSettingsLoader(commandBuilder: settingsCommandBuilder, toolchain: toolchain)
-
-        // Auto-detect the appropriate destination for this project
-        let destination = try await settingsLoader.detectDestination(scheme: scheme)
-
-        // Find the appropriate target from the scheme
-        let targetToUse = try getTargetFromScheme(schemeName: scheme)
-
-        // Load build settings and index paths with correct destination
-        let buildSettings = try await settingsLoader.loadBuildSettings(target: targetToUse, destination: destination)
         let (indexStoreURL, indexDatabaseURL) = try await settingsLoader.loadIndexingPaths(
-            target: targetToUse,
-            buildSettings: buildSettings
+            buildSettingsList: buildSettingsList
         )
 
         // Extract derived data path from index store URL (go up 2 levels from Index.noIndex/DataStore)
@@ -242,7 +235,7 @@ public actor XcodeProjectManager {
         toolchain
     }
 
-    public var currentProjectInfo: XcodeProjectBasicInfo? {
+    public var currentProjectInfo: XcodeProjectInfo? {
         currentProject
     }
 
@@ -254,7 +247,7 @@ public actor XcodeProjectManager {
     /// Get all runnable targets from loaded schemes
     public func getAllRunnableTargets() throws -> Set<String> {
         guard let currentProject else {
-            throw XcodeProjectError.invalidConfig("Project not loaded. Call loadProjectBasicInfo() first.")
+            throw XcodeProjectError.invalidConfig("Project not loaded. Call resolveProjectInfo() first.")
         }
 
         return schemeLoader.getAllRunnableTargets(from: currentProject.schemeInfoList)
@@ -263,7 +256,7 @@ public actor XcodeProjectManager {
     /// Get all testable targets from loaded schemes
     public func getAllTestableTargets() throws -> Set<String> {
         guard let currentProject else {
-            throw XcodeProjectError.invalidConfig("Project not loaded. Call loadProjectBasicInfo() first.")
+            throw XcodeProjectError.invalidConfig("Project not loaded. Call resolveProjectInfo() first.")
         }
 
         return schemeLoader.getAllTestableTargets(from: currentProject.schemeInfoList)
@@ -272,7 +265,7 @@ public actor XcodeProjectManager {
     /// Get the preferred scheme for a target
     public func getPreferredScheme(for targetName: String) throws -> XcodeSchemeInfo? {
         guard let currentProject else {
-            throw XcodeProjectError.invalidConfig("Project not loaded. Call loadProjectBasicInfo() first.")
+            throw XcodeProjectError.invalidConfig("Project not loaded. Call resolveProjectInfo() first.")
         }
 
         return schemeLoader.getPreferredScheme(for: targetName, from: currentProject.schemeInfoList)
@@ -280,18 +273,10 @@ public actor XcodeProjectManager {
 
     private func getAnyAvailableScheme() async throws -> String {
         guard let currentProject else {
-            throw XcodeProjectError.invalidConfig("Project not loaded. Call loadProjectBasicInfo() first.")
+            throw XcodeProjectError.invalidConfig("Project not loaded. Call resolveProjectInfo() first.")
         }
 
         return try schemeLoader.getAnyAvailableScheme(from: currentProject.schemeInfoList)
-    }
-
-    private func getTargetFromScheme(schemeName: String) throws -> String {
-        guard let currentProject else {
-            throw XcodeProjectError.invalidConfig("Project not loaded. Call loadProjectBasicInfo() first.")
-        }
-
-        return try schemeLoader.getTargetFromScheme(schemeName: schemeName, in: currentProject.schemeInfoList)
     }
 
     private func parseTargetsFromBuildSettings(data: Data) throws -> [XcodeTargetInfo] {

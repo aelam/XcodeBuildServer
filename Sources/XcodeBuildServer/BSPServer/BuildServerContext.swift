@@ -68,13 +68,14 @@ public actor BuildServerContext {
         // Create project manager (it will manage its own toolchain)
         let projectManager = XcodeProjectManager(
             rootURL: rootURL,
-            projectReference: config?.projectReference,
+            xcodeProjectReference: config?.projectReference,
             toolchain: XcodeToolchain(),
             locator: XcodeProjectLocator()
         )
 
+        try await projectManager.initialize()
         // Load project basic info (this will initialize toolchain internally)
-        _ = try await projectManager.loadProjectBasicInfo()
+        _ = try await projectManager.resolveProjectInfo()
 
         // Initialize BSP adapter
         let bspAdapter = XcodeToBSPAdapter(
@@ -98,7 +99,7 @@ public extension BuildServerContext {
         return try await state.bspAdapter.createBuildTargets()
     }
 
-    func getProjectBasicInfo() async throws -> XcodeProjectBasicInfo {
+    func getProjectBasicInfo() async throws -> XcodeProjectInfo {
         let state = try loadedState
         guard let projectInfo = await state.projectManager.currentProjectInfo else {
             throw BuildServerError.invalidConfiguration("Project not loaded")

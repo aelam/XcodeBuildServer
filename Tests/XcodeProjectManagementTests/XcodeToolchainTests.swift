@@ -61,7 +61,7 @@ struct XcodeToolchainTests {
         let toolchain = XcodeToolchain()
         try await toolchain.initialize()
 
-        let (output, exitCode) = try await toolchain.executeXcodeBuild(arguments: ["-version"])
+        let (output, _, exitCode) = try await toolchain.executeXcodeBuild(arguments: ["-version"])
 
         #expect(exitCode == 0)
         #expect(!output.isEmpty)

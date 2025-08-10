@@ -191,39 +191,17 @@ struct XcodeSchemeLoaderTests {
     }
 
     @Test
-    func validateSchemesThrowsForDuplicateNames() throws {
-        let duplicateSchemes = [
-            XcodeSchemeInfo(
-                name: "Duplicate",
-                configuration: "Debug",
-                buildableTargets: [],
-                testableTargets: []
-            ),
-            XcodeSchemeInfo(
-                name: "Duplicate",
-                configuration: "Release",
-                buildableTargets: [],
-                testableTargets: []
-            )
-        ]
-
-        #expect(throws: XcodeSchemeError.self) {
-            try schemeLoader.validateSchemes(duplicateSchemes)
-        }
-    }
-
-    @Test
     func loadSchemesWithProjectReference() async throws {
         // Create a temporary workspace structure with schemes
         let workspaceDir = createTemporaryWorkspaceStructure()
         defer { try? FileManager.default.removeItem(at: workspaceDir) }
 
         // Test loading all schemes
-        let allSchemes = try await schemeLoader.loadSchemes(from: workspaceDir)
+        let allSchemes = try schemeLoader.loadSchemes(fromWorkspace: workspaceDir)
         #expect(allSchemes.count == 2) // App.xcscheme and Tests.xcscheme
 
         // Test loading with specific scheme filter
-        let filteredSchemes = try await schemeLoader.loadSchemes(from: workspaceDir, filteredBy: "App")
+        let filteredSchemes = try schemeLoader.loadSchemes(fromWorkspace: workspaceDir, filterBy: ["App"])
         #expect(filteredSchemes.count == 1)
         #expect(filteredSchemes.first?.name == "App")
     }
@@ -234,7 +212,7 @@ struct XcodeSchemeLoaderTests {
         defer { try? FileManager.default.removeItem(at: workspaceDir) }
 
         await #expect(throws: XcodeSchemeError.self) {
-            try await schemeLoader.loadSchemes(from: workspaceDir, filteredBy: "NonExistentScheme")
+            try schemeLoader.loadSchemes(fromWorkspace: workspaceDir, filterBy: ["NonExistentScheme"])
         }
     }
 

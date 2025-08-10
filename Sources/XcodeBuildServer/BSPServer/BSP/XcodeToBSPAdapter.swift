@@ -36,9 +36,9 @@ public actor XcodeToBSPAdapter {
     }
 
     /// Get current project info
-    private func getCurrentProject() async throws -> XcodeProjectBasicInfo {
+    private func getCurrentProject() async throws -> XcodeProjectInfo {
         guard let currentProject = await projectManager.currentProjectInfo else {
-            throw XcodeProjectError.invalidConfig("Project not loaded. Call loadProjectBasicInfo() first.")
+            throw XcodeProjectError.invalidConfig("Project not loaded. Call resolveProjectInfo() first.")
         }
         return currentProject
     }
@@ -47,7 +47,7 @@ public actor XcodeToBSPAdapter {
     private func createBuildTarget(
         from targetInfo: XcodeSchemeTargetInfo,
         scheme: XcodeSchemeInfo,
-        projectBasicInfo: XcodeProjectBasicInfo
+        projectBasicInfo: XcodeProjectInfo
     ) async -> BuildTarget {
         // Create BSP target identifier for this specific scheme-target combination
         let targetIdentifier = createBSPTargetIdentifier(
@@ -76,13 +76,12 @@ public actor XcodeToBSPAdapter {
             data: sourceKitData?.encodeToLSPAny()
         )
     }
-    
 
-    /// Create BSP target identifier string from XcodeProjectBasicInfo and target details
+    /// Create BSP target identifier string from XcodeProjectInfo and target details
     private func createBSPTargetIdentifier(
         targetName: String,
         primaryScheme: String,
-        projectBasicInfo: XcodeProjectBasicInfo
+        projectBasicInfo: XcodeProjectInfo
     ) -> String {
         "xcode:///\(projectBasicInfo.projectLocation.name)/\(primaryScheme)/\(targetName)"
     }
@@ -104,7 +103,7 @@ public actor XcodeToBSPAdapter {
 
         if targetInfo.targetName.contains("UITest") {
             tags.append(.integrationTest)
-        } else if targetInfo.buildForTesting && !targetInfo.buildForRunning {
+        } else if targetInfo.buildForTesting, !targetInfo.buildForRunning {
             // Pure test target (only builds for testing)
             tags.append(.test)
         } else if targetInfo.buildForRunning {
@@ -138,7 +137,7 @@ public actor XcodeToBSPAdapter {
 
     /// Create capabilities for BSP target based on scheme configuration
     private func createCapabilities(for targetInfo: XcodeSchemeTargetInfo) -> BuildTargetCapabilities {
-        return BuildTargetCapabilities(
+        BuildTargetCapabilities(
             canCompile: true, // All Xcode targets can compile
             canTest: targetInfo.buildForTesting,
             canRun: targetInfo.buildForRunning,

@@ -23,14 +23,14 @@ struct XcodeProjectManagementExample {
             // Initialize the project manager
             let projectManager = XcodeProjectManager(
                 rootURL: projectURL,
-                projectReference: nil,
+                xcodeProjectReference: nil,
                 toolchain: XcodeToolchain(),
                 locator: XcodeProjectLocator()
             )
 
             // Load the project
             print("Loading Xcode project from: \(projectPath)")
-            let project = try await projectManager.loadProjectBasicInfo()
+            let project = try await projectManager.resolveProjectInfo()
 
             print("✓ Project loaded successfully")
             print("  - Root URL: \(project.rootURL.path)")
