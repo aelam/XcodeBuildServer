@@ -89,21 +89,19 @@ public struct XcodeBuildOptions: Sendable {
 
     public static let buildSettingsJSON = XcodeBuildOptions(
         showBuildSettings: true,
-        json: true,
-        quiet: true
+        json: true
     )
 
     public static let buildSettingsForIndexJSON = XcodeBuildOptions(
         showBuildSettingsForIndex: true,
-        json: true,
-        quiet: true
+        json: true
     )
 
     public static let listSchemesJSON = XcodeBuildOptions(json: true, list: true)
 }
 
 public struct XcodeBuildCommandBuilder {
-    private let projectIdentifier: XcodeProjectIdentifier
+    let projectIdentifier: XcodeProjectIdentifier
 
     public init(projectIdentifier: XcodeProjectIdentifier) {
         self.projectIdentifier = projectIdentifier

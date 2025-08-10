@@ -9,38 +9,34 @@ import XcodeProjectManagement
 
 /// Adapter for converting Xcode project information to BSP BuildTarget objects
 public actor XcodeToBSPAdapter {
-    private let projectManager: XcodeProjectManager
+    private let xcodeProjectInfo: XcodeProjectInfo
+    private let xcodeToolchain: XcodeToolchain
 
-    public init(projectManager: XcodeProjectManager) {
-        self.projectManager = projectManager
+    public init(
+        xcodeProjectInfo: XcodeProjectInfo,
+        xcodeToolchain: XcodeToolchain
+    ) {
+        self.xcodeProjectInfo = xcodeProjectInfo
+        self.xcodeToolchain = xcodeToolchain
     }
 
     /// Create all BuildTarget objects for BSP from the current project
     public func createBuildTargets() async throws -> [BuildTarget] {
-        let currentProject = try await getCurrentProject()
         var buildTargets: [BuildTarget] = []
 
         // Create one BSP BuildTarget for each scheme-target combination
-        for schemeInfo in currentProject.schemeInfoList {
+        for schemeInfo in xcodeProjectInfo.schemeInfoList {
             for schemeTargetInfo in schemeInfo.targets {
                 let buildTarget = await createBuildTarget(
                     from: schemeTargetInfo,
                     scheme: schemeInfo,
-                    projectBasicInfo: currentProject
+                    projectBasicInfo: xcodeProjectInfo
                 )
                 buildTargets.append(buildTarget)
             }
         }
 
         return buildTargets
-    }
-
-    /// Get current project info
-    private func getCurrentProject() async throws -> XcodeProjectInfo {
-        guard let currentProject = await projectManager.currentProjectInfo else {
-            throw XcodeProjectError.invalidConfig("Project not loaded. Call resolveProjectInfo() first.")
-        }
-        return currentProject
     }
 
     /// Create a single BuildTarget for a specific scheme-target combination
@@ -60,7 +56,7 @@ public actor XcodeToBSPAdapter {
         let baseDirectory = try? URI(string: projectBasicInfo.rootURL.absoluteString)
         let displayName = "\(scheme.name)/\(targetInfo.targetName)"
         let tags = classifyTarget(targetInfo)
-        let languages: [Language] = [] // TODO: Get languages from target build settings
+        let languages = await detectLanguages(for: targetInfo, scheme: scheme.name)
         let capabilities = createCapabilities(for: targetInfo)
         let sourceKitData = await createSourceKitData()
 
@@ -135,6 +131,31 @@ public actor XcodeToBSPAdapter {
         }
     }
 
+    /// Detect programming languages used by a target
+    private func detectLanguages(for targetInfo: XcodeSchemeTargetInfo, scheme: String) async -> [Language] {
+        // For now, detect languages based on target name patterns and common conventions
+        // This could be enhanced by analyzing source files or build settings in the future
+
+        var languages: Set<String> = []
+
+        // Most iOS/macOS projects use Swift
+        languages.insert("swift")
+
+        // Add Objective-C for targets that might use it (legacy code, bridging, etc.)
+        // This is a heuristic - in practice, you might want to scan source files
+        if targetInfo.targetName.contains("ObjC") ||
+           targetInfo.targetName.contains("Legacy") {
+            languages.insert("objective-c")
+        }
+
+        // For test targets, they typically use the same languages as main targets
+        if targetInfo.targetName.contains("Test") {
+            languages.insert("swift")
+        }
+
+        return mapLanguages(from: languages)
+    }
+
     /// Create capabilities for BSP target based on scheme configuration
     private func createCapabilities(for targetInfo: XcodeSchemeTargetInfo) -> BuildTargetCapabilities {
         BuildTargetCapabilities(
@@ -147,12 +168,22 @@ public actor XcodeToBSPAdapter {
 
     /// Create SourceKit data for the target
     private func createSourceKitData() async -> SourceKitBuildTarget? {
-        let toolchain = await projectManager.getToolchain()
-        guard let installation = await toolchain.getSelectedInstallation() else {
+        guard let installation = await xcodeToolchain.getSelectedInstallation() else {
             return nil
         }
 
-        let toolchainURI = try? URI(string: installation.path.absoluteString)
+        // toolchain应该指向包含'usr'目录的toolchain目录
+        // 对于iOS/macOS项目，XcodeDefault.xctoolchain包含所有平台的工具
+        let toolchainPath = installation.path
+            .appendingPathComponent("Contents/Developer/Toolchains/XcodeDefault.xctoolchain")
+
+        // 验证toolchain路径是否存在
+        guard FileManager.default.fileExists(atPath: toolchainPath.path) else {
+            logger.warning("Toolchain not found at: \(toolchainPath.path)")
+            return SourceKitBuildTarget(toolchain: nil)
+        }
+
+        let toolchainURI = try? URI(string: toolchainPath.absoluteString)
         return SourceKitBuildTarget(toolchain: toolchainURI)
     }
 }

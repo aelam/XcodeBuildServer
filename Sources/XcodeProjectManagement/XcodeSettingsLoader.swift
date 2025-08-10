@@ -86,6 +86,7 @@ public actor XcodeSettingsLoader {
             destination: destination,
             forIndex: false
         )
+        logger.debug("loadBuildSettings command: \(command.joined(separator: " "))")
         let output = try await runXcodeBuild(arguments: command)
         guard let jsonString = output, !jsonString.isEmpty else {
             throw XcodeProjectError.invalidConfig("Failed to load build settings")
@@ -169,9 +170,10 @@ public actor XcodeSettingsLoader {
     }
 
     public func listInfo() async throws -> XcodeListInfo {
+        logger.debug("Listing schemes for platform detection...")
         let command = commandBuilder.listSchemesCommand()
-        let output = try await runXcodeBuild(arguments: command)
-
+        let output = try await runXcodeBuild(arguments: command) // No timeout
+        logger.debug("Received output for list schemes: \(output ?? "[No output]")")
         guard let jsonString = output, !jsonString.isEmpty else {
             throw XcodeProjectError.invalidConfig("Failed to list schemes for platform detection")
         }
@@ -186,7 +188,23 @@ public actor XcodeSettingsLoader {
     }
 
     private func runXcodeBuild(arguments: [String]) async throws -> String? {
-        let (output, error, exitCode) = try await toolchain.executeXcodeBuild(arguments: arguments)
+        // Set working directory to project root for better relative path resolution
+        let workingDirectory = commandBuilder.projectIdentifier.rootURL
+        logger.debug("runXcodeBuild: about to execute command with arguments: \(arguments.joined(separator: " "))")
+        logger.debug("runXcodeBuild: working directory: \(workingDirectory.path)")
+        let (output, error, exitCode) = try await toolchain.executeXcodeBuild(
+            arguments: arguments,
+            workingDirectory: workingDirectory
+        )
+        logger.debug("runXcodeBuild: command completed with exit code: \(exitCode)")
+        logger.debug("runXcodeBuild: output isEmpty: \(output.isEmpty)")
+        logger.debug("runXcodeBuild: output length: \(output.count)")
+        
+        if !output.isEmpty {
+            logger.debug("runXcodeBuild: output preview: \(String(output.prefix(200)))")
+        } else {
+            logger.warning("runXcodeBuild: output is empty!")
+        }
 
         if exitCode != 0 {
             logger.error("xcodebuild command failed with exit code \(exitCode)")
@@ -195,6 +213,7 @@ public actor XcodeSettingsLoader {
             }
         }
 
-        return output
+        // 返回空字符串时返回nil
+        return output.isEmpty ? nil : output
     }
 }

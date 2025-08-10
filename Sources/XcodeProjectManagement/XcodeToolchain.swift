@@ -51,6 +51,7 @@ public actor XcodeToolchain {
     private var availableInstallations: [XcodeInstallation] = []
     private let preferredVersion: String?
     private let customDeveloperDir: String?
+    private let processExecutor = ProcessExecutor()
 
     public init(preferredVersion: String? = nil, customDeveloperDir: String? = nil) {
         self.preferredVersion = preferredVersion
@@ -83,65 +84,13 @@ public actor XcodeToolchain {
             throw XcodeToolchainError.xcodeNotFound
         }
 
-        let process = Process()
-        process.executableURL = installation.xcodebuildPath
-        process.arguments = arguments
+        let result = try await processExecutor.executeXcodeBuild(
+            arguments: arguments,
+            workingDirectory: workingDirectory,
+            xcodeInstallationPath: installation.path
+        )
 
-        // Log the command being executed
-        let commandString = "\(installation.xcodebuildPath.path) \(arguments.joined(separator: " "))"
-        logger.info("Executing command: \(commandString)")
-
-        if let workingDirectory {
-            process.currentDirectoryURL = workingDirectory
-        }
-
-        // Set environment variables for consistent toolchain selection
-        var environment = ProcessInfo.processInfo.environment
-
-        // Only set the standard DEVELOPER_DIR environment variable
-        environment["DEVELOPER_DIR"] = installation.path.appendingPathComponent("Contents/Developer").path
-
-        // Remove any potentially interfering environment variables
-        environment.removeValue(forKey: "XCODE_DEVELOPER_DIR_PATH")
-
-        process.environment = environment
-
-        let outputPipe = Pipe()
-        let errorPipe = Pipe()
-        process.standardOutput = outputPipe
-        process.standardError = errorPipe
-
-        return try await withCheckedThrowingContinuation { continuation in
-            process.terminationHandler = { process in
-                defer {
-                    // Explicitly close file handles to prevent resource leaks
-                    try? outputPipe.fileHandleForReading.close()
-                    try? outputPipe.fileHandleForWriting.close()
-                    try? errorPipe.fileHandleForReading.close()
-                    try? errorPipe.fileHandleForWriting.close()
-                }
-
-                let outputData = outputPipe.fileHandleForReading.readDataToEndOfFile()
-                let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
-
-                let output = String(data: outputData, encoding: .utf8) ?? ""
-                let errorString = String(data: errorData, encoding: .utf8) ?? ""
-                let error = errorString.isEmpty ? nil : errorString
-
-                continuation.resume(returning: (output: output, error: error, exitCode: process.terminationStatus))
-            }
-
-            do {
-                try process.run()
-            } catch {
-                // Clean up pipes if process fails to start
-                try? outputPipe.fileHandleForReading.close()
-                try? outputPipe.fileHandleForWriting.close()
-                try? errorPipe.fileHandleForReading.close()
-                try? errorPipe.fileHandleForWriting.close()
-                continuation.resume(throwing: error)
-            }
-        }
+        return (output: result.output, error: result.error, exitCode: result.exitCode)
     }
 
     public func getXcodeVersion() async throws -> String {
@@ -339,69 +288,32 @@ private enum XcodeInstallationFactory {
 }
 
 private enum XcodePathResolver {
+    private static let processExecutor = ProcessExecutor()
+
     static func findActiveXcodePath() async throws -> String? {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
-        process.arguments = ["--show-sdk-path"]
+        let result = try await processExecutor.executeXcrun(arguments: ["--show-sdk-path"])
 
-        // Log the command being executed
-        logger.info("Executing command: /usr/bin/xcrun --show-sdk-path")
-
-        let pipe = Pipe()
-        process.standardOutput = pipe
-
-        return try await withCheckedThrowingContinuation { continuation in
-            process.terminationHandler = { _ in
-                let data = pipe.fileHandleForReading.readDataToEndOfFile()
-                if let output = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) {
-                    let components = output.split(separator: "/")
-                    if let appIndex = components.firstIndex(where: { $0.hasSuffix(".app") }) {
-                        let appPath = "/" + components[1 ... appIndex].joined(separator: "/")
-                        continuation.resume(returning: appPath)
-                    } else {
-                        continuation.resume(returning: nil)
-                    }
-                } else {
-                    continuation.resume(returning: nil)
-                }
-            }
-
-            do {
-                try process.run()
-            } catch {
-                continuation.resume(throwing: error)
-            }
+        guard result.isSuccess else {
+            return nil
         }
+
+        let output = result.output.trimmingCharacters(in: .whitespacesAndNewlines)
+        let components = output.split(separator: "/")
+        if let appIndex = components.firstIndex(where: { $0.hasSuffix(".app") }) {
+            let appPath = "/" + components[1 ... appIndex].joined(separator: "/")
+            return appPath
+        }
+
+        return nil
     }
 
     static func getCurrentDeveloperDir() async throws -> String? {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/xcode-select")
-        process.arguments = ["--print-path"]
+        let result = try await processExecutor.executeXcodeSelect()
 
-        // Log the command being executed
-        logger.info("Executing command: /usr/bin/xcode-select --print-path")
-
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = pipe
-
-        return try await withCheckedThrowingContinuation { continuation in
-            process.terminationHandler = { process in
-                if process.terminationStatus == 0 {
-                    let data = pipe.fileHandleForReading.readDataToEndOfFile()
-                    let output = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines)
-                    continuation.resume(returning: output)
-                } else {
-                    continuation.resume(returning: nil)
-                }
-            }
-
-            do {
-                try process.run()
-            } catch {
-                continuation.resume(throwing: error)
-            }
+        guard result.isSuccess else {
+            return nil
         }
+
+        return result.output.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }

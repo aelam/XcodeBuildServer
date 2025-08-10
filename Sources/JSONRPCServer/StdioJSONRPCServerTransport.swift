@@ -124,7 +124,7 @@ public final class StdioJSONRPCServerTransport: JSONRPCServerTransport, @uncheck
         }
 
         let data = try jsonEncoder.encode(response)
-        let header = "Content-Length: \(data.count)\r\n\r\n"
+        let header = "Content-Length:\(data.count)\r\n\r\n"
         let headerData = header.data(using: .utf8)!
 
         // Log response being sent (only if BSP_DEBUG is set)
@@ -188,7 +188,7 @@ public final class StdioJSONRPCServerTransport: JSONRPCServerTransport, @uncheck
             throw JSONRPCTransportError.invalidMessage
         }
 
-        // Parse HTTP-like headers (Content-Length: N\r\n\r\n)
+        // Parse HTTP-like headers (Content-Length:N\r\n\r\n)
         let components = content.split(separator: "\r\n", omittingEmptySubsequences: true)
         guard components.count >= 2 else {
             throw JSONRPCTransportError.invalidMessage

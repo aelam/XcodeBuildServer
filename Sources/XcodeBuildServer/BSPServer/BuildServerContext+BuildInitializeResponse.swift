@@ -8,18 +8,10 @@ import Foundation
 
 public extension BuildServerContext {
     func getIndexStoreURL() async throws -> URL {
-        let state = try loadedState
-        guard let projectInfo = await state.projectManager.currentProjectInfo else {
-            throw BuildServerError.invalidConfiguration("Project not loaded")
-        }
-        return projectInfo.indexStoreURL
+        try loadedState.xcodeProjectInfo.indexStoreURL
     }
 
     func getIndexDatabaseURL() async throws -> URL {
-        let state = try loadedState
-        guard let projectInfo = await state.projectManager.currentProjectInfo else {
-            throw BuildServerError.invalidConfiguration("Project not loaded")
-        }
-        return projectInfo.indexDatabaseURL
+        try loadedState.xcodeProjectInfo.indexDatabaseURL
     }
 }
