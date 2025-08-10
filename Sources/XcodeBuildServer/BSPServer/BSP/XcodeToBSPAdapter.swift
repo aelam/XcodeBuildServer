@@ -144,7 +144,7 @@ public actor XcodeToBSPAdapter {
         // Add Objective-C for targets that might use it (legacy code, bridging, etc.)
         // This is a heuristic - in practice, you might want to scan source files
         if targetInfo.targetName.contains("ObjC") ||
-           targetInfo.targetName.contains("Legacy") {
+            targetInfo.targetName.contains("Legacy") {
             languages.insert("objective-c")
         }
 

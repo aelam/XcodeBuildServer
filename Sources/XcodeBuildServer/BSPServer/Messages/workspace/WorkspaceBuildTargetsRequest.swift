@@ -39,11 +39,10 @@ public struct WorkspaceBuildTargetsRequest: ContextualRequestType, Sendable {
                 logger.error("Failed to get build targets: \(error)")
 
                 // 提供更友好的错误信息，特别是对于未初始化的情况
-                let errorMessage: String
-                if error.localizedDescription.contains("BuildServerContext not loaded") {
-                    errorMessage = "Build server not initialized. Please send 'build/initialize' request first."
+                let errorMessage = if error.localizedDescription.contains("BuildServerContext not loaded") {
+                    "Build server not initialized. Please send 'build/initialize' request first."
                 } else {
-                    errorMessage = "Failed to get build targets: \(error.localizedDescription)"
+                    "Failed to get build targets: \(error.localizedDescription)"
                 }
 
                 return JSONRPCErrorResponse(
