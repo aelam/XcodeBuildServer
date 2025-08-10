@@ -4,7 +4,25 @@
 //  Copyright © 2024 Wang Lun.
 //
 
+/// Example request:
+/// ```json
+/// {
+///   "params": {
+///     "targets": [
+///       {"uri": "xcode:///Hello.xcodeproj/Hello/Hello"},
+///       {"uri": "xcode:///Hello.xcodeproj/Hello/HelloTests"},
+///       {"uri": "xcode:///Hello.xcodeproj/Hello/HelloUITests"},
+///       {"uri": "xcode:///Hello.xcodeproj/Hello/World"}
+///     ]
+///   },
+///   "jsonrpc": "2.0",
+///   "method": "buildTarget/sources",
+///   "id": 3
+/// }
+/// ```
+
 import Foundation
+import XcodeProjectManagement
 
 struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
     typealias RequiredContext = BuildServerContext
@@ -32,18 +50,157 @@ struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
         context: BuildServerContext,
         targetIds: [BuildTargetIdentifier]
     ) async -> BuildTargetSourcesResponse {
-        // TODO: Implement actual source file discovery logic
-        // For now, return empty sources for each target
-        let items = targetIds.map { targetId in
-            SourcesItem(
-                target: targetId,
-                sources: [], // Will be populated with actual source files
-                roots: nil
+        let sourceDiscovery = XcodeSourceFileDiscovery()
+        var items: [SourcesItem] = []
+
+        for targetId in targetIds {
+            let sourcesItem = await buildSourcesItem(
+                for: targetId,
+                context: context,
+                sourceDiscovery: sourceDiscovery
             )
+            items.append(sourcesItem)
         }
 
         return BuildTargetSourcesResponse(items: items)
     }
+
+    private func buildSourcesItem(
+        for targetId: BuildTargetIdentifier,
+        context: BuildServerContext,
+        sourceDiscovery: XcodeSourceFileDiscovery
+    ) async -> SourcesItem {
+        do {
+            // Parse target identifier to get target information
+            let targetInfo = try parseTargetIdentifier(targetId.uri.stringValue)
+
+            // Get project info from context
+            guard let projectInfo = try? await context.getProjectBasicInfo() else {
+                return createEmptySourcesItem(for: targetId)
+            }
+
+            // Find the target in build settings and build sources
+            if let xcodeTarget = projectInfo.buildSettingsList
+                .first(where: { $0.target == targetInfo.targetName }) {
+                return await buildSourcesItemWithTarget(
+                    targetId: targetId,
+                    xcodeTarget: xcodeTarget,
+                    projectInfo: projectInfo,
+                    sourceDiscovery: sourceDiscovery
+                )
+            } else {
+                return createEmptySourcesItem(for: targetId)
+            }
+        } catch {
+            return createEmptySourcesItem(for: targetId)
+        }
+    }
+
+    private func buildSourcesItemWithTarget(
+        targetId: BuildTargetIdentifier,
+        xcodeTarget: XcodeBuildSettings,
+        projectInfo: XcodeProjectInfo,
+        sourceDiscovery: XcodeSourceFileDiscovery
+    ) async -> SourcesItem {
+        do {
+            // Create target info from build settings
+            let target = XcodeTargetInfo(
+                name: xcodeTarget.target,
+                productType: xcodeTarget.buildSettings["PRODUCT_TYPE"],
+                buildSettings: xcodeTarget.buildSettings
+            )
+
+            // Discover source files for this target
+            let discoveredFiles = try await sourceDiscovery.discoverSourceFiles(
+                for: target,
+                projectInfo: projectInfo
+            )
+
+            // Convert to SourceItem objects
+            let sourceItems = convertToSourceItems(discoveredFiles)
+
+            // Get source roots
+            let sourceRootURLs = sourceDiscovery.getSourceRoots(
+                for: target,
+                projectInfo: projectInfo
+            )
+            let sourceRoots = sourceRootURLs.compactMap { try? URI(string: $0.absoluteString) }
+
+            return SourcesItem(
+                target: targetId,
+                sources: sourceItems,
+                roots: sourceRoots
+            )
+        } catch {
+            return createEmptySourcesItem(for: targetId)
+        }
+    }
+
+    private func convertToSourceItems(_ discoveredFiles: [DiscoveredSourceFile]) -> [SourceItem] {
+        discoveredFiles.compactMap { discoveredFile in
+            let conversionResult = discoveredFile.toBSPFormat()
+
+            guard let uri = try? URI(string: conversionResult.uri) else {
+                return nil
+            }
+
+            // Create SourceKit data
+            let sourceKitData = SourceKitSourceItemData(
+                language: Language(rawValue: conversionResult.data?["language"] ?? ""),
+                kind: SourceKitSourceItemKind(
+                    rawValue: conversionResult.data?["kind"] ?? "source"
+                ),
+                outputPath: nil // TODO: Add output path from build settings if available
+            )
+
+            return SourceItem(
+                uri: uri,
+                kind: conversionResult.kind == 1 ? .file : .directory,
+                generated: conversionResult.generated,
+                dataKind: .sourceKit,
+                data: sourceKitData.encodeToLSPAny()
+            )
+        }
+    }
+
+    private func createEmptySourcesItem(for targetId: BuildTargetIdentifier) -> SourcesItem {
+        SourcesItem(target: targetId, sources: [], roots: nil)
+    }
+
+    /// Parse target identifier URI to extract target information
+    private func parseTargetIdentifier(_ uri: String) throws -> TargetInfo {
+        // Expected format: "xcode:///ProjectName/SchemeName/TargetName"
+        guard let url = URL(string: uri) else {
+            throw NSError(
+                domain: "InvalidTargetURI",
+                code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "Invalid target URI format"]
+            )
+        }
+
+        let pathComponents = url.pathComponents.filter { $0 != "/" }
+        guard pathComponents.count >= 3 else {
+            let message = "Target URI must have format: xcode:///ProjectName/SchemeName/TargetName"
+            throw NSError(
+                domain: "InvalidTargetURI",
+                code: 2,
+                userInfo: [NSLocalizedDescriptionKey: message]
+            )
+        }
+
+        return TargetInfo(
+            projectName: pathComponents[0],
+            schemeName: pathComponents[1],
+            targetName: pathComponents[2]
+        )
+    }
+}
+
+/// Helper struct to hold parsed target information
+private struct TargetInfo {
+    let projectName: String
+    let schemeName: String
+    let targetName: String
 }
 
 public struct BuildTargetSourcesResponse: ResponseType, Hashable {
@@ -51,122 +208,5 @@ public struct BuildTargetSourcesResponse: ResponseType, Hashable {
 
     public init(items: [SourcesItem]) {
         self.items = items
-    }
-}
-
-public struct SourcesItem: Codable, Hashable, Sendable {
-    public var target: BuildTargetIdentifier
-
-    /// The text documents and directories that belong to this build target.
-    public var sources: [SourceItem]
-
-    /// The root directories from where source files should be relativized.
-    /// Example: ["file://Users/name/dev/metals/src/main/scala"]
-    public var roots: [URI]?
-
-    public init(target: BuildTargetIdentifier, sources: [SourceItem], roots: [URI]? = nil) {
-        self.target = target
-        self.sources = sources
-        self.roots = roots
-    }
-}
-
-public struct SourceItem: Codable, Hashable, Sendable {
-    /// Either a text document or a directory. A directory entry must end with a
-    /// forward slash "/" and a directory entry implies that every nested text
-    /// document within the directory belongs to this source item.
-    public var uri: URI
-
-    /// Type of file of the source item, such as whether it is file or directory.
-    public var kind: SourceItemKind
-
-    /// Indicates if this source is automatically generated by the build and is
-    /// not intended to be manually edited by the user.
-    public var generated: Bool
-
-    /// Kind of data to expect in the `data` field. If this field is not set, the kind of data is not specified.
-    public var dataKind: SourceItemDataKind?
-
-    /// Language-specific metadata about this source item.
-    public var data: LSPAny?
-
-    public init(
-        uri: URI,
-        kind: SourceItemKind,
-        generated: Bool,
-        dataKind: SourceItemDataKind? = nil,
-        data: LSPAny? = nil
-    ) {
-        self.uri = uri
-        self.kind = kind
-        self.generated = generated
-        self.dataKind = dataKind
-        self.data = data
-    }
-}
-
-public enum SourceItemKind: Int, Codable, Hashable, Sendable {
-    /// The source item references a normal file.
-    case file = 1
-
-    /// The source item references a directory.
-    case directory = 2
-}
-
-public struct SourceItemDataKind: RawRepresentable, Codable, Hashable, Sendable {
-    public var rawValue: String
-
-    public init(rawValue: String) {
-        self.rawValue = rawValue
-    }
-
-    /// `data` field must contain a JvmSourceItemData object.
-    public static let jvm = SourceItemDataKind(rawValue: "jvm")
-
-    /// `data` field must contain a `SourceKitSourceItemData` object.
-    ///
-    /// **(BSP Extension)**
-    public static let sourceKit = SourceItemDataKind(rawValue: "sourceKit")
-}
-
-/// **(BSP Extension)**
-public struct SourceKitSourceItemData: LSPAnyCodable, Codable {
-    /// The language of the source file. If `nil`, the language is inferred from the file extension.
-    public var language: Language?
-
-    /// Whether the file is a header file that is clearly associated with one target.
-    ///
-    /// For example header files in SwiftPM projects are always associated to one target and SwiftPM can provide build
-    /// settings for that header file.
-    ///
-    /// In general, build systems don't need to list all header files in the `buildTarget/sources` request: Semantic
-    /// functionality for header files is usually provided by finding a main file that includes the header file and
-    /// inferring build settings from it. Listing header files in `buildTarget/sources` allows SourceKit-LSP to provide
-    /// semantic functionality for header files if they haven't been included by any main file.
-    public var isHeader: Bool?
-
-    public init(language: Language? = nil, isHeader: Bool? = nil) {
-        self.language = language
-        self.isHeader = isHeader
-    }
-
-    public init?(fromLSPDictionary dictionary: [String: LSPAny]) {
-        if case let .string(language) = dictionary[CodingKeys.language.stringValue] {
-            self.language = Language(rawValue: language)
-        }
-        if case let .bool(isHeader) = dictionary[CodingKeys.isHeader.stringValue] {
-            self.isHeader = isHeader
-        }
-    }
-
-    public func encodeToLSPAny() -> LSPAny {
-        var result: [String: LSPAny] = [:]
-        if let language {
-            result[CodingKeys.language.stringValue] = .string(language.rawValue)
-        }
-        if let isHeader {
-            result[CodingKeys.isHeader.stringValue] = .bool(isHeader)
-        }
-        return .dictionary(result)
     }
 }
