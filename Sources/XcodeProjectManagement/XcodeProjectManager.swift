@@ -189,8 +189,17 @@ public actor XcodeProjectManager {
 
         // Load buildSettingsForIndex for source file discovery
         logger.debug("getting buildSettingsForIndex...")
-        let buildSettingsForIndex = try? await settingsLoader.loadBuildSettingsForIndex()
-        logger.debug("got buildSettingsForIndex with \(buildSettingsForIndex?.count ?? 0) targets")
+        let buildSettingsForIndex: XcodeBuildSettingsForIndex?
+        do {
+            buildSettingsForIndex = try await settingsLoader.loadBuildSettingsForIndex()
+            logger.debug("got buildSettingsForIndex with \(buildSettingsForIndex?.count ?? 0) targets")
+            if let indexSettings = buildSettingsForIndex {
+                logger.debug("buildSettingsForIndex targets: \(Array(indexSettings.keys))")
+            }
+        } catch {
+            logger.error("Failed to load buildSettingsForIndex: \(error)")
+            buildSettingsForIndex = nil
+        }
 
         // Get index URLs using the first available scheme (shared per workspace)
         let indexPaths = try await loadIndexURLs(

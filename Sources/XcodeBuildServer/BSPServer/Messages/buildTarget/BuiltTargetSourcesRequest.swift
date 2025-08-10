@@ -42,88 +42,84 @@ struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
         id: RequestID
     ) async -> ResponseType? where Handler.Context == BuildServerContext {
         await contextualHandler.withContext { context in
-            await handleBuildTargetSources(context: context, targetIds: params.targets)
+            await handleBuildTargetSources(context: context, targetIds: params.targets, requestId: id)
         }
     }
 
     private func handleBuildTargetSources(
         context: BuildServerContext,
-        targetIds: [BuildTargetIdentifier]
+        targetIds: [BuildTargetIdentifier],
+        requestId: RequestID
     ) async -> BuildTargetSourcesResponse {
-        let sourceDiscovery = XcodeSourceFileDiscovery()
         var items: [SourcesItem] = []
 
         for targetId in targetIds {
             let sourcesItem = await buildSourcesItem(
                 for: targetId,
-                context: context,
-                sourceDiscovery: sourceDiscovery
+                context: context
             )
             items.append(sourcesItem)
         }
 
-        return BuildTargetSourcesResponse(items: items)
+        return BuildTargetSourcesResponse(id: requestId, items: items)
     }
 
     private func buildSourcesItem(
         for targetId: BuildTargetIdentifier,
-        context: BuildServerContext,
-        sourceDiscovery: XcodeSourceFileDiscovery
+        context: BuildServerContext
     ) async -> SourcesItem {
         do {
             // Parse target identifier to get target information
             let targetInfo = try parseTargetIdentifier(targetId.uri.stringValue)
+            logger.debug("Parsed target info - projectName: \(targetInfo.projectName), " +
+                        "schemeName: \(targetInfo.schemeName), targetName: \(targetInfo.targetName)")
 
             // Get project info from context
             guard let projectInfo = try? await context.getProjectBasicInfo() else {
+                logger.error("Failed to get project info")
                 return createEmptySourcesItem(for: targetId)
             }
 
-            // Find the target in build settings and build sources
-            if let xcodeTarget = projectInfo.buildSettingsList
-                .first(where: { $0.target == targetInfo.targetName }) {
-                return await buildSourcesItemWithTarget(
-                    targetId: targetId,
-                    xcodeTarget: xcodeTarget,
-                    projectInfo: projectInfo,
-                    sourceDiscovery: sourceDiscovery
-                )
-            } else {
-                return createEmptySourcesItem(for: targetId)
-            }
+            // Build sources directly from buildSettingsForIndex
+            return await buildSourcesItemFromIndex(
+                targetId: targetId,
+                targetName: targetInfo.targetName,
+                projectInfo: projectInfo
+            )
         } catch {
+            logger.error("Error in buildSourcesItem: \(error)")
             return createEmptySourcesItem(for: targetId)
         }
     }
 
-    private func buildSourcesItemWithTarget(
+    private func buildSourcesItemFromIndex(
         targetId: BuildTargetIdentifier,
-        xcodeTarget: XcodeBuildSettings,
-        projectInfo: XcodeProjectInfo,
-        sourceDiscovery: XcodeSourceFileDiscovery
+        targetName: String,
+        projectInfo: XcodeProjectInfo
     ) async -> SourcesItem {
-        // Get source files from buildSettingsForIndex
+        // Get source files directly from buildSettingsForIndex
         let sourceItems = await buildSourceItemsFromIndexSettings(
-            targetName: xcodeTarget.target,
+            targetName: targetName,
             projectInfo: projectInfo
         )
 
-        // Get source roots from build settings
-        let sourceRoots = extractSourceRoots(
-            from: xcodeTarget.buildSettings,
-            projectRoot: projectInfo.rootURL
-        )
+        // Use project root as the source root
+        let projectRootURI = try? URI(string: projectInfo.rootURL.absoluteString)
+        let roots = projectRootURI.map { [$0] } ?? []
+
+        logger.info("Built SourcesItem for target '\(targetName)' with \(sourceItems.count) sources and \(roots.count) roots")
 
         return SourcesItem(
             target: targetId,
             sources: sourceItems,
-            roots: sourceRoots
+            roots: roots
         )
     }
 
     /// Parse target identifier URI to extract target information
     private func parseTargetIdentifier(_ uri: String) throws -> TargetInfo {
         // Expected format: "xcode:///ProjectName/SchemeName/TargetName"
+        // But target name is always the last component
         guard let url = URL(string: uri) else {
             throw NSError(
                 domain: "InvalidTargetURI",
@@ -133,8 +129,8 @@ struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
         }
 
         let pathComponents = url.pathComponents.filter { $0 != "/" }
-        guard pathComponents.count >= 3 else {
-            let message = "Target URI must have format: xcode:///ProjectName/SchemeName/TargetName"
+        guard pathComponents.count >= 1 else {
+            let message = "Target URI must have at least one path component for target name"
             throw NSError(
                 domain: "InvalidTargetURI",
                 code: 2,
@@ -142,10 +138,13 @@ struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
             )
         }
 
+        // Target name is always the last component
+        let targetName = pathComponents.last!
+
         return TargetInfo(
-            projectName: pathComponents[0],
-            schemeName: pathComponents[1],
-            targetName: pathComponents[2]
+            projectName: pathComponents.count >= 3 ? pathComponents[0] : "",
+            schemeName: pathComponents.count >= 3 ? pathComponents[1] : "",
+            targetName: targetName
         )
     }
 }
@@ -165,58 +164,46 @@ private extension BuiltTargetSourcesRequest {
         targetName: String,
         projectInfo: XcodeProjectInfo
     ) async -> [SourceItem] {
-        guard let indexSettings = projectInfo.buildSettingsForIndex,
-              let targetFiles = indexSettings[targetName] else {
+        // Debug: Check if buildSettingsForIndex exists
+        if projectInfo.buildSettingsForIndex == nil {
+            logger.error("buildSettingsForIndex is nil")
             return []
         }
+
+        let indexSettings = projectInfo.buildSettingsForIndex!
+        logger.debug("buildSettingsForIndex has \(indexSettings.count) targets: \(Array(indexSettings.keys))")
+        logger.debug("Looking for target name: '\(targetName)'")
+
+        // Debug: Print exact key matching
+        for key in indexSettings.keys {
+            logger.debug("Available key: '\(key)' (matches: \(key == targetName))")
+        }
+
+        guard let targetFiles = indexSettings[targetName] else {
+            logger.warning("No files found for target '\(targetName)'")
+            logger.debug("Available targets in buildSettingsForIndex: \(Array(indexSettings.keys))")
+            return []
+        }
+
+        logger.info("Found \(targetFiles.count) files for target '\(targetName)'")
 
         var sourceItems: [SourceItem] = []
 
         for (filePath, fileInfo) in targetFiles {
+            logger.debug("Processing file: \(filePath)")
             guard let sourceItem = createSourceItem(
                 filePath: filePath,
                 fileInfo: fileInfo,
                 projectRoot: projectInfo.rootURL
             ) else {
+                logger.warning("Failed to create SourceItem for: \(filePath)")
                 continue
             }
             sourceItems.append(sourceItem)
         }
 
+        logger.info("Created \(sourceItems.count) source items for target '\(targetName)'")
         return sourceItems
-    }
-
-    func extractSourceRoots(
-        from buildSettings: [String: String],
-        projectRoot: URL
-    ) -> [URI] {
-        var roots: [URI] = []
-
-        // Add SRCROOT if available
-        if let srcRoot = buildSettings["SRCROOT"] {
-            let srcRootURL = URL(fileURLWithPath: srcRoot, relativeTo: projectRoot)
-            if let uri = try? URI(string: srcRootURL.absoluteString) {
-                roots.append(uri)
-            }
-        }
-
-        // Add PROJECT_DIR if different from SRCROOT
-        if let projectDir = buildSettings["PROJECT_DIR"],
-           projectDir != buildSettings["SRCROOT"] {
-            let projectDirURL = URL(fileURLWithPath: projectDir, relativeTo: projectRoot)
-            if let uri = try? URI(string: projectDirURL.absoluteString) {
-                roots.append(uri)
-            }
-        }
-
-        // If no specific roots found, use project root
-        if roots.isEmpty {
-            if let uri = try? URI(string: projectRoot.absoluteString) {
-                roots.append(uri)
-            }
-        }
-
-        return roots
     }
 
     func createSourceItem(
@@ -224,6 +211,9 @@ private extension BuiltTargetSourcesRequest {
         fileInfo: XcodeFileBuildSettingInfo,
         projectRoot: URL
     ) -> SourceItem? {
+        logger.debug("createSourceItem called for: \(filePath)")
+        logger.debug("fileInfo.languageDialect: \(String(describing: fileInfo.languageDialect))")
+
         let fileURL: URL = if filePath.hasPrefix("/") {
             URL(fileURLWithPath: filePath)
         } else {
@@ -231,6 +221,7 @@ private extension BuiltTargetSourcesRequest {
         }
 
         guard let uri = try? URI(string: fileURL.absoluteString) else {
+            logger.warning("Failed to create URI for file: \(filePath)")
             return nil
         }
 
@@ -249,7 +240,12 @@ private extension BuiltTargetSourcesRequest {
             nil // Interface Builder files might not have a specific BSP language
         case .other:
             detectLanguageFromExtension(fileURL.pathExtension)
+        case .none:
+            // If languageDialect is nil, try to detect from file extension
+            detectLanguageFromExtension(fileURL.pathExtension)
         }
+
+        logger.debug("Detected language: \(String(describing: language)) for file: \(filePath)")
 
         // Create SourceKitSourceItemData
         let sourceKitData = SourceKitSourceItemData(
@@ -258,13 +254,16 @@ private extension BuiltTargetSourcesRequest {
             outputPath: fileInfo.outputFilePath
         )
 
-        return SourceItem(
+        let sourceItem = SourceItem(
             uri: uri,
             kind: .file,
             generated: generated,
             dataKind: .sourceKit,
             data: sourceKitData.encodeToLSPAny()
         )
+
+        logger.debug("Successfully created SourceItem for: \(filePath)")
+        return sourceItem
     }
 
     func detectLanguageFromExtension(_ ext: String) -> Language? {
@@ -309,7 +308,19 @@ private struct TargetInfo {
 }
 
 public struct BuildTargetSourcesResponse: ResponseType, Hashable {
-    public var items: [SourcesItem]
+    public let id: JSONRPCID?
+    public let jsonrpc: String
+    public let result: BuildTargetSourcesResult
+
+    public init(id: JSONRPCID? = nil, jsonrpc: String = "2.0", items: [SourcesItem]) {
+        self.id = id
+        self.jsonrpc = jsonrpc
+        self.result = BuildTargetSourcesResult(items: items)
+    }
+}
+
+public struct BuildTargetSourcesResult: Codable, Hashable, Sendable {
+    public let items: [SourcesItem]
 
     public init(items: [SourcesItem]) {
         self.items = items

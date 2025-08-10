@@ -24,22 +24,54 @@ public enum XcodeLanguageDialect: String, Codable, Sendable {
     case objc = "Xcode.SourceCodeLanguage.Objective-C"
     case interfaceBuilder = "Xcode.SourceCodeLanguage.InterfaceBuilder"
     case other
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let stringValue = try container.decode(String.self)
+
+        switch stringValue {
+        case "Xcode.SourceCodeLanguage.Swift":
+            self = .swift
+        case "Xcode.SourceCodeLanguage.Objective-C":
+            self = .objc
+        case "Xcode.SourceCodeLanguage.InterfaceBuilder":
+            self = .interfaceBuilder
+        default:
+            logger.debug("Unknown language dialect: '\(stringValue)', using .other")
+            self = .other
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(self.rawValue)
+    }
 }
 
 public typealias XcodeBuildSettingsForIndex = [String: [String: XcodeFileBuildSettingInfo]]
 
 public struct XcodeFileBuildSettingInfo: Codable, Sendable {
     public var assetSymbolIndexPath: String?
-    public var languageDialect: XcodeLanguageDialect
+    public var languageDialect: XcodeLanguageDialect?
     public var outputFilePath: String?
     public var swiftASTBuiltProductsDir: String?
     public var swiftASTCommandArguments: [String]?
     public var swiftASTModuleName: String?
     public var toolchains: [String]?
 
+    private enum CodingKeys: String, CodingKey {
+        case assetSymbolIndexPath
+        case languageDialect = "LanguageDialect" // Note: Xcode uses capital 'L'
+        case outputFilePath
+        case swiftASTBuiltProductsDir
+        case swiftASTCommandArguments
+        case swiftASTModuleName
+        case toolchains
+    }
+
     public init(
         assetSymbolIndexPath: String? = nil,
-        languageDialect: XcodeLanguageDialect,
+        languageDialect: XcodeLanguageDialect? = nil,
         outputFilePath: String? = nil,
         swiftASTBuiltProductsDir: String? = nil,
         swiftASTCommandArguments: [String]? = nil,
