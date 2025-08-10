@@ -61,11 +61,11 @@ struct XcodeToolchainTests {
         let toolchain = XcodeToolchain()
         try await toolchain.initialize()
 
-        let (output, _, exitCode) = try await toolchain.executeXcodeBuild(arguments: ["-version"])
+        let result = try await toolchain.executeXcodeBuild(arguments: ["-version"])
 
-        #expect(exitCode == 0)
-        #expect(!output.isEmpty)
-        #expect(output.contains("Xcode"))
+        #expect(result.exitCode == 0)
+        #expect(!result.output.isEmpty)
+        #expect(result.output.contains("Xcode"))
     }
 
     @Test("Global isXcodeBuildAvailable function works")

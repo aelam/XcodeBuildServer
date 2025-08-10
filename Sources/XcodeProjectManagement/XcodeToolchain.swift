@@ -7,7 +7,6 @@
 import Foundation
 import Logger
 
-// swiftlint:disable file_length
 public enum XcodeToolchainError: Error, LocalizedError {
     case xcodeNotFound
     case xcodeVersionNotSupported(String)
@@ -46,6 +45,12 @@ public struct XcodeInstallation: Sendable {
     }
 }
 
+public struct XcodeBuildResult: Sendable {
+    public let output: String
+    public let error: String?
+    public let exitCode: Int32
+}
+
 public actor XcodeToolchain {
     private var selectedInstallation: XcodeInstallation?
     private var availableInstallations: [XcodeInstallation] = []
@@ -79,7 +84,7 @@ public actor XcodeToolchain {
     public func executeXcodeBuild(
         arguments: [String],
         workingDirectory: URL? = nil
-    ) async throws -> (output: String, error: String?, exitCode: Int32) {
+    ) async throws -> XcodeBuildResult {
         guard let installation = selectedInstallation else {
             throw XcodeToolchainError.xcodeNotFound
         }
@@ -90,7 +95,7 @@ public actor XcodeToolchain {
             xcodeInstallationPath: installation.path
         )
 
-        return (output: result.output, error: result.error, exitCode: result.exitCode)
+        return XcodeBuildResult(output: result.output, error: result.error, exitCode: result.exitCode)
     }
 
     public func getXcodeVersion() async throws -> String {
@@ -98,13 +103,13 @@ public actor XcodeToolchain {
             throw XcodeToolchainError.xcodeNotFound
         }
 
-        let (output, error, exitCode) = try await executeXcodeBuild(arguments: ["-version"])
-        guard exitCode == 0 else {
-            let errorMessage = error ?? "xcodebuild -version failed"
+        let result = try await executeXcodeBuild(arguments: ["-version"])
+        guard result.exitCode == 0 else {
+            let errorMessage = result.error ?? "xcodebuild -version failed"
             throw XcodeToolchainError.toolchainSelectionFailed(errorMessage)
         }
 
-        return output.trimmingCharacters(in: .whitespacesAndNewlines)
+        return result.output.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     public func isXcodeBuildAvailable() async -> Bool {
