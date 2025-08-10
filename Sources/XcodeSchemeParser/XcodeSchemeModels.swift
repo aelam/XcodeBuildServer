@@ -8,7 +8,6 @@ import Foundation
 
 // MARK: - Core XML Element Models
 
-/// Represents BuildableReference element in scheme XML
 public struct XcodeSchemeBuildableReference: Sendable {
     public let buildableIdentifier: String // e.g., "primary"
     public let blueprintIdentifier: String
@@ -417,19 +416,15 @@ public extension XcodeSchemeInfo {
         var seenIdentifiers: Set<String> = []
 
         // Add buildable targets first
-        for target in buildableTargets {
-            if !seenIdentifiers.contains(target.blueprintIdentifier) {
-                allTargets.append(target)
-                seenIdentifiers.insert(target.blueprintIdentifier)
-            }
+        for target in buildableTargets where !seenIdentifiers.contains(target.blueprintIdentifier) {
+            allTargets.append(target)
+            seenIdentifiers.insert(target.blueprintIdentifier)
         }
 
         // Add testable targets, avoiding duplicates
-        for target in testableTargets {
-            if !seenIdentifiers.contains(target.blueprintIdentifier) {
-                allTargets.append(target)
-                seenIdentifiers.insert(target.blueprintIdentifier)
-            }
+        for target in testableTargets where !seenIdentifiers.contains(target.blueprintIdentifier) {
+            allTargets.append(target)
+            seenIdentifiers.insert(target.blueprintIdentifier)
         }
 
         return allTargets

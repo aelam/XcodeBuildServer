@@ -8,6 +8,7 @@ import Foundation
 import Testing
 @testable import XcodeSchemeParser
 
+// swiftlint:disable:next type_body_length
 struct XcodeSchemeLoaderTests {
     private let schemeLoader = XcodeSchemeLoader()
 

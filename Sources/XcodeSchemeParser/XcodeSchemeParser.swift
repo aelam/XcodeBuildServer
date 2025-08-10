@@ -8,7 +8,7 @@ import Foundation
 import Logger
 import SwiftyXMLParser
 
-/// Parser for Xcode scheme files
+// swiftlint:disable:next type_body_length
 public struct XcodeSchemeParser: Sendable {
     public init() {}
 

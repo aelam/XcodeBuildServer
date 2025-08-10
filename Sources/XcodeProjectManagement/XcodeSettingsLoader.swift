@@ -192,11 +192,14 @@ public actor XcodeSettingsLoader {
         let workingDirectory = commandBuilder.projectIdentifier.rootURL
         logger.debug("runXcodeBuild: about to execute command with arguments: \(arguments.joined(separator: " "))")
         logger.debug("runXcodeBuild: working directory: \(workingDirectory.path)")
-        let (output, error, exitCode) = try await toolchain.executeXcodeBuild(
+        let result = try await toolchain.executeXcodeBuild(
             arguments: arguments,
             workingDirectory: workingDirectory
         )
-        logger.debug("runXcodeBuild: command completed with exit code: \(exitCode)")
+        let exitCode = result.exitCode
+        let output = result.output
+        let error = result.error
+        logger.debug("runXcodeBuild: command completed with exit code: \(result.exitCode)")
         logger.debug("runXcodeBuild: output isEmpty: \(output.isEmpty)")
         logger.debug("runXcodeBuild: output length: \(output.count)")
 
