@@ -173,7 +173,6 @@ public actor XcodeProjectManager {
         logger.debug("about to call toolchain.getSelectedInstallation()...")
         let toolchainInstallation = await toolchain.getSelectedInstallation()
         logger.debug("got toolchain installation: \(toolchainInstallation?.path.path ?? "none")")
-        logger.debug("toolchain installation check completed")
         logger.debug("getting xcodeListInfo...")
         let xcodeListInfo = try await settingsLoader.listInfo()
         logger.debug("got xcodeListInfo: \(xcodeListInfo)")
@@ -193,9 +192,6 @@ public actor XcodeProjectManager {
         do {
             buildSettingsForIndex = try await settingsLoader.loadBuildSettingsForIndex()
             logger.debug("got buildSettingsForIndex with \(buildSettingsForIndex?.count ?? 0) targets")
-            if let indexSettings = buildSettingsForIndex {
-                logger.debug("buildSettingsForIndex targets: \(Array(indexSettings.keys))")
-            }
         } catch {
             logger.error("Failed to load buildSettingsForIndex: \(error)")
             buildSettingsForIndex = nil
