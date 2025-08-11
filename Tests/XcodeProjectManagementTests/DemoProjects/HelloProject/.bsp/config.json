@@ -1,5 +1,5 @@
 {
-    "name": "xcode build server",
+    "name": "XcodeBuildServerCLI",
     "version": "0.2",
     "bspVersion": "2.2.0",
     "languages": [
