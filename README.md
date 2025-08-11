@@ -14,8 +14,9 @@ A Build Server Protocol (BSP) implementation for Xcode projects, enabling better
 - 🏗️ **Xcode Integration**: Seamless integration with Xcode build system
 - ⚡ **Fast Indexing**: Efficient source code indexing and navigation
 - 📁 **Multi-target Support**: Support for complex Xcode project structures
-- 🔍 **SourceKit Integration**: Native Swift language server capabilities
+- 🔍 **SourceKit Integration**: Native Swift language server capabilities with complete `textDocument/sourceKitOptions` implementation
 - 🛡️ **Thread-safe**: Robust concurrent operations with Swift actors
+- 📊 **Comprehensive Build Settings**: Full support for per-file, per-target compiler arguments via `buildSettingsForIndex`
 
 ## Installation
 
@@ -162,9 +163,22 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 ### Key Components
 
 - **BSPServer**: Core BSP protocol implementation
-- **BuildServerContext**: Manages project state and configuration
+- **BuildServerContext**: Manages project state and configuration  
 - **JSONRPCServer**: JSON-RPC transport layer
 - **XcodeBuild Integration**: Interface with xcodebuild tool
+
+### BSP Method Support
+
+| Method | Status | Description |
+|--------|--------|-------------|
+| `build/initialize` | ✅ Complete | Server initialization with capabilities |
+| `build/initialized` | ✅ Complete | Post-initialization notification |
+| `workspace/buildTargets` | ✅ Complete | List all build targets |
+| `buildTarget/sources` | ✅ Complete | Get source files for targets |
+| `textDocument/sourceKitOptions` | ✅ **Complete** | **Per-file compiler arguments from buildSettingsForIndex** |
+| `buildTarget/prepare` | ✅ Complete | Background indexing preparation |
+| `buildTarget/didChange` | ✅ Complete | Build target change notifications |
+| `workspace/didChangeWatchedFiles` | ✅ Complete | File system change handling |
 
 ## Troubleshooting
 

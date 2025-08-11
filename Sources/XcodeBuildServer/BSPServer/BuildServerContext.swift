@@ -5,6 +5,7 @@
 //
 
 import Foundation
+import Logger
 import XcodeProjectManagement
 
 /// 加载状态枚举
@@ -117,5 +118,63 @@ public extension BuildServerContext {
 
     func getProjectManager() throws -> XcodeProjectManager {
         try loadedState.projectManager
+    }
+
+    // MARK: - SourceKit Options Support
+
+    func getCompileArguments(
+        target: BuildTargetIdentifier,
+        fileURI: String
+    ) async throws -> [String] {
+        let state = try loadedState
+
+        guard let buildSettingsForIndex = state.xcodeProjectInfo.buildSettingsForIndex else {
+            logger.warning("No buildSettingsForIndex available")
+            return []
+        }
+
+        // Extract scheme name from BuildTargetIdentifier
+        // Expected format: "xcode:///ProjectName/SchemeName/TargetName"
+        guard let targetScheme = extractSchemeFromBuildTarget(target) else {
+            logger.warning("Could not extract scheme from build target: \(target.uri)")
+            return []
+        }
+
+        // Convert file URI to path
+        let filePath = URL(string: fileURI)?.path ?? fileURI
+
+        // Get file build settings from the index
+        guard let targetSettings = buildSettingsForIndex[targetScheme] else {
+            logger.warning("No build settings found for scheme: \(targetScheme)")
+            return []
+        }
+
+        guard let fileBuildSettings = targetSettings[filePath] else {
+            logger.debug("No specific build settings found for file: \(filePath)")
+            // Try to get the first available file's settings as fallback
+            if let firstFileSettings = targetSettings.values.first {
+                logger.debug("Using fallback build settings from first available file")
+                return firstFileSettings.swiftASTCommandArguments ?? []
+            }
+            return []
+        }
+
+        return fileBuildSettings.swiftASTCommandArguments ?? []
+    }
+
+    func getWorkingDirectory() throws -> String? {
+        let state = try loadedState
+        return state.rootURL.path
+    }
+
+    private func extractSchemeFromBuildTarget(_ target: BuildTargetIdentifier) -> String? {
+        // Parse URI like "xcode:///ProjectName/SchemeName/TargetName"
+        let uriString = target.uri.stringValue
+        guard uriString.hasPrefix("xcode:///") else { return nil }
+
+        let pathComponents = uriString.dropFirst("xcode:///".count).split(separator: "/")
+        guard pathComponents.count >= 2 else { return nil }
+
+        return String(pathComponents[1]) // SchemeName
     }
 }

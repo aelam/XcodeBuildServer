@@ -80,9 +80,37 @@ SourceKit-LSP可以通过[Build Server Protocol (BSP)](https://build-server-prot
 
 ### 3. `textDocument/sourceKitOptions`
 - **用途**：为特定文件返回编译选项
-- **关键字段**：
-  - `options`: 编译参数数组
-  - `workingDirectory`: 工作目录
+- **实现状态**：✅ 已完成实现
+- **数据源**：`buildSettingsForIndex`
+- **请求参数**：
+  - `textDocument.uri`: 文件路径
+  - `target`: 构建目标标识符（格式：`xcode:///ProjectName/SchemeName/TargetName`）
+  - `language`: 编程语言
+- **响应字段**：
+  - `compilerArguments`: 编译器参数数组
+  - `workingDirectory`: 工作目录路径
+- **关键实现**：
+  ```swift
+  // 1. 从BuildTargetIdentifier提取scheme名称
+  private func extractSchemeFromBuildTarget(_ target: BuildTargetIdentifier) -> String? {
+      let uriString = target.uri.stringValue
+      guard uriString.hasPrefix("xcode:///") else { return nil }
+      let pathComponents = uriString.dropFirst("xcode:///".count).split(separator: "/")
+      return pathComponents.count >= 2 ? String(pathComponents[1]) : nil
+  }
+  
+  // 2. 获取编译参数
+  func getCompileArguments(target: BuildTargetIdentifier, fileURI: String) async throws -> [String] {
+      let targetScheme = extractSchemeFromBuildTarget(target)
+      let filePath = URL(string: fileURI)?.path ?? fileURI
+      return buildSettingsForIndex[targetScheme]?[filePath]?.swiftASTCommandArguments ?? []
+  }
+  ```
+- **错误处理**：
+  - 无 `buildSettingsForIndex` 时返回空数组
+  - 无法解析目标scheme时记录警告
+  - 找不到文件特定设置时使用首个可用文件设置作为后备
+  - 异常时返回 `nil` 结果
 
 ### 4. `buildTarget/didChange`
 - **用途**：通知构建目标发生变化
@@ -103,6 +131,125 @@ SourceKit-LSP可以通过[Build Server Protocol (BSP)](https://build-server-prot
 ### `buildTarget/prepare`
 - **用途**：准备构建目标用于索引
 - **实现状态**：🔄 基础实现完成
+
+## textDocument/sourceKitOptions 详细实现
+
+`textDocument/sourceKitOptions` 是BSP协议中最重要的方法之一，为SourceKit-LSP提供特定文件的编译器选项。
+
+### 实现架构
+
+```
+客户端请求 → TextDocumentSourceKitOptionsRequest → BuildServerContext → XcodeProjectInfo → buildSettingsForIndex
+```
+
+### 数据流程
+
+1. **请求解析**：
+   ```swift
+   public struct Params: Codable, Sendable {
+       public var textDocument: TextDocumentIdentifier  // 文件URI
+       public var target: BuildTargetIdentifier         // 目标标识符
+       public var language: Language                    // 编程语言
+   }
+   ```
+
+2. **目标解析**：
+   ```swift
+   private func extractSchemeFromBuildTarget(_ target: BuildTargetIdentifier) -> String? {
+       // 解析 "xcode:///ProjectName/SchemeName/TargetName" 格式
+       let uriString = target.uri.stringValue
+       guard uriString.hasPrefix("xcode:///") else { return nil }
+       let pathComponents = uriString.dropFirst("xcode:///".count).split(separator: "/")
+       guard pathComponents.count >= 2 else { return nil }
+       return String(pathComponents[1]) // 返回SchemeName
+   }
+   ```
+
+3. **编译参数获取**：
+   ```swift
+   func getCompileArguments(target: BuildTargetIdentifier, fileURI: String) async throws -> [String] {
+       let state = try loadedState
+       guard let buildSettingsForIndex = state.xcodeProjectInfo.buildSettingsForIndex else {
+           logger.warning("No buildSettingsForIndex available")
+           return []
+       }
+       
+       let targetScheme = extractSchemeFromBuildTarget(target)
+       let filePath = URL(string: fileURI)?.path ?? fileURI
+       
+       guard let targetSettings = buildSettingsForIndex[targetScheme],
+             let fileBuildSettings = targetSettings[filePath] else {
+           // 后备策略：使用第一个可用文件的设置
+           if let firstFileSettings = buildSettingsForIndex[targetScheme]?.values.first {
+               return firstFileSettings.swiftASTCommandArguments ?? []
+           }
+           return []
+       }
+       
+       return fileBuildSettings.swiftASTCommandArguments ?? []
+   }
+   ```
+
+### 响应格式
+
+```swift
+public struct Result: Codable, Hashable, Sendable {
+    /// 编译器选项列表
+    public let compilerArguments: [String]
+    
+    /// 编译命令的工作目录
+    public let workingDirectory: String?
+}
+```
+
+### 典型的编译参数示例
+
+```json
+{
+  "compilerArguments": [
+    "-module-name", "Hello",
+    "-Onone",
+    "-enforce-exclusivity=checked",
+    "/Users/user/project/Hello/Hello.swift",
+    "-DDEBUG",
+    "-enable-bare-slash-regex",
+    "-sdk", "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.1.sdk",
+    "-target", "arm64-apple-ios18.0",
+    "-g",
+    "-module-cache-path", "/Users/user/Library/Developer/Xcode/DerivedData/ModuleCache.noindex",
+    "-index-store-path", "/Users/user/Library/Developer/Xcode/DerivedData/Hello-hash/Index.noindex/DataStore",
+    "-swift-version", "5",
+    "-working-directory", "/Users/user/project/Hello"
+  ],
+  "workingDirectory": "/Users/user/project/Hello"
+}
+```
+
+### 错误处理策略
+
+1. **无 buildSettingsForIndex**：
+   - 记录警告日志
+   - 返回空编译参数数组
+
+2. **无法解析目标Scheme**：
+   - 记录警告并显示原始URI
+   - 返回空数组
+
+3. **文件特定设置缺失**：
+   - 尝试使用同scheme下第一个可用文件的设置
+   - 记录调试信息说明使用了后备策略
+
+4. **异常情况**：
+   - 捕获并记录错误详情
+   - 返回 `nil` 结果让客户端知道获取失败
+
+### 关键特性
+
+- ✅ **目标特异性**：不同构建目标返回不同编译参数
+- ✅ **文件特异性**：为特定文件返回专门的编译设置
+- ✅ **数据源正确性**：使用 `buildSettingsForIndex` 而非普通 buildSettings
+- ✅ **后备机制**：当特定文件设置不可用时的智能降级
+- ✅ **详细日志**：提供完整的调试信息追踪
 
 ## 可选方法
 
@@ -182,7 +329,7 @@ let toolchainURI = URI(string: "file://\(toolchainPath)")
 - [x] `build/exit`
 - [x] `workspace/buildTargets`
 - [x] `buildTarget/sources`
-- [x] `textDocument/sourceKitOptions`
+- [x] `textDocument/sourceKitOptions` - ✅ **完整实现，使用buildSettingsForIndex数据源**
 - [x] `buildTarget/didChange`
 - [x] `workspace/waitForBuildSystemUpdates`
 
@@ -228,6 +375,11 @@ logger.info("Generated toolchain URI: \(toolchainURI)")
 
 ## 版本历史
 
-- v1.0.0: 初始实现，支持基本BSP协议
-- v1.1.0: 添加window/showMessage支持
-- v1.2.0: 改进buildTargets实现和工具链配置
+- v0.0.1: 初始实现，支持基本BSP协议
+- v0.0.1: 添加window/showMessage支持
+- v0.0.1: 改进buildTargets实现和工具链配置
+- v0.0.1: **[待发布] 完整实现textDocument/sourceKitOptions**
+  - 使用buildSettingsForIndex作为数据源
+  - 支持目标和文件特异性编译参数
+  - 完善的错误处理和后备机制
+  - 详细的调试日志记录
