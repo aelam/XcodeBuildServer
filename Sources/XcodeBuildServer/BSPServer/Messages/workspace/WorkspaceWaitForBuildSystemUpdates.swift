@@ -24,7 +24,8 @@ public struct WorkspaceWaitForBuildSystemUpdatesRequest: ContextualRequestType, 
     ) async -> ResponseType? where Handler.Context == BuildServerContext {
         await contextualHandler.withContext { _ in
             WorkspaceWaitForBuildSystemUpdatesResponse(
-                jsonrpc: "2.0", id: id
+                jsonrpc: "2.0",
+                id: id
             )
         }
     }
