@@ -131,8 +131,8 @@ public final class StdioJSONRPCServerTransport: JSONRPCServerTransport, @uncheck
         let header = "Content-Length:\(data.count)\r\n\r\n"
         let headerData = header.data(using: .utf8)!
 
-        // Now safe to log because ConsoleDestination is disabled
-        logger.debug("Sending JSON-RPC response: \(String(data: data, encoding: .utf8) ?? "[Invalid UTF-8]")")
+        // Log sent data with pretty JSON formatting (already formatted by jsonEncoder)
+        logger.debug("Sending (\(data.count) bytes):\n\(String(data: data, encoding: .utf8) ?? "[Invalid UTF-8]")")
 
         // Perform write operations with timeout to prevent hanging
         try await withThrowingTaskGroup(of: Void.self) { group in
@@ -167,13 +167,26 @@ public final class StdioJSONRPCServerTransport: JSONRPCServerTransport, @uncheck
         guard !data.isEmpty else {
             return
         }
-        logger.debug("Received data of size: \(data.count)")
-        logger.debug("Raw data: \(String(data: data, encoding: .utf8) ?? "[Invalid UTF-8]")")
 
+        // Parse the message first
         do {
             let message = try parseJSONRPCMessage(from: data)
+
+            // Log with pretty JSON using existing encoder
+            if let prettyData = try? jsonEncoder.encode(message.request),
+               let prettyJson = String(data: prettyData, encoding: .utf8) {
+                logger.debug("Received (\(message.rawData.count) bytes):\n\(prettyJson)")
+            } else {
+                let rawString = String(data: message.rawData, encoding: .utf8) ?? "[Invalid UTF-8]"
+                logger.debug("Received (\(message.rawData.count) bytes):\n\(rawString)")
+            }
+
             messageContinuation?.yield(message)
         } catch {
+            // Log raw data if parsing fails
+            let rawString = String(data: data, encoding: .utf8) ?? "[Invalid UTF-8]"
+            logger.debug("Received invalid data (\(data.count) bytes):\n\(rawString)")
+
             if let transportError = error as? JSONRPCTransportError {
                 errorContinuation?.yield(transportError)
             } else {
@@ -202,7 +215,6 @@ public final class StdioJSONRPCServerTransport: JSONRPCServerTransport, @uncheck
             throw JSONRPCTransportError.invalidMessage
         }
 
-        logger.debug("Parsed JSON content: \(jsonContent)")
         // Decode JSON-RPC request
         do {
             let request = try jsonDecoder.decode(JSONRPCRequest.self, from: rawData)
