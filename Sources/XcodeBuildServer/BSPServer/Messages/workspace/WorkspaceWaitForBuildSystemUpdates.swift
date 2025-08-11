@@ -14,8 +14,7 @@ public struct WorkspaceWaitForBuildSystemUpdatesRequest: ContextualRequestType, 
         "workspace/waitForBuildSystemUpdates"
     }
 
-    public struct Params: Codable, Sendable {
-    }
+    public struct Params: Codable, Sendable {}
 
     public let id: JSONRPCID
     public let jsonrpc: String

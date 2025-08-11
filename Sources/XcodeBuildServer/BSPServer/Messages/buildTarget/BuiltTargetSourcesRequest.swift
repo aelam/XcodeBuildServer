@@ -72,7 +72,8 @@ struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
             // Parse target identifier to get target information
             let targetInfo = try parseTargetIdentifier(targetId.uri.stringValue)
             logger.debug("Parsed target info - projectName: \(targetInfo.projectName), " +
-                        "schemeName: \(targetInfo.schemeName), targetName: \(targetInfo.targetName)")
+                "schemeName: \(targetInfo.schemeName), targetName: \(targetInfo.targetName)"
+            )
 
             // Get project info from context
             guard let projectInfo = try? await context.getProjectBasicInfo() else {
@@ -107,7 +108,10 @@ struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
         let projectRootURI = try? URI(string: projectInfo.rootURL.absoluteString)
         let roots = projectRootURI.map { [$0] } ?? []
 
-        logger.info("Built SourcesItem for target '\(targetName)' with \(sourceItems.count) sources and \(roots.count) roots")
+        logger
+            .info(
+                "Built SourcesItem for target '\(targetName)' with \(sourceItems.count) sources and \(roots.count) roots"
+            )
 
         return SourcesItem(
             target: targetId,
