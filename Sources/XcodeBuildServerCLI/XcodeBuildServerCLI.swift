@@ -41,9 +41,7 @@ struct XcodeBuildServerCLI {
 
         if isDebugMode {
             let debugMsg = "🔧 BSP Debug Mode Enabled - PID: \(ProcessInfo.processInfo.processIdentifier)"
-            fputs("\(debugMsg)\n", stderr)
-            fputs("📝 Logging JSON-RPC communication to stderr\n", stderr)
-            XcodeBuildServer.logger.debug(debugMsg)
+            logger.debug(debugMsg)
         }
 
         let transport = StdioJSONRPCServerTransport()
@@ -66,8 +64,7 @@ struct XcodeBuildServerCLI {
         } catch {
             // Log error
             let errorMsg = "Server failed to start: \(error)"
-            XcodeBuildServer.logger.error(errorMsg)
-            fputs("\(errorMsg)\n", stderr)
+            logger.error(errorMsg)
             exit(1)
         }
     }
@@ -121,7 +118,6 @@ struct XcodeBuildServerCLI {
         } else {
             let msg = "🟠 kill() failed for parent process (PID \(parentProcessID)), " +
                 " errno: \(errno), not terminating."
-            fputs("\(msg)\n", stderr)
             logger.debug(msg)
         }
     }
