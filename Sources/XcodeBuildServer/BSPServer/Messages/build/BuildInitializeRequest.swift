@@ -105,8 +105,8 @@ public struct BuildInitializeRequest: ContextualRequestType, Sendable {
                         ),
                         rootUri: self.params.rootUri,
                         bspVersion: "2.2.0",
-                        version: "0.1",
-                        displayName: "xcode build server"
+                        version: "1.0",
+                        displayName: "XcodeBuildServerCLI"
                     )
                 )
                 logger.debug("BuildInitializeRequest: response created successfully, returning")

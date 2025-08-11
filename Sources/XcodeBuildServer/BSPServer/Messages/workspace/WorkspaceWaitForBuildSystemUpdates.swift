@@ -15,8 +15,11 @@ public struct WorkspaceWaitForBuildSystemUpdatesRequest: ContextualRequestType, 
     }
 
     public struct Params: Codable, Sendable {
-        public let targets: [String]
     }
+
+    public let id: JSONRPCID
+    public let jsonrpc: String
+    public let params: VoidParams
 
     public func handle<Handler: ContextualMessageHandler>(
         contextualHandler: Handler,
@@ -31,7 +34,4 @@ public struct WorkspaceWaitForBuildSystemUpdatesRequest: ContextualRequestType, 
     }
 }
 
-struct WorkspaceWaitForBuildSystemUpdatesResponse: ResponseType, Sendable {
-    let jsonrpc: String
-    let id: JSONRPCID?
-}
+typealias WorkspaceWaitForBuildSystemUpdatesResponse = VoidResponse

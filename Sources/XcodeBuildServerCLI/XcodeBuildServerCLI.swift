@@ -73,7 +73,7 @@ struct XcodeBuildServerCLI {
         print("Usage: XcodeBuildServerCLI")
         print("")
         print("Description:")
-        print("  Starts an Xcode Build Server Protocol (BSP) server that communicates")
+        print("  Starts an XcodeBuildServerCLI Protocol (BSP) server that communicates")
         print("  via JSON-RPC over stdin/stdout. The server waits for BSP requests")
         print("  from compatible IDEs or tools.")
         print("")
