@@ -1,0 +1,110 @@
+#!/bin/bash
+
+# Pre-commit hook for XcodeBuildServer
+# Auto-format and lint Swift files before commit
+# Works in both macOS and Dev Container environments
+
+# Function to find tool path
+find_tool() {
+    local tool_name=$1
+    
+    # Try common paths
+    local paths=(
+        "/opt/homebrew/bin/$tool_name"
+        "/usr/local/bin/$tool_name" 
+        "/usr/bin/$tool_name"
+        "$(which $tool_name 2>/dev/null)"
+    )
+    
+    for path in "${paths[@]}"; do
+        if [ -f "$path" ] && [ -x "$path" ]; then
+            echo "$path"
+            return 0
+        fi
+    done
+    
+    return 1
+}
+
+# Find SwiftFormat and SwiftLint
+SWIFTFORMAT=$(find_tool "swiftformat")
+SWIFTLINT=$(find_tool "swiftlint")
+
+echo "🔧 Pre-commit hook: XcodeBuildServer"
+
+# Get list of staged Swift files
+STAGED_SWIFT_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.swift$')
+
+if [ -z "$STAGED_SWIFT_FILES" ]; then
+    echo "ℹ️  No Swift files to process"
+    exit 0
+fi
+
+echo "📝 Processing $(echo "$STAGED_SWIFT_FILES" | wc -l | tr -d ' ') Swift files..."
+
+# 1. Run SwiftFormat
+if [ -n "$SWIFTFORMAT" ]; then
+    echo "🎨 Running SwiftFormat..."
+    
+    for file in $STAGED_SWIFT_FILES; do
+        if [ -f "$file" ]; then
+            echo "  • Formatting $file"
+            $SWIFTFORMAT "$file"
+        fi
+    done
+    
+    echo "✅ SwiftFormat complete"
+else
+    echo "⚠️  SwiftFormat not found - skipping formatting"
+fi
+
+# 2. Run SwiftLint --fix
+if [ -n "$SWIFTLINT" ]; then
+    echo "🧹 Running SwiftLint --fix..."
+    
+    for file in $STAGED_SWIFT_FILES; do
+        if [ -f "$file" ]; then
+            echo "  • Fixing $file"
+            $SWIFTLINT --fix "$file" --quiet
+        fi
+    done
+    
+    echo "✅ SwiftLint --fix complete"
+else
+    echo "⚠️  SwiftLint not found - skipping auto-fix"
+fi
+
+# 3. Re-add modified files to staging area
+echo "📦 Re-staging modified files..."
+for file in $STAGED_SWIFT_FILES; do
+    if [ -f "$file" ]; then
+        git add "$file"
+    fi
+done
+
+# 4. Final SwiftLint check
+if [ -n "$SWIFTLINT" ]; then
+    echo "🔍 Running final SwiftLint validation..."
+    $SWIFTLINT --quiet
+    SWIFTLINT_EXIT_CODE=$?
+    
+    if [ $SWIFTLINT_EXIT_CODE -ne 0 ]; then
+        echo ""
+        echo "❌ SwiftLint found violations that require manual fixes:"
+        echo ""
+        $SWIFTLINT --quiet --reporter emoji
+        echo ""
+        echo "💡 Please fix the issues above and commit again."
+        echo "   You can run 'swiftlint --fix' manually if needed."
+        echo ""
+        exit $SWIFTLINT_EXIT_CODE
+    fi
+    
+    echo "✅ All SwiftLint checks passed!"
+else
+    echo "⚠️  Skipping final SwiftLint check (not available)"
+fi
+
+echo ""
+echo "🎉 Pre-commit checks complete - ready to commit!"
+exit 0
