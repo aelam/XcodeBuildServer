@@ -12,7 +12,11 @@ public final class StdioJSONRPCServerTransport: JSONRPCServerTransport, @uncheck
     private let input: FileHandle
     private let output: FileHandle
     private let jsonDecoder = JSONDecoder()
-    private let jsonEncoder = JSONEncoder()
+    private let jsonEncoder: JSONEncoder = {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        return encoder
+    }()
 
     // Stream continuations for async streams
     private var messageContinuation: AsyncStream<JSONRPCMessage>.Continuation?
@@ -127,7 +131,7 @@ public final class StdioJSONRPCServerTransport: JSONRPCServerTransport, @uncheck
         let header = "Content-Length:\(data.count)\r\n\r\n"
         let headerData = header.data(using: .utf8)!
 
-        // 现在可以安全地记录日志，因为ConsoleDestination已被禁用
+        // Now safe to log because ConsoleDestination is disabled
         logger.debug("Sending JSON-RPC response: \(String(data: data, encoding: .utf8) ?? "[Invalid UTF-8]")")
 
         // Perform write operations with timeout to prevent hanging
