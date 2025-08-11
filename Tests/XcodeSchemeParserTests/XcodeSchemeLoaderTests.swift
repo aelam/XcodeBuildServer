@@ -212,7 +212,7 @@ struct XcodeSchemeLoaderTests {
         let workspaceDir = createTemporaryWorkspaceStructure()
         defer { try? FileManager.default.removeItem(at: workspaceDir) }
 
-        await #expect(throws: XcodeSchemeError.self) {
+        #expect(throws: XcodeSchemeError.self) {
             try schemeLoader.loadSchemes(fromWorkspace: workspaceDir, filterBy: ["NonExistentScheme"])
         }
     }
