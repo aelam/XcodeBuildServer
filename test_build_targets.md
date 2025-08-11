@@ -1,8 +1,8 @@
-# WorkspaceBuildTargetsRequest 实现完成
+# WorkspaceBuildTargetsRequest 和 textDocument/sourceKitOptions 实现完成
 
 ## 实现总结
 
-我已经成功实现了 `WorkspaceBuildTargetsRequest`，包括以下组件：
+我已经成功实现了核心的 BSP 方法，包括 `WorkspaceBuildTargetsRequest` 和 `textDocument/sourceKitOptions`：
 
 ### 1. 增强的 XcodeProjectManager
 - 添加了 `getAvailableTargets()` 方法来发现项目中的所有目标
@@ -35,6 +35,35 @@
 ### 5. WorkspaceBuildTargetsResponse
 - 创建了符合 BSP 规范的响应结构
 - 返回完整的 BuildTarget 数组，包含所有必需的元数据
+
+### 6. textDocument/sourceKitOptions 完整实现 ✨
+- **数据源**：使用 `buildSettingsForIndex` 而非普通构建设置
+- **目标特异性**：支持不同构建目标的不同编译参数
+- **文件特异性**：为特定文件返回专门的编译设置
+- **BuildServerContext 方法**：
+  - `getCompileArguments(target:fileURI:)` - 获取文件编译参数
+  - `extractSchemeFromBuildTarget(_:)` - 解析目标scheme名称
+  - `getWorkingDirectory()` - 获取工作目录
+- **错误处理**：完善的后备机制和错误恢复策略
+- **日志记录**：详细的调试和故障排除信息
+
+## textDocument/sourceKitOptions 数据流
+
+```
+BSP Client Request (textDocument/sourceKitOptions)
+    ↓
+TextDocumentSourceKitOptionsRequest
+    ↓  
+BuildServerContext.getCompileArguments()
+    ↓
+extractSchemeFromBuildTarget() → parse "xcode:///ProjectName/SchemeName/TargetName"
+    ↓
+XcodeProjectInfo.buildSettingsForIndex[scheme][filePath]
+    ↓
+XcodeFileBuildSettingInfo.swiftASTCommandArguments
+    ↓
+TextDocumentSourceKitOptionsResponse with compiler arguments
+```
 
 ## BSP BuildTarget 映射
 
@@ -70,6 +99,8 @@ WorkspaceBuildTargetsResponse
 ```
 
 ## 使用示例
+
+### workspace/buildTargets 请求
 
 当 BSP 客户端发送请求时：
 
@@ -113,4 +144,45 @@ WorkspaceBuildTargetsResponse
 }
 ```
 
-现在 `WorkspaceBuildTargetsRequest` 已经完全实现，并且可以正确地从 XcodeProjectManagement 模块获取数据。
+### textDocument/sourceKitOptions 请求
+
+当 BSP 客户端请求特定文件的编译选项时：
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "textDocument/sourceKitOptions",
+  "params": {
+    "textDocument": { "uri": "file:///path/to/MyApp/ViewController.swift" },
+    "target": { "uri": "xcode:///MyApp/MyScheme/MyApp" },
+    "language": "swift"
+  }
+}
+```
+
+服务器将返回实际的编译器参数：
+
+```json
+{
+  "jsonrpc": "2.0", 
+  "id": 2,
+  "result": {
+    "compilerArguments": [
+      "-module-name", "MyApp",
+      "-Onone",
+      "-enforce-exclusivity=checked", 
+      "/path/to/MyApp/ViewController.swift",
+      "-DDEBUG",
+      "-sdk", "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.1.sdk",
+      "-target", "arm64-apple-ios18.0",
+      "-g",
+      "-index-store-path", "/Users/user/Library/Developer/Xcode/DerivedData/MyApp-hash/Index.noindex/DataStore",
+      "-swift-version", "5"
+    ],
+    "workingDirectory": "/path/to/MyApp"
+  }
+}
+```
+
+现在 `WorkspaceBuildTargetsRequest` 和 `textDocument/sourceKitOptions` 都已经完全实现，为 SourceKit-LSP 提供了完整的语义支持。
