@@ -110,7 +110,8 @@ struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
 
         logger
             .info(
-                "Built SourcesItem for target '\(targetName)' with \(sourceItems.count) sources and \(roots.count) roots"
+                "Built SourcesItem for target '\(targetName)' with \(sourceItems.count) sources " +
+                    "and \(roots.count) roots"
             )
 
         return SourcesItem(
