@@ -31,13 +31,13 @@ public actor XcodeToBSPAdapter {
         }
 
         logger.debug("Creating BuildTargets from \(buildSettingsForIndex.count) targets in buildSettingsForIndex")
-        
+
         for (targetKey, _) in buildSettingsForIndex {
             logger.debug("Processing target key: \(targetKey)")
-            
+
             // Extract target name from the key (format: /path/to/project.xcodeproj/TargetName)
             let targetName = extractTargetNameFromKey(targetKey)
-            
+
             let buildTarget = await createBuildTarget(
                 targetKey: targetKey,
                 targetName: targetName,
@@ -117,7 +117,7 @@ public actor XcodeToBSPAdapter {
     }
 
     /// Create BSP target identifier string from XcodeProjectInfo and target details
-    /// 
+    ///
     /// New format: xcode://{projectPath}{targetName}?scheme={schemeName}
     /// Example: xcode:///Users/dev/MyApp.xcodeproj/MyAppTarget?scheme=MyScheme
     private func createBSPTargetIdentifier(
@@ -238,17 +238,17 @@ public actor XcodeToBSPAdapter {
         let toolchainURI = try? URI(string: toolchainPath.absoluteString)
         return SourceKitBuildTarget(toolchain: toolchainURI)
     }
-    
+
     /// Extract target name from buildSettingsForIndex key
     /// Key format: "/path/to/project.xcodeproj/TargetName"
     private func extractTargetNameFromKey(_ key: String) -> String {
-        return (key as NSString).lastPathComponent
+        (key as NSString).lastPathComponent
     }
-    
+
     /// Classify target based on name patterns
     private func classifyTargetByName(_ targetName: String) -> [BuildTargetTag] {
         var tags: [BuildTargetTag] = []
-        
+
         if targetName.contains("UITest") {
             tags.append(.integrationTest)
         } else if targetName.contains("Test") {
@@ -256,21 +256,21 @@ public actor XcodeToBSPAdapter {
         } else {
             tags.append(.application)
         }
-        
+
         return tags
     }
-    
+
     /// Detect languages for a target based on name
     private func detectLanguagesForTarget(_ targetName: String) async -> [Language] {
         // For now, assume Swift for all targets
         // This could be enhanced by analyzing build settings
-        return [.swift]
+        [.swift]
     }
-    
+
     /// Create capabilities for a target based on name
     private func createCapabilitiesForTarget(_ targetName: String) -> BuildTargetCapabilities {
         let isTestTarget = targetName.contains("Test")
-        
+
         return BuildTargetCapabilities(
             canCompile: true,
             canTest: isTestTarget,
@@ -278,5 +278,4 @@ public actor XcodeToBSPAdapter {
             canDebug: true
         )
     }
-    
 }

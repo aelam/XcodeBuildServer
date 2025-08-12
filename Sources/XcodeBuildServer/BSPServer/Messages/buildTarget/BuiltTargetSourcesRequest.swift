@@ -102,8 +102,8 @@ struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
 
     // 异步版本的目标解析方法
     private func parseTargetIdentifierAsync(_ uri: String) async throws -> TargetInfo {
-        return try await Task.detached(priority: .utility) {
-            return try self.parseTargetIdentifier(uri) // 保持原有逻辑不变
+        try await Task.detached(priority: .utility) {
+            try self.parseTargetIdentifier(uri) // 保持原有逻辑不变
         }.value
     }
 
@@ -115,7 +115,7 @@ struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
         // 从target URI中提取blueprintIdentifier用于查找buildSettingsForIndex
         let targetURI = targetId.uri.stringValue
         logger.debug("Building sources for target URI: \(targetURI)")
-        
+
         // 异步并行处理URI转换和源文件构建
         async let sourceItems = buildSourceItemsFromIndexSettings(
             targetURI: targetURI,
@@ -144,8 +144,8 @@ struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
 
     // 异步URI转换辅助方法
     private func convertProjectRootURIAsync(_ rootURL: URL) async -> URI? {
-        return await Task.detached(priority: .utility) {
-            return try? URI(string: rootURL.absoluteString)
+        await Task.detached(priority: .utility) {
+            try? URI(string: rootURL.absoluteString)
         }.value
     }
 
@@ -199,7 +199,7 @@ private extension BuiltTargetSourcesRequest {
         projectInfo: XcodeProjectInfo
     ) async -> [SourceItem] {
         // 获取缓存数据
-        return await Task.detached(priority: .userInitiated) {
+        await Task.detached(priority: .userInitiated) {
             // Debug: Check if buildSettingsForIndex exists
             guard let indexSettings = projectInfo.buildSettingsForIndex else {
                 logger.error("buildSettingsForIndex is nil")
@@ -211,7 +211,7 @@ private extension BuiltTargetSourcesRequest {
 
             // 直接使用 projectPath/targetName 格式的键（完整路径）
             var targetFiles: [String: XcodeFileBuildSettingInfo]?
-            
+
             if let projectPathAndTarget = self.extractProjectPathAndTarget(from: targetURI) {
                 logger.debug("🔍 Extracted projectPath/target: '\(projectPathAndTarget)' from URI: '\(targetURI)'")
                 targetFiles = indexSettings[projectPathAndTarget]
@@ -268,7 +268,7 @@ private extension BuiltTargetSourcesRequest {
         fileInfo: XcodeFileBuildSettingInfo,
         projectRoot: URL
     ) async -> SourceItem? {
-        return await Task.detached(priority: .utility) {
+        await Task.detached(priority: .utility) {
             logger.debug("createSourceItem called for: \(filePath)")
             logger.debug("fileInfo.languageDialect: \(String(describing: fileInfo.languageDialect))")
 
@@ -417,19 +417,19 @@ private extension BuiltTargetSourcesRequest {
             return .source
         }
     }
-    
+
     /// Extract project path and target name from BSP target URI (without scheme query)
     /// Returns: "projectPath/targetName" that can be used as a key for buildSettingsForIndex
     func extractProjectPathAndTarget(from uriString: String) -> String? {
         guard uriString.hasPrefix("xcode://") else { return nil }
         guard URL(string: uriString) != nil else { return nil }
-        
+
         // Remove scheme:// prefix and query parameters
         let pathWithTarget = uriString.dropFirst("xcode://".count)
-        
+
         // Split by '?' to remove query parameters
         let pathOnly = String(pathWithTarget.split(separator: "?").first ?? "")
-        
+
         return pathOnly
     }
 }

@@ -115,7 +115,7 @@ Supported xcodebuild actions:
 The module supports BSP (Build Server Protocol) configuration files:
 
 - `.bsp/xcode.json` - Standard BSP configuration
-- `buildServer.json` - Legacy configuration support
+- `buildServer.json` - Legacy configuration support 
 
 Example configuration:
 ```json
