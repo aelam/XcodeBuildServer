@@ -411,8 +411,7 @@ extension XcodeProjectManager {
 
             } catch {
                 logger.error("Failed to load build settings for target '\(targetName)'" +
-                    "in project \(projectURL.path): \(error)"
-                )
+                    "in project \(projectURL.path): \(error)")
             }
         }
 

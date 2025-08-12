@@ -10,11 +10,12 @@
 --linebreaks lf
 --commas always
 --trimwhitespace always
+--ifdef no-indent
 
 # Wrapping
---wraparguments before-first
---wrapparameters before-first
---wrapcollections before-first
+--wraparguments preserve
+--wrapparameters preserve
+--wrapcollections preserve
 --closingparen balanced
 
 # Spacing (operators with spaces are default behavior)
@@ -24,6 +25,7 @@
 --disable trailingCommas
 --disable unusedArguments
 --disable wrapMultilineStatementBraces
+--disable wrapArguments
 
 # Rules to enable
 --enable isEmpty
