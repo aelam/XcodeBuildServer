@@ -104,7 +104,8 @@ let package = Package(
             dependencies: ["XcodeProjectManagement"],
             resources: [
                 .copy("DemoProjects"),
-                .copy("README.md")
+                .copy("README.md"),
+                .copy("Resources")
             ]
         ),
     ]
