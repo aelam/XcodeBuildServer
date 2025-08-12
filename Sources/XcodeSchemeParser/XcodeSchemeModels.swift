@@ -8,7 +8,7 @@ import Foundation
 
 // MARK: - Core XML Element Models
 
-public struct XcodeSchemeBuildableReference: Sendable {
+public struct XcodeSchemeBuildableReference: Sendable, Equatable, Hashable {
     public let buildableIdentifier: String // e.g., "primary"
     public let blueprintIdentifier: String
     public let buildableName: String?
@@ -31,7 +31,7 @@ public struct XcodeSchemeBuildableReference: Sendable {
 }
 
 /// Represents BuildActionEntry with build flags
-public struct XcodeSchemeBuildActionEntry: Sendable {
+public struct XcodeSchemeBuildActionEntry: Sendable, Equatable, Hashable {
     public let buildForTesting: Bool
     public let buildForRunning: Bool
     public let buildForProfiling: Bool

@@ -7,19 +7,53 @@
 import Foundation
 import XcodeProjectManagement
 
+/// BSP Configuration for Xcode projects
+/// 
+/// Supports conditional loading to reduce project loading overhead:
+/// - `workspace`: Optional workspace path
+/// - `project`: Optional project path  
+/// - `scheme`: Optional single scheme name
+/// - `schemes`: Optional array of scheme names
+/// - `configuration`: Optional build configuration (defaults to "Debug")
+///
+/// When schemes are specified, only those schemes and their targets will be loaded,
+/// significantly reducing initialization time for large projects.
+///
+/// Example .bsp/xcode.json:
+/// ```json
+/// {
+///   "project": "MyApp.xcodeproj",
+///   "schemes": ["MyApp", "MyAppTests"],
+///   "configuration": "Debug"
+/// }
+/// ```
 public struct XcodeBSPConfiguration: Codable, Sendable {
     public let workspace: String?
     public let project: String?
     public let scheme: String?
+    public let schemes: [String]?
     public let configuration: String?
 
     public static let defaultConfiguration = "Debug"
 
-    public init(workspace: String? = nil, project: String? = nil, scheme: String? = nil, configuration: String? = nil) {
+    public init(workspace: String? = nil, project: String? = nil, scheme: String? = nil, schemes: [String]? = nil, configuration: String? = nil) {
         self.workspace = workspace
         self.project = project
         self.scheme = scheme
+        self.schemes = schemes
         self.configuration = configuration
+    }
+    
+    /// Get all scheme names to load (combining single scheme and schemes array)
+    public var allSchemes: [String] {
+        var result: [String] = []
+        if let scheme = scheme {
+            result.append(scheme)
+        }
+        if let schemes = schemes {
+            result.append(contentsOf: schemes)
+        }
+        return Array(Set(result)) // Remove duplicates
     }
 
     // Convert to XcodeProjectReference for project management

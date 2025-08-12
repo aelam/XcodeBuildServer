@@ -77,13 +77,6 @@ public final actor JSONRPCServer {
 
     /// Process a single message from the message stream
     private func processMessage(_ message: JSONRPCMessage) async {
-        // Log the original message
-        logger
-            .debug(
-                "JSONRPCServer received message: " +
-                    "\(String(data: message.rawData, encoding: .utf8) ?? "Unable to decode raw data")"
-            )
-
         if let requestType = messageRegistry.requestType(for: message.request.method) {
             logger.debug("Found request type for method: \(message.request.method)")
             await handleRequest(message: message, requestType: requestType)
