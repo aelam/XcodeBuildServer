@@ -80,7 +80,9 @@ public actor BuildServerContext {
         // Load project basic info (this will initialize toolchain internally)
         logger.debug(">>> Resolving project info")
         do {
-            let xcodeProjectInfo = try await projectManager.resolveProjectInfo()
+            let additionalSchemes = config?.allSchemes ?? []
+            logger.debug("Loading project with additional schemes: \(additionalSchemes)")
+            let xcodeProjectInfo = try await projectManager.resolveProjectInfo(additionalSchemes: additionalSchemes)
             logger.debug(">>> Project info resolved")
 
             // Initialize BSP adapter
@@ -133,10 +135,10 @@ public extension BuildServerContext {
             return []
         }
 
-        // Extract scheme name from BuildTargetIdentifier
-        // Expected format: "xcode:///ProjectName/SchemeName/TargetName"
-        guard let targetScheme = extractSchemeFromBuildTarget(target) else {
-            logger.warning("Could not extract scheme from build target: \(target.uri)")
+        // Extract target name from BuildTargetIdentifier
+        // Expected format: "xcode:///ProjectPath/TargetName?scheme={schemeName}"
+        guard let xcodeTargetIdentifier: String = extractXcodeProjectIdentifier(target) else {
+            logger.warning("Could not extract target from build target: \(target.uri)")
             return []
         }
 
@@ -144,22 +146,54 @@ public extension BuildServerContext {
         let filePath = URL(string: fileURI)?.path ?? fileURI
 
         // Get file build settings from the index
-        guard let targetSettings = buildSettingsForIndex[targetScheme] else {
-            logger.warning("No build settings found for scheme: \(targetScheme)")
+        guard let targetSettings = buildSettingsForIndex[xcodeTargetIdentifier] else {
+            logger.warning("No build settings found for target: \(xcodeTargetIdentifier)")
             return []
         }
 
         guard let fileBuildSettings = targetSettings[filePath] else {
-            logger.debug("No specific build settings found for file: \(filePath)")
-            // Try to get the first available file's settings as fallback
-            if let firstFileSettings = targetSettings.values.first {
-                logger.debug("Using fallback build settings from first available file")
-                return firstFileSettings.swiftASTCommandArguments ?? []
+            logger.warning("No specific build settings found for file: \(filePath)")
+            logger.debug("Available files in target '\(xcodeTargetIdentifier)': \(Array(targetSettings.keys))")
+
+            // Instead of using first file, try to find a file with similar extension
+            let fileExtension = (filePath as NSString).pathExtension.lowercased()
+
+            // Look for files with same extension as fallback
+            let sameExtensionFiles = targetSettings.filter { key, _ in
+                let keyExtension = (key as NSString).pathExtension.lowercased()
+                return keyExtension == fileExtension
             }
+
+            if let similarFileSettings = sameExtensionFiles.first?.value {
+                logger.debug("Using fallback build settings from similar file with extension .\(fileExtension)")
+                return enhanceCompilerArgumentsForSourceKit(similarFileSettings.swiftASTCommandArguments ?? [])
+            }
+
+            // Only use first file as absolute last resort
+            if let firstFileSettings = targetSettings.values.first {
+                logger.warning("Using fallback build settings from first available file (last resort)")
+                return enhanceCompilerArgumentsForSourceKit(firstFileSettings.swiftASTCommandArguments ?? [])
+            }
+
+            logger.error("No fallback build settings available for target: \(xcodeTargetIdentifier)")
             return []
         }
 
-        return fileBuildSettings.swiftASTCommandArguments ?? []
+        return enhanceCompilerArgumentsForSourceKit(fileBuildSettings.swiftASTCommandArguments ?? [])
+    }
+
+    /// Enhance compiler arguments with SourceKit-LSP specific parameters for better system framework support.
+    private func enhanceCompilerArgumentsForSourceKit(_ baseArgs: [String]) -> [String] {
+        var enhancedArgs = baseArgs
+
+        // Only add flags that are universally supported and not likely to conflict
+        let additionalFlags = ["-enable-bare-slash-regex"]
+
+        for flag in additionalFlags where !enhancedArgs.contains(flag) {
+            enhancedArgs.append(flag)
+        }
+
+        return enhancedArgs
     }
 
     func getWorkingDirectory() throws -> String? {
@@ -167,14 +201,22 @@ public extension BuildServerContext {
         return state.rootURL.path
     }
 
-    private func extractSchemeFromBuildTarget(_ target: BuildTargetIdentifier) -> String? {
-        // Parse URI like "xcode:///ProjectName/SchemeName/TargetName"
+
+    /// Extract project path and target name from BSP target identifier (without scheme query)
+    /// Returns: "projectPath/targetName" that can be used for LSP compile arguments
+    func extractXcodeProjectIdentifier(_ target: BuildTargetIdentifier) -> String? {
+        // Parse URI like "xcode://{projectPath}/targetName?scheme={schemeName}"
         let uriString = target.uri.stringValue
-        guard uriString.hasPrefix("xcode:///") else { return nil }
+        guard uriString.hasPrefix("xcode://") else { return nil }
 
-        let pathComponents = uriString.dropFirst("xcode:///".count).split(separator: "/")
-        guard pathComponents.count >= 2 else { return nil }
+        guard URL(string: uriString) != nil else { return nil }
 
-        return String(pathComponents[1]) // SchemeName
+        // Remove scheme:// prefix and query parameters
+        let pathWithTarget = uriString.dropFirst("xcode://".count)
+
+        // Split by '?' to remove query parameters
+        let pathOnly = String(pathWithTarget.split(separator: "?").first ?? "")
+
+        return pathOnly
     }
 }

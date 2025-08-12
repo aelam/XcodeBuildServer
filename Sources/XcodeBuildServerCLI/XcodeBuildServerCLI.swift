@@ -11,15 +11,14 @@ import XcodeBuildServer
 @main
 struct XcodeBuildServerCLI {
     static func main() async {
-        // Initialize SwiftyBeaver logging
+        // 获取环境信息
+        let processID = ProcessInfo.processInfo.processIdentifier
         let environment = ProcessInfo.processInfo.environment["BSP_ENVIRONMENT"] ?? "development"
 
         // Log startup message
-        XcodeBuildServer.logger
-            .info(
-                "XcodeBuildServer started successfully - PID: \(ProcessInfo.processInfo.processIdentifier) " +
-                    "- Environment: \(environment)"
-            )
+        XcodeBuildServer.logger.info(
+            "XcodeBuildServer started successfully - PID: \(processID) - Environment: \(environment)"
+        )
 
         let arguments = CommandLine.arguments
 
@@ -40,8 +39,7 @@ struct XcodeBuildServerCLI {
             arguments.contains("--debug")
 
         if isDebugMode {
-            let debugMsg = "🔧 BSP Debug Mode Enabled - PID: \(ProcessInfo.processInfo.processIdentifier)"
-            logger.debug(debugMsg)
+            logger.debug("🔧 BSP Debug Mode Enabled - PID: \(processID)")
         }
 
         let transport = StdioJSONRPCServerTransport()
@@ -93,32 +91,18 @@ struct XcodeBuildServerCLI {
     }
 
     private static func killSelfIfParentIsNull() {
-        let parentProcessID = getppid()
+        let parentPID = getppid()
 
-        // Check if parent process is init (PID 1) or doesn't exist
-        if parentProcessID == 1 {
-            let msg = "🔴 Parent process became init (PID 1), terminating..."
-            logger.warning(msg)
+        // Exit if parent became init (original parent died)
+        if parentPID == 1 {
+            logger.warning("🔴 Parent process died, terminating...")
             exit(0)
         }
 
-        // Additional check: verify parent process still exists and is not a zombie
-        let result = kill(parentProcessID, 0) // Signal 0 just checks if process exists
-        if result == -1 {
-            if errno == ESRCH {
-                let msg = "🔴 Parent process (PID \(parentProcessID)) no longer exists (ESRCH), " + "terminating..."
-                logger.warning(msg)
-                exit(0)
-            } else if errno == EPERM {
-                // Parent exists, but we don't have permission; do not exit
-                let msg = "🟡 Parent process (PID \(parentProcessID)) exists " +
-                    "but permission denied (EPERM), not terminating."
-                logger.debug(msg)
-            }
-        } else {
-            let msg = "🟠 kill() failed for parent process (PID \(parentProcessID)), " +
-                " errno: \(errno), not terminating."
-            logger.debug(msg)
+        // Exit if parent process no longer exists
+        if kill(parentPID, 0) == -1 && errno == ESRCH {
+            logger.warning("🔴 Parent process (PID \(parentPID)) not found, terminating...")
+            exit(0)
         }
     }
 }

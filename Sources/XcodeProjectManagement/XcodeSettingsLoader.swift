@@ -133,13 +133,19 @@ public actor XcodeSettingsLoader {
         }
     }
 
-    public func loadBuildSettingsForIndex() async throws -> XcodeBuildSettingsForIndex {
+    public func loadBuildSettingsForIndex(
+        projectURL: URL,
+        target: String,
+        derivedDataPath: URL
+        ) async throws -> XcodeBuildSettingsForIndex {
         let command = commandBuilder.buildSettingsCommand(
             scheme: nil,
-            target: nil,
+            target: target,
             destination: nil, // No destination needed for index settings
-            forIndex: true
+            forIndex: true,
+            derivedDataPath: derivedDataPath
         )
+
         let output = try await runXcodeBuild(arguments: command)
         guard let jsonString = output, !jsonString.isEmpty else {
             throw XcodeProjectError.invalidConfig("Failed to load build settings for index")

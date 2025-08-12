@@ -48,6 +48,19 @@ public enum XcodeBuildDestination: Sendable {
     }
 }
 
+public enum XcodeProjectConfiguration: Sendable {
+    case project(projectURL: URL, target: String?, configuration: String?)
+    case workspace(workspaceURL: URL, scheme: String, configuration: String?)
+
+    public init(projectURL: URL, target: String? = nil, configuration: String? = nil) {
+        self = .project(projectURL: projectURL, target: target, configuration: configuration)
+    }
+
+    public init(workspaceURL: URL, scheme: String, configuration: String? = nil) {
+        self = .workspace(workspaceURL: workspaceURL, scheme: scheme, configuration: configuration)
+    }
+}
+
 public struct XcodeBuildOptions: Sendable {
     public let showBuildSettings: Bool
     public let showBuildSettingsForIndex: Bool
@@ -107,27 +120,33 @@ public struct XcodeBuildCommandBuilder {
         self.projectIdentifier = projectIdentifier
     }
 
+    /// New buildCommand method using XcodeProjectConfiguration
     public func buildCommand(
+        project: XcodeProjectConfiguration,
         action: XcodeBuildAction? = nil,
-        scheme: String? = nil, // required for workspace project
-        target: String? = nil, // only work with non-workspace
-        configuration: String? = nil,
         destination: XcodeBuildDestination? = nil,
+        derivedDataPath: URL? = nil,
         options: XcodeBuildOptions = XcodeBuildOptions()
     ) -> [String] {
         var arguments: [String] = []
 
-        arguments.append(contentsOf: buildWorkspaceOrProjectArguments())
-
-        if let scheme {
+        switch project {
+        case let .project(projectURL, target, configuration):
+            arguments.append(contentsOf: ["-project", projectURL.path])
+            if let target {
+                arguments.append(contentsOf: ["-target", target])
+            }
+            if let configuration {
+                arguments.append(contentsOf: ["-configuration", configuration])
+            }
+        case let .workspace(workspaceURL, scheme, configuration):
+            arguments.append(contentsOf: ["-workspace", workspaceURL.path])
             arguments.append(contentsOf: ["-scheme", scheme])
+            if let configuration {
+                arguments.append(contentsOf: ["-configuration", configuration])
+            }
         }
-        if let target {
-            arguments.append(contentsOf: ["-target", target])
-        }
-        if let configuration {
-            arguments.append(contentsOf: ["-configuration", configuration])
-        }
+
         if let destination {
             arguments.append(contentsOf: ["-destination", destination.destinationString])
         }
@@ -138,14 +157,86 @@ public struct XcodeBuildCommandBuilder {
 
         arguments.append(contentsOf: buildOptionsArguments(options: options))
 
+        if let derivedDataPath {
+            arguments.append(contentsOf: ["-derivedDataPath", derivedDataPath.path])
+        }
+
         return arguments
+    }
+
+    /// Legacy buildCommand method for backward compatibility
+    public func buildCommand(
+        projectURL: URL? = nil,
+        workspaceURL: URL? = nil,
+        action: XcodeBuildAction? = nil,
+        scheme: String? = nil, // required for workspace project
+        target: String? = nil, // only work with non-workspace
+        configuration: String? = nil,
+        destination: XcodeBuildDestination? = nil,
+        options: XcodeBuildOptions = XcodeBuildOptions(),
+        derivedDataPath: URL? = nil
+    ) -> [String] {
+        // Convert legacy parameters to new XcodeProjectConfiguration format
+        let projectConfig: XcodeProjectConfiguration
+
+        if let projectURL {
+            projectConfig = XcodeProjectConfiguration(
+                projectURL: projectURL,
+                target: target,
+                configuration: configuration
+            )
+        } else if let workspaceURL, let scheme {
+            projectConfig = XcodeProjectConfiguration(
+                workspaceURL: workspaceURL,
+                scheme: scheme,
+                configuration: configuration
+            )
+        } else {
+            // Fallback to original logic for auto-detection
+            var arguments: [String] = []
+            arguments.append(contentsOf: buildWorkspaceOrProjectArguments())
+
+            if let scheme {
+                arguments.append(contentsOf: ["-scheme", scheme])
+            }
+            if let target {
+                arguments.append(contentsOf: ["-target", target])
+            }
+            if let configuration {
+                arguments.append(contentsOf: ["-configuration", configuration])
+            }
+            if let destination {
+                arguments.append(contentsOf: ["-destination", destination.destinationString])
+            }
+            if let action {
+                arguments.append(action.rawValue)
+            }
+
+            arguments.append(contentsOf: buildOptionsArguments(options: options))
+
+            if let derivedDataPath {
+                arguments.append(contentsOf: ["-derivedDataPath", derivedDataPath.path])
+            }
+
+            return arguments
+        }
+
+        // Use the new method
+        return buildCommand(
+            project: projectConfig,
+            action: action,
+            destination: destination,
+            derivedDataPath: derivedDataPath,
+            options: options
+        )
     }
 
     public func buildSettingsCommand(
         scheme: String?,
         target: String?,
         destination: XcodeBuildDestination? = nil,
-        forIndex: Bool = false
+        forIndex: Bool = false,
+        derivedDataPath: URL? = nil
     ) -> [String] {
         let options = forIndex ? XcodeBuildOptions.buildSettingsForIndexJSON : XcodeBuildOptions.buildSettingsJSON
         return buildCommand(
@@ -162,19 +253,6 @@ public struct XcodeBuildCommandBuilder {
 
     public func showDestinationsCommand(scheme: String) -> [String] {
         buildCommand(scheme: scheme, options: XcodeBuildOptions(showdestinations: true))
-    }
-
-    public func buildForBSP(
-        action: XcodeBuildAction = .build,
-        target: String? = nil,
-        destination: XcodeBuildDestination = .iOSSimulator
-    ) -> [String] {
-        let options = XcodeBuildOptions(
-            quiet: false,
-            verbose: true,
-            derivedDataPath: "TODOC"
-        )
-        return buildCommand(action: action, target: target, destination: destination, options: options)
     }
 
     private func buildWorkspaceOrProjectArguments() -> [String] {

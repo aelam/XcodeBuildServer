@@ -24,23 +24,66 @@ public actor XcodeToBSPAdapter {
     public func createBuildTargets() async throws -> [BuildTarget] {
         var buildTargets: [BuildTarget] = []
 
-        // Create one BSP BuildTarget for each scheme-target combination
-        for schemeInfo in xcodeProjectInfo.schemeInfoList {
-            for schemeTargetInfo in schemeInfo.targets {
-                let buildTarget = await createBuildTarget(
-                    from: schemeTargetInfo,
-                    scheme: schemeInfo,
-                    projectBasicInfo: xcodeProjectInfo
-                )
-                buildTargets.append(buildTarget)
-            }
+        // Create BuildTargets based on what's available in buildSettingsForIndex
+        guard let buildSettingsForIndex = xcodeProjectInfo.buildSettingsForIndex else {
+            logger.warning("No buildSettingsForIndex available, cannot create build targets")
+            return []
         }
 
+        logger.debug("Creating BuildTargets from \(buildSettingsForIndex.count) targets in buildSettingsForIndex")
+        
+        for (targetKey, _) in buildSettingsForIndex {
+            logger.debug("Processing target key: \(targetKey)")
+            
+            // Extract target name from the key (format: /path/to/project.xcodeproj/TargetName)
+            let targetName = extractTargetNameFromKey(targetKey)
+            
+            let buildTarget = await createBuildTarget(
+                targetKey: targetKey,
+                targetName: targetName,
+                projectBasicInfo: xcodeProjectInfo
+            )
+            buildTargets.append(buildTarget)
+        }
+
+        logger.info("Created \(buildTargets.count) BuildTargets from buildSettingsForIndex")
         return buildTargets
     }
 
-    /// Create a single BuildTarget for a specific scheme-target combination
+    /// Create a single BuildTarget from buildSettingsForIndex
     private func createBuildTarget(
+        targetKey: String,
+        targetName: String,
+        projectBasicInfo: XcodeProjectInfo
+    ) async -> BuildTarget {
+        // Create BSP target identifier using the targetKey directly
+        // targetKey format: "/path/to/project.xcodeproj/TargetName"
+        // Convert to xcode:// URI format with default scheme
+        let targetIdentifier = "xcode://\(targetKey)?scheme=default"
+        let targetID = createBuildTargetIdentifier(from: targetIdentifier)
+
+        let baseDirectory = try? URI(string: projectBasicInfo.rootURL.absoluteString)
+        let displayName = targetName // Just use target name without scheme
+        let tags = classifyTargetByName(targetName)
+        let languages = await detectLanguagesForTarget(targetName)
+        let capabilities = createCapabilitiesForTarget(targetName)
+        let sourceKitData = await createSourceKitData()
+
+        return BuildTarget(
+            id: targetID,
+            displayName: displayName,
+            baseDirectory: baseDirectory,
+            tags: tags,
+            languageIds: languages,
+            dependencies: [], // TODO: Extract dependencies from build settings
+            capabilities: capabilities,
+            dataKind: .sourceKit,
+            data: sourceKitData?.encodeToLSPAny()
+        )
+    }
+
+    /// Create a single BuildTarget for a specific scheme-target combination (legacy method)
+    private func createBuildTargetFromScheme(
         from targetInfo: XcodeSchemeTargetInfo,
         scheme: XcodeSchemeInfo,
         projectBasicInfo: XcodeProjectInfo
@@ -74,12 +117,21 @@ public actor XcodeToBSPAdapter {
     }
 
     /// Create BSP target identifier string from XcodeProjectInfo and target details
+    /// 
+    /// New format: xcode://{projectPath}{targetName}?scheme={schemeName}
+    /// Example: xcode:///Users/dev/MyApp.xcodeproj/MyAppTarget?scheme=MyScheme
     private func createBSPTargetIdentifier(
         targetName: String,
         primaryScheme: String,
         projectBasicInfo: XcodeProjectInfo
     ) -> String {
-        "xcode:///\(projectBasicInfo.projectLocation.name)/\(primaryScheme)/\(targetName)"
+        let projectPath = switch projectBasicInfo.projectLocation {
+        case let .explicitWorkspace(url):
+            url.path
+        case let .implicitWorkspace(projectURL, _):
+            projectURL.path
+        }
+        return "xcode://\(projectPath)/\(targetName)?scheme=\(primaryScheme)"
     }
 
     /// Convert string identifier to BuildTargetIdentifier
@@ -186,4 +238,45 @@ public actor XcodeToBSPAdapter {
         let toolchainURI = try? URI(string: toolchainPath.absoluteString)
         return SourceKitBuildTarget(toolchain: toolchainURI)
     }
+    
+    /// Extract target name from buildSettingsForIndex key
+    /// Key format: "/path/to/project.xcodeproj/TargetName"
+    private func extractTargetNameFromKey(_ key: String) -> String {
+        return (key as NSString).lastPathComponent
+    }
+    
+    /// Classify target based on name patterns
+    private func classifyTargetByName(_ targetName: String) -> [BuildTargetTag] {
+        var tags: [BuildTargetTag] = []
+        
+        if targetName.contains("UITest") {
+            tags.append(.integrationTest)
+        } else if targetName.contains("Test") {
+            tags.append(.test)
+        } else {
+            tags.append(.application)
+        }
+        
+        return tags
+    }
+    
+    /// Detect languages for a target based on name
+    private func detectLanguagesForTarget(_ targetName: String) async -> [Language] {
+        // For now, assume Swift for all targets
+        // This could be enhanced by analyzing build settings
+        return [.swift]
+    }
+    
+    /// Create capabilities for a target based on name
+    private func createCapabilitiesForTarget(_ targetName: String) -> BuildTargetCapabilities {
+        let isTestTarget = targetName.contains("Test")
+        
+        return BuildTargetCapabilities(
+            canCompile: true,
+            canTest: isTestTarget,
+            canRun: !isTestTarget,
+            canDebug: true
+        )
+    }
+    
 }

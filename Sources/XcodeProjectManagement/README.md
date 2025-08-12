@@ -43,9 +43,6 @@ let buildCommand = commandBuilder.buildCommand(
 
 // Get build settings as JSON
 let settingsCommand = commandBuilder.buildSettingsCommand(forIndex: true)
-
-// BSP-optimized build command
-let bspCommand = commandBuilder.buildForBSP()
 ```
 
 ### XcodeSettingsManager
