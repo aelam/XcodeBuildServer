@@ -137,7 +137,7 @@ public actor XcodeSettingsLoader {
         projectURL: URL,
         target: String,
         derivedDataPath: URL
-        ) async throws -> XcodeBuildSettingsForIndex {
+    ) async throws -> XcodeBuildSettingsForIndex {
         let command = commandBuilder.buildSettingsCommand(
             scheme: nil,
             target: target,

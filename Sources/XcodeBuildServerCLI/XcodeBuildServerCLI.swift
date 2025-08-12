@@ -100,7 +100,7 @@ struct XcodeBuildServerCLI {
         }
 
         // Exit if parent process no longer exists
-        if kill(parentPID, 0) == -1 && errno == ESRCH {
+        if kill(parentPID, 0) == -1, errno == ESRCH {
             logger.warning("🔴 Parent process (PID \(parentPID)) not found, terminating...")
             exit(0)
         }

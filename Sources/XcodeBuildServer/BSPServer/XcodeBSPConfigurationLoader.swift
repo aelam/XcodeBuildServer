@@ -8,10 +8,10 @@ import Foundation
 import XcodeProjectManagement
 
 /// BSP Configuration for Xcode projects
-/// 
+///
 /// Supports conditional loading to reduce project loading overhead:
 /// - `workspace`: Optional workspace path
-/// - `project`: Optional project path  
+/// - `project`: Optional project path
 /// - `scheme`: Optional single scheme name
 /// - `schemes`: Optional array of scheme names
 /// - `configuration`: Optional build configuration (defaults to "Debug")
@@ -36,21 +36,27 @@ public struct XcodeBSPConfiguration: Codable, Sendable {
 
     public static let defaultConfiguration = "Debug"
 
-    public init(workspace: String? = nil, project: String? = nil, scheme: String? = nil, schemes: [String]? = nil, configuration: String? = nil) {
+    public init(
+        workspace: String? = nil,
+        project: String? = nil,
+        scheme: String? = nil,
+        schemes: [String]? = nil,
+        configuration: String? = nil
+    ) {
         self.workspace = workspace
         self.project = project
         self.scheme = scheme
         self.schemes = schemes
         self.configuration = configuration
     }
-    
+
     /// Get all scheme names to load (combining single scheme and schemes array)
     public var allSchemes: [String] {
         var result: [String] = []
-        if let scheme = scheme {
+        if let scheme {
             result.append(scheme)
         }
-        if let schemes = schemes {
+        if let schemes {
             result.append(contentsOf: schemes)
         }
         return Array(Set(result)) // Remove duplicates

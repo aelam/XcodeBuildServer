@@ -201,7 +201,6 @@ public extension BuildServerContext {
         return state.rootURL.path
     }
 
-
     /// Extract project path and target name from BSP target identifier (without scheme query)
     /// Returns: "projectPath/targetName" that can be used for LSP compile arguments
     func extractXcodeProjectIdentifier(_ target: BuildTargetIdentifier) -> String? {
