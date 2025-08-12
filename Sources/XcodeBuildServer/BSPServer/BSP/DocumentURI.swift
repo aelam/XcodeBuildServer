@@ -11,9 +11,9 @@
 // ===----------------------------------------------------------------------===//
 
 #if compiler(>=6)
-    public import Foundation
+public import Foundation
 #else
-    import Foundation
+import Foundation
 #endif
 
 struct FailedToConstructDocumentURIFromStringError: Error, CustomStringConvertible {

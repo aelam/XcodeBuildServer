@@ -85,8 +85,7 @@ struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
             let (parsedTargetInfo, basicInfo) = try await (targetInfo, projectInfo)
 
             logger.debug("Parsed target info - projectName: \(parsedTargetInfo.projectName), " +
-                "schemeName: \(parsedTargetInfo.schemeName), targetName: \(parsedTargetInfo.targetName)"
-            )
+                "schemeName: \(parsedTargetInfo.schemeName), targetName: \(parsedTargetInfo.targetName)")
 
             // Build sources directly from buildSettingsForIndex
             return await buildSourcesItemFromIndex(
