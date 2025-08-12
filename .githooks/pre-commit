@@ -1,0 +1,13 @@
+#!/bin/sh
+
+SWIFT_FORMAT="swiftformat"
+SWIFT_LINT="swiftlint"
+GIT_FORMAT_STAGED=".githooks/git-format-staged"
+# Format Swift files
+$GIT_FORMAT_STAGED --formatter "$SWIFT_FORMAT stdin --stdinpath '{}'" "*.swift"
+
+# Format Swift files with swiftlint
+$GIT_FORMAT_STAGED --formatter "$SWIFT_LINT --fix --format --use-stdin --quiet" "*.swift"
+
+# Lint Swift files
+$GIT_FORMAT_STAGED --formatter "$SWIFT_LINT lint --use-stdin --quiet" "*.swift"
