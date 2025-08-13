@@ -111,8 +111,8 @@ The build server looks for configuration in the following order:
 ### VS Code with SourceKit-LSP
 ```json
 {
-  "sourcekit-lsp.serverPath": "/path/to/sourcekit-lsp",
-  "sourcekit-lsp.toolchainPath": "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain"
+  "swift.sourcekit-lsp.serverPath": "/path/to/sourcekit-lsp",
+  "swift.sourcekit-lsp.toolchainPath": "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain"
 }
 ```
 
