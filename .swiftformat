@@ -44,4 +44,4 @@
 --varattributes prev-line
 
 # File exclusions
---exclude Pods,Generated,DerivedData,.build
+--exclude Pods,Generated,DerivedData,.build,Tests/*/Resources
