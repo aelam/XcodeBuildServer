@@ -197,7 +197,7 @@ private extension BuiltTargetSourcesRequest {
         targetName: String,
         projectInfo: XcodeProjectInfo
     ) async -> [SourceItem] {
-        // 获取缓存数据
+        // 异步获取缓存数据
         await Task.detached(priority: .userInitiated) {
             // Debug: Check if buildSettingsForIndex exists
             guard let indexSettings = projectInfo.buildSettingsForIndex else {
@@ -208,22 +208,25 @@ private extension BuiltTargetSourcesRequest {
             logger.debug("buildSettingsForIndex has \(indexSettings.count) targets: \(Array(indexSettings.keys))")
             logger.debug("Looking for target URI: '\(targetURI)', targetName: '\(targetName)'")
 
-            // 直接使用 projectPath/targetName 格式的键（完整路径）
+            // 🔧 FIX: 现在使用blueprintIdentifier作为键，需要从URI中提取或使用多种查找策略
             var targetFiles: [String: XcodeFileBuildSettingInfo]?
 
-            if let projectPathAndTarget = self.extractProjectPathAndTarget(from: targetURI) {
-                logger.debug("🔍 Extracted projectPath/target: '\(projectPathAndTarget)' from URI: '\(targetURI)'")
-                targetFiles = indexSettings[projectPathAndTarget]
-                if targetFiles != nil {
-                    logger.debug("✅ Found target using projectPath/target key: '\(projectPathAndTarget)'")
-                } else {
-                    logger.warning("❌ No files found for projectPath/target key: '\(projectPathAndTarget)'")
-                }
+            // 尝试多种查找策略：
+            // 1. 直接使用targetName（向后兼容）
+            if let files = indexSettings[targetName] {
+                targetFiles = files
+                logger.debug("Found target using targetName: '\(targetName)'")
             } else {
-                logger.error("❌ Failed to extract projectPath/target from URI: '\(targetURI)'")
+                // 2. 尝试查找包含targetName的键（处理blueprintIdentifier格式）
+                for (key, files) in indexSettings where key.contains(targetName) {
+                    // 检查键是否匹配target信息
+                    targetFiles = files
+                    logger.debug("Found target using key containing targetName: '\(key)'")
+                    break
+                }
             }
 
-            // 4. 如果还没找到，打印所有可用的键帮助调试
+            // 3. 如果还没找到，打印所有可用的键帮助调试
             if targetFiles == nil {
                 logger.warning("No files found for target '\(targetName)' with URI '\(targetURI)'")
                 logger.debug("Available keys in buildSettingsForIndex: \(Array(indexSettings.keys))")
@@ -415,21 +418,6 @@ private extension BuiltTargetSourcesRequest {
         default:
             return .source
         }
-    }
-
-    /// Extract project path and target name from BSP target URI (without scheme query)
-    /// Returns: "projectPath/targetName" that can be used as a key for buildSettingsForIndex
-    func extractProjectPathAndTarget(from uriString: String) -> String? {
-        guard uriString.hasPrefix("xcode://") else { return nil }
-        guard URL(string: uriString) != nil else { return nil }
-
-        // Remove scheme:// prefix and query parameters
-        let pathWithTarget = uriString.dropFirst("xcode://".count)
-
-        // Split by '?' to remove query parameters
-        let pathOnly = String(pathWithTarget.split(separator: "?").first ?? "")
-
-        return pathOnly
     }
 }
 

@@ -4,7 +4,7 @@
 //  Copyright © 2024 Wang Lun.
 //
 
-public struct WorkspaceDidChangeWatchedFilesNotification: NotificationType, Sendable {
+public struct WorkspaceDidChangeWatchedFilesNotification: ContextualNotificationType, Sendable {
     public typealias RequiredContext = BuildServerContext
 
     public static func method() -> String {
@@ -16,8 +16,14 @@ public struct WorkspaceDidChangeWatchedFilesNotification: NotificationType, Send
     }
 
     public func handle(
-        handler: MessageHandler
-    ) async {
-        fatalError("WorkspaceDidChangeWatchedFilesNotification not implemented")
+        contextualHandler: some ContextualMessageHandler
+    ) async throws {
+        logger.debug("WorkspaceDidChangeWatchedFilesNotification received")
+        // if xcodeproj file version is < 13.0 skip
+        // Handle the notification, e.g., update the workspace state or notify clients
+        // if context.xcodeprojFileVersion < "13.0" {
+        //     logger.info("Skipping WorkspaceDidChangeWatchedFilesNotification handling for Xcode < 13.0")
+        //     return
+        // }
     }
 }

@@ -36,6 +36,9 @@ private let notificationTypes: [NotificationType.Type] = [
 
     // window
     WindowShowMessageNotification.self,
+
+    // $
+    CancelRequestNotification.self,
 ]
 
 public let bspRegistry = MessageRegistry(requests: requestTypes, notifications: notificationTypes)

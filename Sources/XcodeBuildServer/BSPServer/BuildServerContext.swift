@@ -80,9 +80,7 @@ public actor BuildServerContext {
         // Load project basic info (this will initialize toolchain internally)
         logger.debug(">>> Resolving project info")
         do {
-            let additionalSchemes = config?.allSchemes ?? []
-            logger.debug("Loading project with additional schemes: \(additionalSchemes)")
-            let xcodeProjectInfo = try await projectManager.resolveProjectInfo(additionalSchemes: additionalSchemes)
+            let xcodeProjectInfo = try await projectManager.resolveProjectInfo()
             logger.debug(">>> Project info resolved")
 
             // Initialize BSP adapter
@@ -135,10 +133,10 @@ public extension BuildServerContext {
             return []
         }
 
-        // Extract target name from BuildTargetIdentifier
-        // Expected format: "xcode:///ProjectPath/TargetName?scheme={schemeName}"
-        guard let xcodeTargetIdentifier: String = extractXcodeProjectIdentifier(target) else {
-            logger.warning("Could not extract target from build target: \(target.uri)")
+        // Extract scheme name from BuildTargetIdentifier
+        // Expected format: "xcode:///ProjectName/SchemeName/TargetName"
+        guard let targetScheme = extractSchemeFromBuildTarget(target) else {
+            logger.warning("Could not extract scheme from build target: \(target.uri)")
             return []
         }
 
@@ -146,14 +144,14 @@ public extension BuildServerContext {
         let filePath = URL(string: fileURI)?.path ?? fileURI
 
         // Get file build settings from the index
-        guard let targetSettings = buildSettingsForIndex[xcodeTargetIdentifier] else {
-            logger.warning("No build settings found for target: \(xcodeTargetIdentifier)")
+        guard let targetSettings = buildSettingsForIndex[targetScheme] else {
+            logger.warning("No build settings found for scheme: \(targetScheme)")
             return []
         }
 
         guard let fileBuildSettings = targetSettings[filePath] else {
             logger.warning("No specific build settings found for file: \(filePath)")
-            logger.debug("Available files in target '\(xcodeTargetIdentifier)': \(Array(targetSettings.keys))")
+            logger.debug("Available files in scheme '\(targetScheme)': \(Array(targetSettings.keys))")
 
             // Instead of using first file, try to find a file with similar extension
             let fileExtension = (filePath as NSString).pathExtension.lowercased()
@@ -175,7 +173,7 @@ public extension BuildServerContext {
                 return enhanceCompilerArgumentsForSourceKit(firstFileSettings.swiftASTCommandArguments ?? [])
             }
 
-            logger.error("No fallback build settings available for target: \(xcodeTargetIdentifier)")
+            logger.error("No fallback build settings available for scheme: \(targetScheme)")
             return []
         }
 
@@ -201,21 +199,14 @@ public extension BuildServerContext {
         return state.rootURL.path
     }
 
-    /// Extract project path and target name from BSP target identifier (without scheme query)
-    /// Returns: "projectPath/targetName" that can be used for LSP compile arguments
-    func extractXcodeProjectIdentifier(_ target: BuildTargetIdentifier) -> String? {
-        // Parse URI like "xcode://{projectPath}/targetName?scheme={schemeName}"
+    func extractSchemeFromBuildTarget(_ target: BuildTargetIdentifier) -> String? {
+        // Parse URI like "xcode:///ProjectName/SchemeName/TargetName"
         let uriString = target.uri.stringValue
-        guard uriString.hasPrefix("xcode://") else { return nil }
+        guard uriString.hasPrefix("xcode:///") else { return nil }
 
-        guard URL(string: uriString) != nil else { return nil }
+        let pathComponents = uriString.dropFirst("xcode:///".count).split(separator: "/")
+        guard pathComponents.count >= 2 else { return nil }
 
-        // Remove scheme:// prefix and query parameters
-        let pathWithTarget = uriString.dropFirst("xcode://".count)
-
-        // Split by '?' to remove query parameters
-        let pathOnly = String(pathWithTarget.split(separator: "?").first ?? "")
-
-        return pathOnly
+        return String(pathComponents[1]) // SchemeName
     }
 }
