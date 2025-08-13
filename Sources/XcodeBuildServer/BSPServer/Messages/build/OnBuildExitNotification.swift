@@ -5,6 +5,8 @@
 //  Created by ST22956 on 2024/11/09.
 //
 
+import Foundation
+
 /// Like the language server protocol, a notification to ask the
 /// server to exit its process. The server should exit with success
 /// code 0 if the shutdown request has been received before;
@@ -18,5 +20,7 @@ public struct OnBuildExitNotification: ContextualNotificationType, Sendable {
 
     public func handle(
         contextualHandler: some ContextualMessageHandler
-    ) async throws {}
+    ) async throws {
+        exit(0)
+    }
 }
