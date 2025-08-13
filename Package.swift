@@ -89,7 +89,7 @@ let package = Package(
             name: "XcodeBuildServerTests",
             dependencies: ["XcodeBuildServer"],
             resources: [
-                .copy("DemoProjects")
+                .copy("Resources")
             ]
         ),
         .testTarget(
@@ -103,7 +103,6 @@ let package = Package(
             name: "XcodeProjectManagementTests",
             dependencies: ["XcodeProjectManagement"],
             resources: [
-                .copy("DemoProjects"),
                 .copy("README.md"),
                 .copy("Resources")
             ]
