@@ -134,7 +134,7 @@ public extension BuildServerContext {
         }
 
         // Extract scheme name from BuildTargetIdentifier
-        // Expected format: "xcode:///ProjectName/SchemeName/TargetName"
+        // Expected format: "xcode:///ProjectPath/TargetName"
         guard let targetScheme = extractSchemeFromBuildTarget(target) else {
             logger.warning("Could not extract scheme from build target: \(target.uri)")
             return []
@@ -200,7 +200,7 @@ public extension BuildServerContext {
     }
 
     func extractSchemeFromBuildTarget(_ target: BuildTargetIdentifier) -> String? {
-        // Parse URI like "xcode:///ProjectName/SchemeName/TargetName"
+        // Parse URI like "xcode:///ProjectPath/SchemeName/TargetName"
         let uriString = target.uri.stringValue
         guard uriString.hasPrefix("xcode:///") else { return nil }
 

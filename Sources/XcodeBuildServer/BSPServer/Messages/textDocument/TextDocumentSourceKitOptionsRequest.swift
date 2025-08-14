@@ -35,7 +35,7 @@ import Logger
 ///   "method": "textDocument/sourceKitOptions",
 ///   "params": {
 ///     "textDocument": { "uri": "file:///path/to/source.swift" },
-///     "target": { "uri": "xcode:///ProjectName/SchemeName/TargetName" },
+///     "target": { "uri": "xcode:///ProjectPath/SchemeName/TargetName" },
 ///     "language": "swift"
 ///   }
 /// }
@@ -82,7 +82,7 @@ public struct TextDocumentSourceKitOptionsRequest: ContextualRequestType, Sendab
         /// A source file might be part of multiple targets and might have different compiler arguments
         /// in each target, thus the target specification is necessary for this request.
         ///
-        /// - Important: The target URI should follow the format `xcode:///ProjectName/SchemeName/TargetName`.
+        /// - Important: The target URI should follow the format `xcode:///ProjectPath/TargetName`.
         public var target: BuildTargetIdentifier
 
         /// The programming language of the document.
