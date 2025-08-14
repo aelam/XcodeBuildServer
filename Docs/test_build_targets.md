@@ -56,7 +56,7 @@ TextDocumentSourceKitOptionsRequest
     ↓  
 BuildServerContext.getCompileArguments()
     ↓
-extractSchemeFromBuildTarget() → parse "xcode:///ProjectName/SchemeName/TargetName"
+extractSchemeFromBuildTarget() → parse "xcode:///ProjectPath/SchemeName/TargetName"
     ↓
 XcodeProjectInfo.buildSettingsForIndex[scheme][filePath]
     ↓
@@ -69,7 +69,7 @@ TextDocumentSourceKitOptionsResponse with compiler arguments
 
 每个 Xcode 目标现在映射为一个 BuildTarget，包含：
 
-- **ID**: `xcode:///ProjectName/TargetName` 格式的 URI
+- **ID**: `xcode:///ProjectPath/TargetName` 格式的 URI
 - **DisplayName**: 目标的可读名称
 - **BaseDirectory**: 项目根目录
 - **Tags**: 基于目标类型的分类标签

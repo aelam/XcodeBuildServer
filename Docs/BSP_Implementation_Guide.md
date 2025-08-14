@@ -54,7 +54,7 @@ SourceKit-LSP可以通过[Build Server Protocol (BSP)](https://build-server-prot
   {
     "targets": [
       {
-        "id": { "uri": "xcode:///ProjectName/SchemeName/TargetName" },
+        "id": { "uri": "xcode:///ProjectPath/SchemeName/TargetName" },
         "displayName": "SchemeName/TargetName",
         "baseDirectory": "file:///path/to/project",
         "tags": ["application", "library", "test"],
@@ -84,7 +84,7 @@ SourceKit-LSP可以通过[Build Server Protocol (BSP)](https://build-server-prot
 - **数据源**：`buildSettingsForIndex`
 - **请求参数**：
   - `textDocument.uri`: 文件路径
-  - `target`: 构建目标标识符（格式：`xcode:///ProjectName/SchemeName/TargetName`）
+  - `target`: 构建目标标识符（格式：`xcode:///ProjectPath/SchemeName/TargetName`）
   - `language`: 编程语言
 - **响应字段**：
   - `compilerArguments`: 编译器参数数组
@@ -154,16 +154,7 @@ SourceKit-LSP可以通过[Build Server Protocol (BSP)](https://build-server-prot
    ```
 
 2. **目标解析**：
-   ```swift
-   private func extractSchemeFromBuildTarget(_ target: BuildTargetIdentifier) -> String? {
-       // 解析 "xcode:///ProjectName/SchemeName/TargetName" 格式
-       let uriString = target.uri.stringValue
-       guard uriString.hasPrefix("xcode:///") else { return nil }
-       let pathComponents = uriString.dropFirst("xcode:///".count).split(separator: "/")
-       guard pathComponents.count >= 2 else { return nil }
-       return String(pathComponents[1]) // 返回SchemeName
-   }
-   ```
+
 
 3. **编译参数获取**：
    ```swift

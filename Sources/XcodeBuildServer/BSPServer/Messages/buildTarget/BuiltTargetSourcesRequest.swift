@@ -150,7 +150,7 @@ struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
 
     /// Parse target identifier URI to extract target information
     private func parseTargetIdentifier(_ uri: String) throws -> TargetInfo {
-        // Expected format: "xcode:///ProjectName/SchemeName/TargetName"
+        // Expected format: "xcode:///ProjectPath/SchemeName/TargetName"
         // But target name is always the last component
         guard let url = URL(string: uri) else {
             throw NSError(
