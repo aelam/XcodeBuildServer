@@ -18,7 +18,7 @@ struct XcodeBuildCommandBuilderTests {
     func buildBasicCommand() {
         let builder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
         let command = builder.buildCommand(
-            target: "TestTarget",
+            targets: ["TestTarget"],
             configuration: "Debug"
         )
 
@@ -48,7 +48,7 @@ struct XcodeBuildCommandBuilderTests {
     func buildSettingsForIndexCommand() {
         let builder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
         let command = builder.buildCommand(
-            target: "TestTarget",
+            targets: ["TestTarget"],
             configuration: "Debug",
             options: XcodeBuildOptions.buildSettingsForIndexJSON
         )
@@ -72,7 +72,7 @@ struct XcodeBuildCommandBuilderTests {
         let builder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
         let options = XcodeBuildOptions(quiet: true)
         let command = builder.buildCommand(
-            target: "TestTarget",
+            targets: ["TestTarget"],
             configuration: "Debug",
             options: options
         )
