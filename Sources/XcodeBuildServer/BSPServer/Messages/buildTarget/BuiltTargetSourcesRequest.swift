@@ -51,25 +51,16 @@ struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
         targetIds: [BuildTargetIdentifier],
         requestId: RequestID
     ) async -> BuildTargetSourcesResponse {
-        // 异步并行处理所有目标
-        let items = await withTaskGroup(of: SourcesItem.self) { group in
-            for targetId in targetIds {
-                group.addTask {
-                    await buildSourcesItem(
-                        for: targetId,
-                        context: context
-                    )
-                }
-            }
-
-            var results: [SourcesItem] = []
-            for await item in group {
-                results.append(item)
-            }
-            return results
+        var sourcesItems = [SourcesItem]()
+        for targetId in targetIds {
+            logger.debug("Processing target: \(targetId.uri.stringValue)")
+            let sourcesItem = await buildSourcesItem(
+                for: targetId,
+                context: context
+            )
+            sourcesItems.append(sourcesItem)
         }
-
-        return BuildTargetSourcesResponse(id: requestId, items: items)
+        return BuildTargetSourcesResponse(id: requestId, items: sourcesItems)
     }
 
     private func buildSourcesItem(
@@ -184,7 +175,6 @@ private extension BuiltTargetSourcesRequest {
         logger.debug("buildSettingsForIndex has \(indexSettings.count) targets: \(Array(indexSettings.keys))")
         logger.debug("Looking for target URI: '\(targetURI)', targetName: '\(targetName)'")
 
-        // 🔧 FIX: 现在使用blueprintIdentifier作为键，需要从URI中提取或使用多种查找策略
         var targetFiles: [String: XcodeFileBuildSettingInfo]?
 
         // 尝试多种查找策略：

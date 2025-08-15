@@ -134,8 +134,8 @@ public extension BuildServerContext {
         }
 
         // Extract scheme name from BuildTargetIdentifier
-        // Expected format: "xcode:///ProjectName/SchemeName/TargetName"
-        guard let targetScheme = extractSchemeFromBuildTarget(target) else {
+        // Expected format: "xcode:///ProjectPath/TargetName"
+        guard let xcodeTargetIdentifier = extractXcodeTargetIdentifierForBuildSettingsFromBuildTarget(target) else {
             logger.warning("Could not extract scheme from build target: \(target.uri)")
             return []
         }
@@ -144,8 +144,8 @@ public extension BuildServerContext {
         let filePath = URL(string: fileURI)?.path ?? fileURI
 
         // Get file build settings from the index
-        guard let targetSettings = buildSettingsForIndex[targetScheme] else {
-            logger.warning("No build settings found for scheme: \(targetScheme)")
+        guard let targetSettings = buildSettingsForIndex[xcodeTargetIdentifier] else {
+            logger.warning("No build settings found for scheme: \(xcodeTargetIdentifier)")
             return []
         }
 
@@ -181,14 +181,12 @@ public extension BuildServerContext {
         return state.rootURL.path
     }
 
-    func extractSchemeFromBuildTarget(_ target: BuildTargetIdentifier) -> String? {
-        // Parse URI like "xcode:///ProjectName/SchemeName/TargetName"
+    func extractXcodeTargetIdentifierForBuildSettingsFromBuildTarget(_ target: BuildTargetIdentifier) -> String? {
+        // Parse URI like "xcode:///ProjectName/TargetName"
+        // get ProjectPath/TargetName
         let uriString = target.uri.stringValue
-        guard uriString.hasPrefix("xcode:///") else { return nil }
-
-        let pathComponents = uriString.dropFirst("xcode:///".count).split(separator: "/")
-        guard pathComponents.count >= 2 else { return nil }
-
-        return String(pathComponents[1]) // SchemeName
+        guard uriString.hasPrefix("xcode://") else { return nil }
+        let targetPath = uriString.dropFirst("xcode://".count)
+        return String(targetPath)
     }
 }
