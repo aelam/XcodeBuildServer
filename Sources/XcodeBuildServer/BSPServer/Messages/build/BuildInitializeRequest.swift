@@ -63,7 +63,9 @@ public struct BuildInitializeRequest: ContextualRequestType, Sendable {
 
                 guard
                     let indexDataStoreURL = try? await context.getIndexStoreURL(),
-                    let indexDatabaseURL = try? await context.getIndexDatabaseURL()
+                    let indexDatabaseURL = try? await context.getIndexDatabaseURL(),
+                    let derivedDataPath = try? await context.getDerivedDataPath()
+
                 else {
                     logger.error("BuildInitializeRequest: indexStoreURL is nil")
                     return JSONRPCErrorResponse(
@@ -77,10 +79,33 @@ public struct BuildInitializeRequest: ContextualRequestType, Sendable {
 
                 logger.debug("BuildInitializeRequest: indexDataStoreURL obtained: \(indexDataStoreURL)")
 
+                logger.info("derivedDataPath: \(derivedDataPath.path)")
                 logger.info("indexDataStorePath: \(indexDataStoreURL.path)")
                 logger.info("indexDatabasePath: \(indexDatabaseURL.path)")
-                let globPatternForFileWatch = rootURL.path + "/**/*.swift"
-                logger.debug("globPatternForFileWatch: \(globPatternForFileWatch)")
+
+                // Create file watcher, excluding derivedDataPath if inside project
+                var fileWatchers: [FileSystemWatcher] = []
+
+                if derivedDataPath.path.hasPrefix(rootURL.path) {
+                    // DerivedData is inside project, create exclusion pattern
+                    let relativeDerivedDataPath = String(derivedDataPath.path.dropFirst(rootURL.path.count + 1))
+                    logger.debug("derivedDataPath is inside project, excluding: \(relativeDerivedDataPath)")
+
+                    // Create positive pattern for Swift files
+                    let includePattern = rootURL.path + "/**/*.swift"
+                    fileWatchers.append(FileSystemWatcher(globPattern: includePattern))
+
+                    // Create negative pattern to exclude derivedDataPath
+                    let excludePattern = "!" + derivedDataPath.path + "/**"
+                    fileWatchers.append(FileSystemWatcher(globPattern: excludePattern))
+
+                    logger.debug("fileWatchers: include=\(includePattern), exclude=\(excludePattern)")
+                } else {
+                    // DerivedData is outside project, use simple pattern
+                    let globPatternForFileWatch = rootURL.path + "/**/*.swift"
+                    fileWatchers.append(FileSystemWatcher(globPattern: globPatternForFileWatch))
+                    logger.debug("globPatternForFileWatch: \(globPatternForFileWatch)")
+                }
 
                 // Create server capabilities based on client capabilities
                 let capabilities = createServerCapabilities(
@@ -99,9 +124,7 @@ public struct BuildInitializeRequest: ContextualRequestType, Sendable {
                             indexDatabasePath: indexDatabaseURL.path,
                             prepareProvider: true,
                             sourceKitOptionsProvider: true,
-                            watchers: [
-                                FileSystemWatcher(globPattern: globPatternForFileWatch),
-                            ]
+                            watchers: fileWatchers
                         ),
                         rootUri: self.params.rootUri,
                         bspVersion: "2.2.0",

@@ -6,7 +6,50 @@
 
 import Foundation
 import Logger
-import XcodeSchemeParser
+import XcodeProj
+
+/// Target information with complete project context
+public struct XcodeTarget: Sendable, Hashable {
+    public let name: String
+    public let projectURL: URL
+    public let projectName: String
+    public let isFromWorkspace: Bool
+    public let buildForTesting: Bool
+    public let buildForRunning: Bool
+
+    // Computed property for legacy compatibility
+    public var targetName: String { name }
+
+    public init(
+        name: String,
+        projectURL: URL,
+        isFromWorkspace: Bool = false,
+        buildForTesting: Bool = true,
+        buildForRunning: Bool = true
+    ) {
+        self.name = name
+        self.projectURL = projectURL
+        self.projectName = projectURL.deletingPathExtension().lastPathComponent
+        self.isFromWorkspace = isFromWorkspace
+        self.buildForTesting = buildForTesting
+        self.buildForRunning = buildForRunning
+    }
+}
+
+/// Scheme information for workspace projects
+public struct XcodeScheme: Sendable {
+    public let name: String
+    public let workspaceURL: URL
+
+    public init(name: String, workspaceURL: URL) {
+        self.name = name
+        self.workspaceURL = workspaceURL
+    }
+}
+
+// Legacy type aliases for compatibility
+public typealias XcodeSchemeInfo = XcodeScheme
+public typealias XcodeSchemeTargetInfo = XcodeTarget
 
 public struct XcodeIndexPaths: Sendable {
     public let derivedDataPath: URL
@@ -89,7 +132,6 @@ public struct XcodeProjectIdentifier: Sendable {
 public actor XcodeProjectManager {
     public let rootURL: URL
     private let locator: XcodeProjectLocator
-    private let schemeLoader: XcodeSchemeLoader
     private let toolchain: XcodeToolchain
     private let xcodeProjectReference: XcodeProjectReference?
 
@@ -100,20 +142,18 @@ public actor XcodeProjectManager {
         xcodeProjectReference: XcodeProjectReference? = nil,
         toolchain: XcodeToolchain,
         locator: XcodeProjectLocator,
-        schemeLoader: XcodeSchemeLoader = XcodeSchemeLoader()
     ) {
         self.rootURL = rootURL
         self.xcodeProjectReference = xcodeProjectReference
         self.toolchain = toolchain
         self.locator = locator
-        self.schemeLoader = schemeLoader
     }
 
     public func initialize() async throws {
         try await toolchain.initialize()
     }
 
-    public func resolveProjectInfo(additionalSchemes: [String] = []) async throws -> XcodeProjectInfo {
+    public func resolveProjectInfo() async throws -> XcodeProjectInfo {
         let projectLocation = try locator.resolveProjectType(
             rootURL: rootURL,
             xcodeProjectReference: xcodeProjectReference
@@ -122,13 +162,15 @@ public actor XcodeProjectManager {
         let settingsCommandBuilder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
         let settingsLoader = XcodeSettingsLoader(commandBuilder: settingsCommandBuilder, toolchain: toolchain)
         _ = await toolchain.getSelectedInstallation()
-        let xcodeListInfo = try await settingsLoader.listInfo()
+        // Load containers for workspace projects to get actual targets
+        let actualTargets = try await loadActualTargets(
+            projectLocation: projectLocation
+        )
 
-        // Load build settings and index paths with correct destination
-        let buildSettingsList = try await settingsLoader.loadBuildSettings(
-            scheme: xcodeListInfo.schemes.first,
-            target: nil,
-            destination: nil
+        // Load a build settings of any target to get DerivedData path
+        let buildSettingsList = try await loadBuildSettingsWithCorrectParameters(
+            projectLocation: projectLocation,
+            settingsLoader: settingsLoader
         )
 
         // Get index URLs using the first available scheme (shared per workspace)
@@ -138,40 +180,23 @@ public actor XcodeProjectManager {
             buildSettingsList: buildSettingsList
         )
 
-        var filterSchemes: [String] = []
-        if let xcodeProjectReference, let scheme = xcodeProjectReference.scheme {
-            filterSchemes.append(scheme)
-        }
-        filterSchemes.append(contentsOf: additionalSchemes)
-
-        // Remove duplicates and ensure we have a non-empty list
-        filterSchemes = Array(Set(filterSchemes))
-        let schemesToLoad = try schemeLoader.loadSchemes(
-            from: projectLocation,
-            filterBy: filterSchemes
-        )
-        logger.info("schemesToLoad.count: \(schemesToLoad.count)")
-
-        // Validate loaded schemes
-        try schemeLoader.validateSchemes(schemesToLoad)
-
-        let expectedTargets = Set(schemesToLoad.flatMap { scheme in
-            scheme.targets
-        })
+        // Load schemes for workspace projects
+        let schemes = try await loadSchemes(projectLocation: projectLocation)
 
         // Load buildSettingsForIndex for source file discovery
-        let buildSettingsForIndex = try await loadBuildSettingsForIndexForTargets(
-            expectedTargets: expectedTargets,
+        let buildSettingsForIndex = try await loadBuildSettingsForIndex(
+            targets: actualTargets,
             settingsLoader: settingsLoader,
             derivedDataPath: indexPaths.derivedDataPath
         )
+        logger.debug("buildSettingsForIndex: \(buildSettingsForIndex)")
 
         return XcodeProjectInfo(
             rootURL: rootURL,
             projectLocation: projectLocation,
-            xcodeListInfo: xcodeListInfo,
             buildSettingsList: buildSettingsList,
-            schemeInfoList: schemesToLoad,
+            targets: actualTargets,
+            schemes: schemes,
             derivedDataPath: indexPaths.derivedDataPath,
             indexStoreURL: indexPaths.indexStoreURL,
             indexDatabaseURL: indexPaths.indexDatabaseURL,
@@ -206,128 +231,6 @@ public actor XcodeProjectManager {
         toolchain
     }
 
-    /// Get the scheme loader for advanced scheme operations
-    public func getSchemeLoader() -> XcodeSchemeLoader {
-        schemeLoader
-    }
-
-    /// Get all runnable targets from loaded schemes
-    public func getAllRunnableTargets() throws -> Set<String> {
-        guard let currentProject else {
-            throw XcodeProjectError.invalidConfig("Project not loaded. Call resolveProjectInfo() first.")
-        }
-
-        return schemeLoader.getAllRunnableTargets(from: currentProject.schemeInfoList)
-    }
-
-    /// Get all testable targets from loaded schemes
-    public func getAllTestableTargets() throws -> Set<String> {
-        guard let currentProject else {
-            throw XcodeProjectError.invalidConfig("Project not loaded. Call resolveProjectInfo() first.")
-        }
-
-        return schemeLoader.getAllTestableTargets(from: currentProject.schemeInfoList)
-    }
-
-    /// Get the preferred scheme for a target
-    public func getPreferredScheme(for targetName: String) throws -> XcodeSchemeInfo? {
-        guard let currentProject else {
-            throw XcodeProjectError.invalidConfig("Project not loaded. Call resolveProjectInfo() first.")
-        }
-
-        return schemeLoader.getPreferredScheme(for: targetName, from: currentProject.schemeInfoList)
-    }
-}
-
-extension XcodeProjectManager {
-    /// Load build settings for multiple targets with proper project path resolution
-    private func loadBuildSettingsForIndexForTargets(
-        expectedTargets: Set<XcodeSchemeBuildActionEntry>,
-        settingsLoader: XcodeSettingsLoader,
-        derivedDataPath: URL
-    ) async throws -> XcodeBuildSettingsForIndex {
-        logger.debug("getting buildSettingsForIndex...")
-        var mergedBuildSettings: XcodeBuildSettingsForIndex = [:]
-
-        // Check if this is an explicit workspace and handle accordingly
-        let projectLocation = try locator.resolveProjectType(
-            rootURL: rootURL,
-            xcodeProjectReference: xcodeProjectReference
-        )
-
-        switch projectLocation {
-        case let .explicitWorkspace(workspaceURL):
-            logger.debug("Processing explicit workspace for buildSettingsForIndex: \(workspaceURL.path)")
-            return try await loadBuildSettingsFromWorkspace(
-                workspaceURL: workspaceURL,
-                derivedDataPath: derivedDataPath
-            )
-
-        case .implicitWorkspace:
-            logger.debug("Processing implicit workspace for buildSettingsForIndex")
-        }
-
-        // 为每个 target 分别获取 buildSettingsForIndex
-        for target in expectedTargets {
-            let targetName = target.buildableReference.blueprintName
-            logger.debug("🎯 Processing target: \(targetName)")
-            logger.debug("  - ReferencedContainer: \(target.buildableReference.referencedContainer ?? "nil")")
-            logger.debug("  - BuildForTesting: \(target.buildForTesting)")
-            logger.debug("  - BuildForRunning: \(target.buildForRunning)")
-
-            // 从 referencedContainer 提取 project 路径
-            // 格式: "container:Hello.xcodeproj" 或 "container:../Hello.xcodeproj" 等
-            var projectURL: URL?
-            if let container = target.buildableReference.referencedContainer,
-               container.hasPrefix("container:") {
-                let relativePath = String(container.dropFirst("container:".count))
-
-                // 解析相对路径，基于当前 workspace/project 的根目录
-                if relativePath.hasPrefix("/") {
-                    // 绝对路径（少见）
-                    projectURL = URL(fileURLWithPath: relativePath)
-                } else {
-                    // 相对路径，基于 rootURL
-                    projectURL = rootURL.appendingPathComponent(relativePath)
-                }
-
-                logger.debug("  - Resolved project URL: \(projectURL?.path ?? "nil")")
-                logger.debug("  - Original container: \(container)")
-            } else {
-                logger.warning("  - ⚠️ Missing or invalid referencedContainer for target: \(targetName)")
-            }
-
-            do {
-                // 使用 project + target 的方式获取 buildSettings
-                let targetBuildSettings = try await settingsLoader.loadBuildSettingsForIndex(
-                    projectURL: projectURL ?? rootURL, // 如果解析失败，使用 rootURL 作为 fallback
-                    target: targetName,
-                    derivedDataPath: derivedDataPath
-                )
-
-                // 合并到总的 buildSettings 中
-                // 使用 projectPath/targetName 作为键，避免 workspace 中同名 target 冲突
-                let projectKey = "\(projectURL?.path ?? rootURL.path)/\(targetName)"
-
-                // 🔧 FIX: 合并 targetBuildSettings 到 mergedBuildSettings
-                for (_, fileInfos) in targetBuildSettings {
-                    // 只使用 projectKey (完整路径) 作为键，避免重复
-                    mergedBuildSettings[projectKey] = fileInfos
-                }
-
-                if targetBuildSettings.isEmpty {
-                    logger.warning("⚠️ Target buildSettings is empty for '\(targetName)'")
-                }
-            } catch {
-                let msg = "❌ Failed to load buildSettings for target '\(targetName)': \(error)"
-                logger.error(msg)
-
-                // 尝试提供更多上下文信息
-            }
-        }
-        return mergedBuildSettings
-    }
-
     /// Load build settings from all projects in an explicit workspace
     private func loadBuildSettingsFromWorkspace(
         workspaceURL: URL,
@@ -335,11 +238,8 @@ extension XcodeProjectManager {
     ) async throws -> XcodeBuildSettingsForIndex {
         var mergedBuildSettings: XcodeBuildSettingsForIndex = [:]
 
-        let containerParser = XcodeContainerParser()
-        let containerURLs = containerParser.getContainerURLs(from: workspaceURL)
-
-        // Filter out the workspace itself, keep only .xcodeproj URLs
-        let projectURLs = containerURLs.filter { $0.pathExtension == "xcodeproj" }
+        // Get project URLs from workspace using XcodeProj
+        let projectURLs = getProjectURLsFromWorkspace(workspaceURL: workspaceURL)
 
         // For each project, load all its targets
         for projectURL in projectURLs {
@@ -378,16 +278,12 @@ extension XcodeProjectManager {
         let commandBuilder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
         let projectSettingsLoader = XcodeSettingsLoader(commandBuilder: commandBuilder, toolchain: toolchain)
 
-        // Get list of all targets in the project
-        let listInfo = try await projectSettingsLoader.listInfo()
-
-        // Extract targets based on the kind of list info
+        // Get list of all targets using XcodeProj
         let targetNames: [String]
-        switch listInfo.kind {
-        case let .project(project):
-            targetNames = project.targets
-        case .workspace:
-            logger.warning("Expected project info but got workspace info for \(projectURL.path)")
+        do {
+            targetNames = try loadTargetsFromXcodeProj(projectPath: projectURL)
+        } catch {
+            logger.error("Failed to load targets from project \(projectURL.path): \(error)")
             return [:]
         }
 
@@ -418,25 +314,224 @@ extension XcodeProjectManager {
         return projectBuildSettings
     }
 
-    private func parseTargetsFromBuildSettings(data: Data) throws -> [XcodeTargetInfo] {
+    /// Load actual targets, handling both workspace and project cases
+    private func loadActualTargets(
+        projectLocation: XcodeProjectLocation
+    ) async throws -> [XcodeTarget] {
+        switch projectLocation {
+        case .explicitWorkspace:
+            // For workspace, load containers to get actual targets from projects
+            return try await loadTargetsFromWorkspaceContainers(projectLocation: projectLocation)
+        case let .implicitWorkspace(projectURL, _):
+            // For project, load targets using XcodeProj
+            let targetNames = try loadTargetsFromXcodeProj(projectPath: projectURL)
+            return targetNames.map { targetName in
+                XcodeTarget(name: targetName, projectURL: projectURL, isFromWorkspace: false)
+            }
+        }
+    }
+
+    /// Load targets from workspace containers using XcodeProj
+    private func loadTargetsFromWorkspaceContainers(
+        projectLocation: XcodeProjectLocation
+    ) async throws -> [XcodeTarget] {
+        guard case let .explicitWorkspace(workspaceURL) = projectLocation else {
+            return []
+        }
+
         do {
-            _ = String(data: data, encoding: .utf8)
-            let json = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] ?? []
+            // Use XcodeProj to parse workspace
+            let workspace = try XCWorkspace(pathString: workspaceURL.path)
+            var allTargets: [XcodeTarget] = []
 
-            return json.compactMap { targetSettings in
-                guard let targetName = targetSettings["TARGET_NAME"] as? String else { return nil }
+            // Get all project references from workspace
+            for element in workspace.data.children {
+                if case let .file(fileRef) = element,
+                   fileRef.location.path.hasSuffix(".xcodeproj") {
+                    // Resolve project path relative to workspace
+                    let projectPath = resolveProjectPath(
+                        from: fileRef.location,
+                        workspaceURL: workspaceURL
+                    )
 
-                let productType = targetSettings["PRODUCT_TYPE"] as? String
-                let buildSettings = targetSettings.compactMapValues { $0 as? String }
+                    if let projectPath {
+                        do {
+                            let projectTargetNames = try loadTargetsFromXcodeProj(projectPath: projectPath)
+                            let projectTargets = projectTargetNames.map { targetName in
+                                XcodeTarget(name: targetName, projectURL: projectPath, isFromWorkspace: true)
+                            }
+                            allTargets.append(contentsOf: projectTargets)
+                        } catch {
+                            logger.error("Failed to load targets from project \(projectPath): \(error)")
+                            // Continue with other projects
+                        }
+                    }
+                }
+            }
 
-                return XcodeTargetInfo(
-                    name: targetName,
-                    productType: productType,
-                    buildSettings: buildSettings
+            return allTargets
+        } catch {
+            logger.error("Failed to parse workspace \(workspaceURL.path): \(error)")
+            return []
+        }
+    }
+
+    /// Simple container parser using XcodeProj to get project URLs from workspace
+    private func getProjectURLsFromWorkspace(workspaceURL: URL) -> [URL] {
+        do {
+            let workspace = try XCWorkspace(pathString: workspaceURL.path)
+            var projectURLs: [URL] = []
+
+            for element in workspace.data.children {
+                if case let .file(fileRef) = element,
+                   fileRef.location.path.hasSuffix(".xcodeproj") {
+                    if let projectPath = resolveProjectPath(from: fileRef.location, workspaceURL: workspaceURL) {
+                        projectURLs.append(projectPath)
+                    }
+                }
+            }
+
+            return projectURLs
+        } catch {
+            logger.error("Failed to parse workspace for project URLs: \(error)")
+            return []
+        }
+    }
+
+    /// Load targets from XcodeProj directly
+    private func loadTargetsFromXcodeProj(projectPath: URL) throws -> [String] {
+        let project = try XcodeProj(pathString: projectPath.path)
+        return project.pbxproj.nativeTargets.map(\.name)
+    }
+
+    /// Resolve project path from workspace file reference
+    private func resolveProjectPath(from location: XCWorkspaceDataElementLocationType, workspaceURL: URL) -> URL? {
+        let workspaceDir = workspaceURL.deletingLastPathComponent()
+
+        switch location {
+        case let .group(path):
+            return workspaceDir.appendingPathComponent(path)
+        case let .absolute(path):
+            return URL(fileURLWithPath: path)
+        case let .container(path):
+            return workspaceDir.appendingPathComponent(path)
+        case let .current(path):
+            return workspaceDir.appendingPathComponent(path)
+        case let .developer(path):
+            // Developer directory path - this is more complex, but for now treat as relative
+            return workspaceDir.appendingPathComponent(path)
+        case let .other(_, path):
+            // Fallback: treat as relative path
+            return workspaceDir.appendingPathComponent(path)
+        }
+    }
+
+    /// Load targets from a single project using XcodeProj
+    private func loadTargetsFromProject(projectURL: URL) async throws -> [String] {
+        try loadTargetsFromXcodeProj(projectPath: projectURL)
+    }
+
+    /// Load build settings with correct parameters based on project type
+    private func loadBuildSettingsWithCorrectParameters(
+        projectLocation: XcodeProjectLocation,
+        settingsLoader: XcodeSettingsLoader
+    ) async throws -> [XcodeBuildSettings] {
+        switch projectLocation {
+        case .explicitWorkspace:
+            // For workspace, we need to use a scheme, not a target
+            // Try to get schemes from workspace and use the first one
+            let schemes = try await getWorkspaceSchemes(projectLocation: projectLocation)
+            if let firstScheme = schemes.first {
+                return try await settingsLoader.loadBuildSettingsForWorkspace(
+                    workspaceURL: projectLocation.workspaceURL,
+                    scheme: firstScheme,
+                    destination: nil
                 )
+            } else {
+                logger.warning("No schemes found for workspace, cannot load build settings")
+            }
+        case let .implicitWorkspace(projectURL: projectURL, _):
+            // For project, we can use target directly
+            return try await settingsLoader.loadBuildSettings(
+                projectURL: projectURL,
+                scheme: nil,
+                destination: nil
+            )
+        }
+        return []
+    }
+
+    /// Get schemes from workspace using xcodebuild -list
+    private func getWorkspaceSchemes(projectLocation: XcodeProjectLocation) async throws -> [String] {
+        guard case let .explicitWorkspace(workspaceURL) = projectLocation else {
+            return []
+        }
+
+        // Create a temporary settings loader just for listing schemes
+        let projectIdentifier = XcodeProjectIdentifier(rootURL: rootURL, projectLocation: projectLocation)
+        let commandBuilder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
+
+        // Use xcodebuild -list to get schemes
+        let command = commandBuilder.listSchemesCommand()
+        let tempSettingsLoader = XcodeSettingsLoader(commandBuilder: commandBuilder, toolchain: toolchain)
+        let output = try await tempSettingsLoader.runXcodeBuildPublic(arguments: command)
+
+        guard let jsonString = output, !jsonString.isEmpty else {
+            logger.warning("Failed to get schemes from workspace \(workspaceURL.path)")
+            return []
+        }
+
+        // Parse the JSON to extract schemes
+        let data = Data(jsonString.utf8)
+        do {
+            if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let workspace = json["workspace"] as? [String: Any],
+               let schemes = workspace["schemes"] as? [String] {
+                logger.debug("Found schemes for workspace: \(schemes)")
+                return schemes
+            } else {
+                logger.warning("Unexpected JSON format when listing schemes")
+                return []
             }
         } catch {
-            throw XcodeProjectError.dataParsingError("Failed to parse build settings: \(error.localizedDescription)")
+            logger.error("Failed to parse schemes JSON: \(error)")
+            return []
         }
+    }
+
+    /// Load schemes for the project location
+    private func loadSchemes(
+        projectLocation: XcodeProjectLocation
+    ) async throws -> [XcodeScheme] {
+        switch projectLocation {
+        case let .explicitWorkspace(workspaceURL):
+            let schemeNames = try await getWorkspaceSchemes(projectLocation: projectLocation)
+            return schemeNames.map { XcodeScheme(name: $0, workspaceURL: workspaceURL) }
+        case .implicitWorkspace:
+            // Single projects don't have schemes in our model
+            return []
+        }
+    }
+
+    /// Load buildSettingsForIndex for source file discovery
+    private func loadBuildSettingsForIndex(
+        targets: [XcodeTarget],
+        settingsLoader: XcodeSettingsLoader,
+        derivedDataPath: URL
+    ) async throws -> XcodeBuildSettingsForIndex {
+        var buildSettings: XcodeBuildSettingsForIndex = [:]
+        for target in targets {
+            let projectURL = target.projectURL
+
+            let buildSettingForProject = try await settingsLoader.loadBuildSettingsForIndex(
+                projectURL: projectURL,
+                derivedDataPath: derivedDataPath
+            )
+            for (targetName, targetBuildSettings) in buildSettingForProject {
+                let newKey = projectURL.appendingPathComponent(targetName).path
+                buildSettings[newKey] = targetBuildSettings
+            }
+        }
+        return buildSettings
     }
 }

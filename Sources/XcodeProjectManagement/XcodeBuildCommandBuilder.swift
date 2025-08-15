@@ -166,8 +166,8 @@ public struct XcodeBuildCommandBuilder {
 
     /// Legacy buildCommand method for backward compatibility
     public func buildCommand(
-        projectURL: URL? = nil,
         workspaceURL: URL? = nil,
+        projectURL: URL? = nil,
         action: XcodeBuildAction? = nil,
         scheme: String? = nil, // required for workspace project
         target: String? = nil, // only work with non-workspace
@@ -232,6 +232,8 @@ public struct XcodeBuildCommandBuilder {
     }
 
     public func buildSettingsCommand(
+        workspaceURL: URL?,
+        projectURL: URL?,
         scheme: String?,
         target: String?,
         destination: XcodeBuildDestination? = nil,
@@ -240,6 +242,8 @@ public struct XcodeBuildCommandBuilder {
     ) -> [String] {
         let options = forIndex ? XcodeBuildOptions.buildSettingsForIndexJSON : XcodeBuildOptions.buildSettingsJSON
         return buildCommand(
+            workspaceURL: workspaceURL,
+            projectURL: projectURL,
             scheme: scheme,
             target: target,
             destination: destination,

@@ -1,6 +1,5 @@
 import Foundation
 import Logger
-import XcodeSchemeParser
 
 public enum XcodeProjectError: Error, CustomStringConvertible, Equatable {
     case projectNotFound
@@ -90,13 +89,8 @@ public enum XcodeProjectLocation: Equatable, Sendable {
     }
 
     public var schemesFolderURLs: [URL] {
-        let containerParser = XcodeContainerParser()
-        switch self {
-        case let .explicitWorkspace(workspaceURL):
-            return containerParser.getSchemeFolderURLs(from: workspaceURL)
-        case let .implicitWorkspace(projectURL, _):
-            return containerParser.getSchemeFolderURLs(from: projectURL)
-        }
+        // Scheme loading is no longer supported
+        []
     }
 }
 
