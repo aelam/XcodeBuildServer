@@ -53,86 +53,95 @@ public actor ProcessExecutor {
         environment: [String: String]? = nil,
         timeout: TimeInterval? = nil
     ) async throws -> ProcessExecutionResult {
-        // Validate executable path
-        let executableURL = URL(fileURLWithPath: executable)
-        guard FileManager.default.fileExists(atPath: executableURL.path) else {
-            throw ProcessExecutorError.executableNotFound(executable)
-        }
-
-        // Validate working directory if provided
-        if let workingDirectory {
-            guard FileManager.default.fileExists(atPath: workingDirectory.path) else {
-                throw ProcessExecutorError.invalidWorkingDirectory(workingDirectory.path)
-            }
-        }
+        logger.debug("ProcessExecutor: \(executable) \(arguments.joined(separator: " "))")
 
         let process = Process()
-        process.executableURL = executableURL
+        process.executableURL = URL(fileURLWithPath: executable)
         process.arguments = arguments
+        process.standardInput = FileHandle.nullDevice
 
-        // Set working directory if provided
+        // Set environment
+        if let environment {
+            var env = ProcessInfo.processInfo.environment
+            env.merge(environment) { _, new in new }
+            process.environment = env
+        }
+
+        // Set working directory
         if let workingDirectory {
             process.currentDirectoryURL = workingDirectory
         }
 
-        // Set environment variables
-        var processEnvironment = ProcessInfo.processInfo.environment
-        if let environment {
-            for (key, value) in environment {
-                processEnvironment[key] = value
-            }
-        }
-        process.environment = processEnvironment
-
-        // Create pipes for output and error
+        // Setup pipes
         let outputPipe = Pipe()
         let errorPipe = Pipe()
         process.standardOutput = outputPipe
         process.standardError = errorPipe
 
-        // Redirect stdin to /dev/null to prevent hanging on input
-        process.standardInput = FileHandle.nullDevice
-
-        // Log the command being executed
-        let commandString = "\(executable) \(arguments.joined(separator: " "))"
-        logger.debug("ProcessExecutor: Executing command: \(commandString)")
-        if let workingDirectory {
-            logger.debug("ProcessExecutor: Working directory: \(workingDirectory.path)")
+        // Start process
+        do {
+            try process.run()
+        } catch {
+            if error.localizedDescription.contains("No such file") {
+                throw ProcessExecutorError.executableNotFound(executable)
+            }
+            throw ProcessExecutorError.processStartFailed(error)
         }
 
-        return try await executeWithModernAPI(
-            executable: executable,
-            arguments: arguments,
-            workingDirectory: workingDirectory,
-            timeout: timeout,
-            processEnvironment: processEnvironment
+        // Handle timeout if specified
+        if let timeout {
+            return try await withTimeout(timeout) {
+                try await self.readProcessOutput(process: process, outputPipe: outputPipe, errorPipe: errorPipe)
+            }
+        } else {
+            return try await readProcessOutput(process: process, outputPipe: outputPipe, errorPipe: errorPipe)
+        }
+    }
+
+    private func readProcessOutput(
+        process: Process,
+        outputPipe: Pipe,
+        errorPipe: Pipe
+    ) async throws -> ProcessExecutionResult {
+        async let outputData = outputPipe.fileHandleForReading.readToEnd()
+        async let errorData = errorPipe.fileHandleForReading.readToEnd()
+
+        process.waitUntilExit()
+
+        let output = try await String(data: outputData ?? Data(), encoding: .utf8) ?? ""
+        let errorString = try await String(data: errorData ?? Data(), encoding: .utf8) ?? ""
+
+        return ProcessExecutionResult(
+            output: output,
+            error: errorString.isEmpty ? nil : errorString,
+            exitCode: process.terminationStatus
         )
+    }
+
+    private func withTimeout<T: Sendable>(
+        _ timeout: TimeInterval,
+        operation: @escaping @Sendable () async throws -> T
+    ) async throws -> T {
+        try await withThrowingTaskGroup(of: T.self) { group in
+            group.addTask {
+                try await operation()
+            }
+
+            group.addTask {
+                try await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
+                throw ProcessExecutorError.timeout(timeout)
+            }
+
+            let result = try await group.next()!
+            group.cancelAll()
+            return result
+        }
     }
 }
 
-// MARK: - Convenience Extensions
+// MARK: - Xcode related
 
-public extension ProcessExecutor {
-    /// Execute a command with a simple executable path and arguments
-    func execute(
-        command: String,
-        workingDirectory: URL? = nil,
-        environment: [String: String]? = nil
-    ) async throws -> ProcessExecutionResult {
-        let components = command.split(separator: " ", omittingEmptySubsequences: true).map(String.init)
-        guard let executable = components.first else {
-            throw ProcessExecutorError.executableNotFound("Empty command")
-        }
-
-        let arguments = Array(components.dropFirst())
-        return try await execute(
-            executable: executable,
-            arguments: arguments,
-            workingDirectory: workingDirectory,
-            environment: environment
-        )
-    }
-
+extension ProcessExecutor {
     /// Execute xcodebuild with the given arguments
     func executeXcodeBuild(
         arguments: [String],
@@ -186,82 +195,5 @@ public extension ProcessExecutor {
             arguments: arguments,
             workingDirectory: workingDirectory
         )
-    }
-
-    /// 使用Swift的现代Process API，专门处理大量输出避免缓冲区死锁
-    private func executeWithModernAPI(
-        executable: String,
-        arguments: [String],
-        workingDirectory: URL?,
-        timeout: TimeInterval?,
-        processEnvironment: [String: String]
-    ) async throws -> ProcessExecutionResult {
-        logger.debug("ProcessExecutor: Executing command: \(executable) \(arguments.joined(separator: " "))")
-
-        return try await withThrowingTaskGroup(of: ProcessExecutionResult?.self) { group in
-            // 主执行任务
-            group.addTask {
-                let process = Process()
-                process.executableURL = URL(fileURLWithPath: executable)
-                process.arguments = arguments
-                process.environment = processEnvironment
-                process.standardInput = FileHandle.nullDevice
-
-                if let workingDirectory {
-                    process.currentDirectoryURL = workingDirectory
-                }
-
-                // 使用现代API
-                let outputPipe = Pipe()
-                let errorPipe = Pipe()
-                process.standardOutput = outputPipe
-                process.standardError = errorPipe
-
-                try process.run()
-
-                // 关键：使用async/await异步读取，避免缓冲区死锁
-                async let outputData = outputPipe.fileHandleForReading.readToEnd()
-                async let errorData = errorPipe.fileHandleForReading.readToEnd()
-
-                process.waitUntilExit()
-
-                let output = try await String(data: outputData ?? Data(), encoding: .utf8) ?? ""
-                let errorString = try await String(data: errorData ?? Data(), encoding: .utf8) ?? ""
-                let error = errorString.isEmpty ? nil : errorString
-
-                logger.debug("ProcessExecutor: Command completed with exit code: \(process.terminationStatus)")
-                logger.debug("ProcessExecutor: Output length: \(output.count) characters")
-
-                return ProcessExecutionResult(
-                    output: output,
-                    error: error,
-                    exitCode: process.terminationStatus
-                )
-            }
-
-            // 超时任务
-            if let timeout {
-                group.addTask {
-                    try await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
-                    logger.warning("ProcessExecutor: Process terminated due to timeout (\(timeout)s)")
-                    throw ProcessExecutorError.timeout(timeout)
-                }
-            }
-
-            // 等待第一个完成的任务
-            for try await result in group {
-                if let result {
-                    group.cancelAll()
-                    return result
-                }
-            }
-
-            let error = NSError(
-                domain: "ProcessExecutor",
-                code: -1,
-                userInfo: [NSLocalizedDescriptionKey: "No result returned"]
-            )
-            throw ProcessExecutorError.processStartFailed(error)
-        }
     }
 }
