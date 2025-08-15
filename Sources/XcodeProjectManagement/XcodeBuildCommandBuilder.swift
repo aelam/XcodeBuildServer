@@ -105,15 +105,21 @@ public struct XcodeBuildOptions: Sendable {
         self.customFlags = customFlags
     }
 
-    public static let buildSettingsJSON = XcodeBuildOptions(
-        showBuildSettings: true,
-        json: true
-    )
+    public static func buildSettingsJSON(derivedDataPath: String? = nil) -> XcodeBuildOptions {
+        XcodeBuildOptions(
+            showBuildSettings: true,
+            json: true,
+            derivedDataPath: derivedDataPath
+        )
+    }
 
-    public static let buildSettingsForIndexJSON = XcodeBuildOptions(
-        showBuildSettingsForIndex: true,
-        json: true
-    )
+    public static func buildSettingsForIndexJSON(derivedDataPath: String? = nil) -> XcodeBuildOptions {
+        XcodeBuildOptions(
+            showBuildSettingsForIndex: true,
+            json: true,
+            derivedDataPath: derivedDataPath
+        )
+    }
 
     public static let listSchemesJSON = XcodeBuildOptions(json: true, list: true)
 }
@@ -164,96 +170,6 @@ public struct XcodeBuildCommandBuilder {
 
         return arguments
     }
-
-    // /// Legacy buildCommand method for backward compatibility
-    // public func buildCommand(
-    //     workspaceURL: URL? = nil,
-    //     projectURL: URL? = nil,
-    //     action: XcodeBuildAction? = nil,
-    //     scheme: String? = nil, // required for workspace project
-    //     targets: [String] = [], // only work with non-workspace
-    //     configuration: String? = nil,
-    //     destination: XcodeBuildDestination? = nil,
-    //     options: XcodeBuildOptions = XcodeBuildOptions(),
-    //     derivedDataPath: URL? = nil
-    // ) -> [String] {
-    //     // Convert legacy parameters to new XcodeProjectConfiguration format
-    //     let projectConfig: XcodeProjectConfiguration
-
-    //     if let projectURL {
-    //         projectConfig = XcodeProjectConfiguration(
-    //             projectURL: projectURL,
-    //             targets: targets,
-    //             configuration: configuration
-    //         )
-    //     } else if let workspaceURL, let scheme {
-    //         projectConfig = XcodeProjectConfiguration(
-    //             workspaceURL: workspaceURL,
-    //             scheme: scheme,
-    //             configuration: configuration
-    //         )
-    //     } else {
-    //         // Fallback to original logic for auto-detection
-    //         var arguments: [String] = []
-    //         arguments.append(contentsOf: buildWorkspaceOrProjectArguments())
-
-    //         if let scheme {
-    //             arguments.append(contentsOf: ["-scheme", scheme])
-    //         }
-    //         if !targets.isEmpty {
-    //             // -target <target> -target <target>
-    //             for target in targets {
-    //                 arguments.append(contentsOf: ["-target", target])
-    //             }
-    //         }
-    //         if let configuration {
-    //             arguments.append(contentsOf: ["-configuration", configuration])
-    //         }
-    //         if let destination {
-    //             arguments.append(contentsOf: ["-destination", destination.destinationString])
-    //         }
-    //         if let action {
-    //             arguments.append(action.rawValue)
-    //         }
-
-    //         arguments.append(contentsOf: buildOptionsArguments(options: options))
-
-    //         if let derivedDataPath {
-    //             arguments.append(contentsOf: ["-derivedDataPath", derivedDataPath.path])
-    //         }
-
-    //         return arguments
-    //     }
-
-    //     // Use the new method
-    //     return buildCommand(
-    //         project: projectConfig,
-    //         action: action,
-    //         destination: destination,
-    //         derivedDataPath: derivedDataPath,
-    //         options: options
-    //     )
-    // }
-
-    // public func buildSettingsCommand(
-    //     workspaceURL: URL?,
-    //     projectURL: URL?,
-    //     scheme: String?,
-    //     targets: [String] = [],
-    //     destination: XcodeBuildDestination? = nil,
-    //     forIndex: Bool = false,
-    //     derivedDataPath: URL? = nil
-    // ) -> [String] {
-    //     let options = forIndex ? XcodeBuildOptions.buildSettingsForIndexJSON : XcodeBuildOptions.buildSettingsJSON
-    //     return buildCommand(
-    //         workspaceURL: workspaceURL,
-    //         projectURL: projectURL,
-    //         scheme: scheme,
-    //         targets: targets,
-    //         destination: destination,
-    //         options: options
-    //     )
-    // }
 
     public func listSchemesCommand(project: XcodeProjectConfiguration) -> [String] {
         buildCommand(

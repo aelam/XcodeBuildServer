@@ -5,7 +5,6 @@
 //
 
 import Foundation
-import Logger
 
 public enum XcodeToolchainError: Error, LocalizedError {
     case xcodeNotFound
