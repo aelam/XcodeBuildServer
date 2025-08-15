@@ -9,10 +9,10 @@
 /// {
 ///   "params": {
 ///     "targets": [
-///       {"uri": "xcode:///Hello.xcodeproj/Hello/Hello"},
-///       {"uri": "xcode:///Hello.xcodeproj/Hello/HelloTests"},
-///       {"uri": "xcode:///Hello.xcodeproj/Hello/HelloUITests"},
-///       {"uri": "xcode:///Hello.xcodeproj/Hello/World"}
+///       {"uri": "xcode:///path/to/Hello.xcodeproj/Hello/Hello"},
+///       {"uri": "xcode:///path/to/Hello.xcodeproj/Hello/HelloTests"},
+///       {"uri": "xcode:///path/to/Hello.xcodeproj/Hello/HelloUITests"},
+///       {"uri": "xcode:///path/to/Hello.xcodeproj/Hello/World"}
 ///     ]
 ///   },
 ///   "jsonrpc": "2.0",
@@ -78,32 +78,23 @@ struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
     ) async -> SourcesItem {
         do {
             // 异步并行处理目标解析和项目信息获取
-            async let targetInfo = parseTargetIdentifierAsync(targetId.uri.stringValue)
-            async let projectInfo = context.getProjectBasicInfo()
+            let targetInfo = try self.parseTargetIdentifier(targetId.uri.stringValue)
+            let projectInfo = try await context.getProjectBasicInfo()
 
-            // 等待两个异步操作完成
-            let (parsedTargetInfo, basicInfo) = try await (targetInfo, projectInfo)
-
-            logger.debug("Parsed target info - projectName: \(parsedTargetInfo.projectName), " +
-                "schemeName: \(parsedTargetInfo.schemeName), targetName: \(parsedTargetInfo.targetName)")
+            logger
+                .debug("Parsed target - projectURL: \(targetInfo.projectURL), " +
+                    "targetName: \(targetInfo.targetName)")
 
             // Build sources directly from buildSettingsForIndex
             return await buildSourcesItemFromIndex(
                 targetId: targetId,
-                targetName: parsedTargetInfo.targetName,
-                projectInfo: basicInfo
+                targetName: targetInfo.targetName,
+                projectInfo: projectInfo
             )
         } catch {
             logger.error("Error in buildSourcesItem: \(error)")
             return createEmptySourcesItem(for: targetId)
         }
-    }
-
-    // 异步版本的目标解析方法
-    private func parseTargetIdentifierAsync(_ uri: String) async throws -> TargetInfo {
-        try await Task.detached(priority: .utility) {
-            try self.parseTargetIdentifier(uri) // 保持原有逻辑不变
-        }.value
     }
 
     private func buildSourcesItemFromIndex(
@@ -122,7 +113,7 @@ struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
             projectInfo: projectInfo
         )
 
-        async let projectRootURI = convertProjectRootURIAsync(projectInfo.rootURL)
+        let projectRootURI = convertProjectRootURI(projectInfo.rootURL)
 
         // 等待两个异步操作完成
         let (items, rootURI) = await (sourceItems, projectRootURI)
@@ -142,15 +133,13 @@ struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
     }
 
     // 异步URI转换辅助方法
-    private func convertProjectRootURIAsync(_ rootURL: URL) async -> URI? {
-        await Task.detached(priority: .utility) {
-            try? URI(string: rootURL.absoluteString)
-        }.value
+    private func convertProjectRootURI(_ rootURL: URL) -> URI? {
+        try? URI(string: rootURL.absoluteString)
     }
 
     /// Parse target identifier URI to extract target information
     private func parseTargetIdentifier(_ uri: String) throws -> TargetInfo {
-        // Expected format: "xcode:///ProjectPath/SchemeName/TargetName"
+        // Expected format: "xcode:///ProjectPath/TargetName"
         // But target name is always the last component
         guard let url = URL(string: uri) else {
             throw NSError(
@@ -160,22 +149,11 @@ struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
             )
         }
 
-        let pathComponents = url.pathComponents.filter { $0 != "/" }
-        guard pathComponents.count >= 1 else {
-            let message = "Target URI must have at least one path component for target name"
-            throw NSError(
-                domain: "InvalidTargetURI",
-                code: 2,
-                userInfo: [NSLocalizedDescriptionKey: message]
-            )
-        }
-
-        // Target name is always the last component
-        let targetName = pathComponents.last!
+        let targetName = url.lastPathComponent
+        let projectURL = url.deletingLastPathComponent().absoluteString
 
         return TargetInfo(
-            projectName: pathComponents.count >= 3 ? pathComponents[0] : "",
-            schemeName: pathComponents.count >= 3 ? pathComponents[1] : "",
+            projectURL: projectURL,
             targetName: targetName
         )
     }
@@ -196,135 +174,59 @@ private extension BuiltTargetSourcesRequest {
         targetURI: String,
         targetName: String,
         projectInfo: XcodeProjectInfo
-    ) async -> [SourceItem] {
-        // 异步获取缓存数据
-        await Task.detached(priority: .userInitiated) {
-            // Debug: Check if buildSettingsForIndex exists
-            guard let indexSettings = projectInfo.buildSettingsForIndex else {
-                logger.error("buildSettingsForIndex is nil")
-                return []
-            }
+    ) -> [SourceItem] {
+        // Debug: Check if buildSettingsForIndex exists
+        guard let indexSettings = projectInfo.buildSettingsForIndex else {
+            logger.error("buildSettingsForIndex is nil")
+            return []
+        }
 
-            logger.debug("buildSettingsForIndex has \(indexSettings.count) targets: \(Array(indexSettings.keys))")
-            logger.debug("Looking for target URI: '\(targetURI)', targetName: '\(targetName)'")
+        logger.debug("buildSettingsForIndex has \(indexSettings.count) targets: \(Array(indexSettings.keys))")
+        logger.debug("Looking for target URI: '\(targetURI)', targetName: '\(targetName)'")
 
-            // 🔧 FIX: 现在使用blueprintIdentifier作为键，需要从URI中提取或使用多种查找策略
-            var targetFiles: [String: XcodeFileBuildSettingInfo]?
+        // 🔧 FIX: 现在使用blueprintIdentifier作为键，需要从URI中提取或使用多种查找策略
+        var targetFiles: [String: XcodeFileBuildSettingInfo]?
 
-            // 尝试多种查找策略：
-            // 1. 直接使用targetName（向后兼容）
-            if let files = indexSettings[targetName] {
+        // 尝试多种查找策略：
+        // 1. 直接使用targetName（向后兼容）
+        if let files = indexSettings[targetName] {
+            targetFiles = files
+            logger.debug("Found target using targetName: '\(targetName)'")
+        } else {
+            // 2. 尝试查找包含targetName的键（处理blueprintIdentifier格式）
+            for (key, files) in indexSettings where key.contains(targetName) {
+                // 检查键是否匹配target信息
                 targetFiles = files
-                logger.debug("Found target using targetName: '\(targetName)'")
-            } else {
-                // 2. 尝试查找包含targetName的键（处理blueprintIdentifier格式）
-                for (key, files) in indexSettings where key.contains(targetName) {
-                    // 检查键是否匹配target信息
-                    targetFiles = files
-                    logger.debug("Found target using key containing targetName: '\(key)'")
-                    break
-                }
+                logger.debug("Found target using key containing targetName: '\(key)'")
+                break
             }
+        }
 
-            // 3. 如果还没找到，打印所有可用的键帮助调试
-            if targetFiles == nil {
-                logger.warning("No files found for target '\(targetName)' with URI '\(targetURI)'")
-                logger.debug("Available keys in buildSettingsForIndex: \(Array(indexSettings.keys))")
-                return []
-            }
+        // 3. 如果还没找到，打印所有可用的键帮助调试
+        if targetFiles == nil {
+            logger.warning("No files found for target '\(targetName)' with URI '\(targetURI)'")
+            logger.debug("Available keys in buildSettingsForIndex: \(Array(indexSettings.keys))")
+            return []
+        }
 
-            guard let foundFiles = targetFiles else {
-                return []
-            }
+        guard let foundFiles = targetFiles else {
+            return []
+        }
 
-            logger.info("Found \(foundFiles.count) files for target '\(targetName)'")
+        logger.info("Found \(foundFiles.count) files for target '\(targetName)'")
 
-            // 异步并行处理文件转换
-            return await withTaskGroup(of: SourceItem?.self) { group in
-                for (filePath, fileInfo) in foundFiles {
-                    group.addTask {
-                        await self.createSourceItemAsync(
-                            filePath: filePath,
-                            fileInfo: fileInfo,
-                            projectRoot: projectInfo.rootURL
-                        )
-                    }
-                }
-
-                var sourceItems: [SourceItem] = []
-                for await sourceItem in group {
-                    if let item = sourceItem {
-                        sourceItems.append(item)
-                    }
-                }
-
-                logger.info("Created \(sourceItems.count) source items for target '\(targetName)'")
-                return sourceItems
-            }
-        }.value
-    }
-
-    // 新增异步版本的createSourceItem
-    func createSourceItemAsync(
-        filePath: String,
-        fileInfo: XcodeFileBuildSettingInfo,
-        projectRoot: URL
-    ) async -> SourceItem? {
-        await Task.detached(priority: .utility) {
-            logger.debug("createSourceItem called for: \(filePath)")
-            logger.debug("fileInfo.languageDialect: \(String(describing: fileInfo.languageDialect))")
-
-            let fileURL: URL = if filePath.hasPrefix("/") {
-                URL(fileURLWithPath: filePath)
-            } else {
-                projectRoot.appendingPathComponent(filePath)
-            }
-
-            guard let uri = try? URI(string: fileURL.absoluteString) else {
-                logger.warning("Failed to create URI for file: \(filePath)")
-                return nil
-            }
-
-            // Determine if the file is generated
-            let generated = filePath.contains("DerivedData") ||
-                filePath.contains("Build/") ||
-                filePath.hasSuffix(".generated.swift")
-
-            // Determine language based on file type
-            let language: Language? = switch fileInfo.languageDialect {
-            case .swift:
-                .swift
-            case .objc:
-                .objective_c
-            case .interfaceBuilder:
-                nil // Interface Builder files might not have a specific BSP language
-            case .other:
-                self.detectLanguageFromExtension(fileURL.pathExtension)
-            case .none:
-                // If languageDialect is nil, try to detect from file extension
-                self.detectLanguageFromExtension(fileURL.pathExtension)
-            }
-
-            logger.debug("Detected language: \(String(describing: language)) for file: \(filePath)")
-
-            // Create SourceKitSourceItemData
-            let sourceKitData = SourceKitSourceItemData(
-                language: language,
-                kind: self.determineSourceKind(fileURL: fileURL, generated: generated),
-                outputPath: fileInfo.outputFilePath
+        var sourceItems: [SourceItem] = []
+        for (filePath, fileInfo) in foundFiles {
+            let item = self.createSourceItem(
+                filePath: filePath,
+                fileInfo: fileInfo,
+                projectRoot: projectInfo.rootURL
             )
-
-            let sourceItem = SourceItem(
-                uri: uri,
-                kind: .file,
-                generated: generated,
-                dataKind: .sourceKit,
-                data: sourceKitData.encodeToLSPAny()
-            )
-
-            logger.debug("Successfully created SourceItem for: \(filePath)")
-            return sourceItem
-        }.value
+            if let item {
+                sourceItems.append(item)
+            }
+        }
+        return sourceItems
     }
 
     func createSourceItem(
@@ -423,8 +325,7 @@ private extension BuiltTargetSourcesRequest {
 
 /// Helper struct to hold parsed target information
 private struct TargetInfo {
-    let projectName: String
-    let schemeName: String
+    let projectURL: String
     let targetName: String
 }
 
