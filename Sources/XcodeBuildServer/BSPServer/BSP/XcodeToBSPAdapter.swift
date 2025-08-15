@@ -59,7 +59,7 @@ public actor XcodeToBSPAdapter {
         // Create BSP target identifier using the targetKey directly
         // targetKey format: "/path/to/project.xcodeproj/TargetName"
         // Convert to xcode:// URI format with default scheme
-        let targetIdentifier = "xcode://\(targetKey)?scheme=default"
+        let targetIdentifier = "xcode://\(targetKey)"
         let targetID = createBuildTargetIdentifier(from: targetIdentifier)
 
         let baseDirectory = try? URI(string: projectBasicInfo.rootURL.absoluteString)

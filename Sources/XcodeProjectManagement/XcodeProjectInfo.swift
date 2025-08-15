@@ -3,9 +3,9 @@ import Foundation
 public struct XcodeProjectInfo: Sendable {
     public let rootURL: URL
     public let projectLocation: XcodeProjectLocation
-    public let xcodeListInfo: XcodeListInfo
     public let buildSettingsList: [XcodeBuildSettings]
-    public let schemeInfoList: [XcodeSchemeInfo]
+    public let targets: [XcodeTarget]
+    public let schemes: [XcodeScheme]
     public let derivedDataPath: URL
     public let indexStoreURL: URL
     public let indexDatabaseURL: URL
@@ -14,9 +14,9 @@ public struct XcodeProjectInfo: Sendable {
     public init(
         rootURL: URL,
         projectLocation: XcodeProjectLocation,
-        xcodeListInfo: XcodeListInfo,
         buildSettingsList: [XcodeBuildSettings],
-        schemeInfoList: [XcodeSchemeInfo] = [],
+        targets: [XcodeTarget] = [],
+        schemes: [XcodeScheme] = [],
         derivedDataPath: URL,
         indexStoreURL: URL,
         indexDatabaseURL: URL,
@@ -24,9 +24,9 @@ public struct XcodeProjectInfo: Sendable {
     ) {
         self.rootURL = rootURL
         self.projectLocation = projectLocation
-        self.xcodeListInfo = xcodeListInfo
         self.buildSettingsList = buildSettingsList
-        self.schemeInfoList = schemeInfoList
+        self.targets = targets
+        self.schemes = schemes
         self.derivedDataPath = derivedDataPath
         self.indexStoreURL = indexStoreURL
         self.indexDatabaseURL = indexDatabaseURL

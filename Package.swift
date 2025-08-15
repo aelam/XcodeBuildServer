@@ -16,10 +16,6 @@ let package = Package(
             targets: ["Logger"]
         ),
         .library(
-            name: "XcodeSchemeParser",
-            targets: ["XcodeSchemeParser"]
-        ),
-        .library(
             name: "XcodeBuildServer",
             targets: ["XcodeBuildServer"]
         ),
@@ -37,7 +33,9 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/SwiftyBeaver/SwiftyBeaver.git", from: "2.0.0"),
-        .package(url: "https://github.com/yahoojapan/SwiftyXMLParser.git", from: "5.6.0")
+        // .package(url: "https://github.com/yahoojapan/SwiftyXMLParser.git", from: "5.6.0"),
+        .package(url: "https://github.com/tuist/XcodeProj.git", .upToNextMajor(from: "8.12.0")),
+
     ],
     targets: [
         .target(
@@ -53,19 +51,9 @@ let package = Package(
             ]
         ),
         .target(
-            name: "XcodeSchemeParser",
-            dependencies: [
-                .product(
-                    name: "SwiftyXMLParser",
-                    package: "SwiftyXMLParser"
-                ),
-                "Logger"
-            ]
-        ),
-        .target(
             name: "XcodeProjectManagement",
             dependencies: [
-                "XcodeSchemeParser",
+                "XcodeProj",
                 "Logger"
             ],
             resources: [.copy("README.md")]
@@ -88,13 +76,6 @@ let package = Package(
         .testTarget(
             name: "XcodeBuildServerTests",
             dependencies: ["XcodeBuildServer"],
-            resources: [
-                .copy("Resources")
-            ]
-        ),
-        .testTarget(
-            name: "XcodeSchemeParserTests",
-            dependencies: ["XcodeSchemeParser"],
             resources: [
                 .copy("Resources")
             ]

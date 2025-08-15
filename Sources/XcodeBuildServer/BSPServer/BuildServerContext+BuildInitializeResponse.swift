@@ -7,11 +7,15 @@
 import Foundation
 
 public extension BuildServerContext {
-    func getIndexStoreURL() async throws -> URL {
+    func getIndexStoreURL() throws -> URL {
         try loadedState.xcodeProjectInfo.indexStoreURL
     }
 
-    func getIndexDatabaseURL() async throws -> URL {
+    func getIndexDatabaseURL() throws -> URL {
         try loadedState.xcodeProjectInfo.indexDatabaseURL
+    }
+
+    func getDerivedDataPath() throws -> URL {
+        try loadedState.xcodeProjectInfo.derivedDataPath
     }
 }

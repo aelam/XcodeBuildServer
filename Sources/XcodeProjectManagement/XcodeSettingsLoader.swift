@@ -17,6 +17,21 @@ public struct XcodeBuildSettings: Codable, Sendable {
         self.action = action
         self.buildSettings = buildSettings
     }
+
+    // Custom Codable to handle mixed buildSettings types
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.target = try container.decode(String.self, forKey: .target)
+        self.action = try container.decode(String.self, forKey: .action)
+
+        // Handle mixed value types in buildSettings
+        let rawBuildSettings = try container.decode([String: BuildSettingValue].self, forKey: .buildSettings)
+        self.buildSettings = rawBuildSettings.mapValues { $0.stringValue }
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case target, action, buildSettings
+    }
 }
 
 public enum XcodeLanguageDialect: String, Codable, Sendable {
@@ -49,6 +64,47 @@ public enum XcodeLanguageDialect: String, Codable, Sendable {
 }
 
 public typealias XcodeBuildSettingsForIndex = [String: [String: XcodeFileBuildSettingInfo]]
+
+/// Represents a build setting value that can be a string or array of strings
+public enum BuildSettingValue: Codable {
+    case string(String)
+    case array([String])
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+
+        if let stringValue = try? container.decode(String.self) {
+            self = .string(stringValue)
+        } else if let arrayValue = try? container.decode([String].self) {
+            self = .array(arrayValue)
+        } else {
+            throw DecodingError.typeMismatch(
+                BuildSettingValue.self,
+                DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Expected String or [String]")
+            )
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case let .string(value):
+            try container.encode(value)
+        case let .array(values):
+            try container.encode(values)
+        }
+    }
+
+    /// Convert to string representation
+    public var stringValue: String {
+        switch self {
+        case let .string(value):
+            value
+        case let .array(values):
+            values.joined(separator: " ")
+        }
+    }
+}
 
 public struct XcodeFileBuildSettingInfo: Codable, Sendable {
     public var assetSymbolIndexPath: String?
@@ -108,13 +164,16 @@ public actor XcodeSettingsLoader {
     }
 
     public func loadBuildSettings(
-        scheme: String?,
-        target: String?,
+        workspaceURL: URL? = nil,
+        projectURL: URL? = nil,
+        scheme: String? = nil,
         destination: XcodeBuildDestination? = .iOSSimulator
     ) async throws -> [XcodeBuildSettings] {
         let command = commandBuilder.buildSettingsCommand(
+            workspaceURL: workspaceURL,
+            projectURL: projectURL,
             scheme: scheme,
-            target: target,
+            target: nil, // Don't specify target for workspace
             destination: destination,
             forIndex: false
         )
@@ -135,10 +194,12 @@ public actor XcodeSettingsLoader {
 
     public func loadBuildSettingsForIndex(
         projectURL: URL,
-        target: String,
+        target: String? = nil,
         derivedDataPath: URL
     ) async throws -> XcodeBuildSettingsForIndex {
         let command = commandBuilder.buildSettingsCommand(
+            workspaceURL: nil,
+            projectURL: projectURL,
             scheme: nil,
             target: target,
             destination: nil, // No destination needed for index settings
@@ -207,22 +268,37 @@ public actor XcodeSettingsLoader {
         buildSettings.first { $0.target == target && $0.action == action }?.buildSettings[key]
     }
 
-    public func listInfo() async throws -> XcodeListInfo {
-        logger.debug("Listing schemes for platform detection...")
-        let command = commandBuilder.listSchemesCommand()
-        let output = try await runXcodeBuild(arguments: command) // No timeout
-        logger.debug("Received output for list schemes: \(output ?? "[No output]")")
+    /// Load build settings for workspace using scheme
+    public func loadBuildSettingsForWorkspace(
+        workspaceURL: URL,
+        scheme: String,
+        destination: XcodeBuildDestination? = .iOSSimulator
+    ) async throws -> [XcodeBuildSettings] {
+        let command = commandBuilder.buildSettingsCommand(
+            workspaceURL: workspaceURL,
+            projectURL: nil,
+            scheme: scheme,
+            target: nil, // Don't specify target for workspace
+            destination: destination,
+            forIndex: false
+        )
+        logger.debug("loadBuildSettingsForWorkspace command: \(command.joined(separator: " "))")
+        let output = try await runXcodeBuild(arguments: command)
         guard let jsonString = output, !jsonString.isEmpty else {
-            throw XcodeProjectError.invalidConfig("Failed to list schemes for platform detection")
+            throw XcodeProjectError.invalidConfig("Failed to load build settings for workspace")
         }
 
         let data = Data(jsonString.utf8)
         do {
-            let decoder = JSONDecoder()
-            return try decoder.decode(XcodeListInfo.self, from: data)
+            return try jsonDecoder.decode([XcodeBuildSettings].self, from: data)
         } catch {
-            throw XcodeProjectError.dataParsingError("Failed to decode schemes for platform detection: \(error)")
+            logger.debug(jsonString)
+            throw XcodeProjectError.dataParsingError("Failed to parse build settings: \(error.localizedDescription)")
         }
+    }
+
+    public func runXcodeBuildPublic(arguments: [String]) async throws -> String? {
+        try await runXcodeBuild(arguments: arguments)
     }
 
     private func runXcodeBuild(arguments: [String]) async throws -> String? {
