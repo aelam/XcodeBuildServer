@@ -143,22 +143,4 @@ public final class XcodeBSPConfigurationLoader: Sendable {
         let configuration = try JSONDecoder().decode(XcodeBSPConfiguration.self, from: data)
         return configuration
     }
-
-    public func saveConfiguration(_ configuration: XcodeBSPConfiguration) throws {
-        let configFileURL = rootURL.appendingPathComponent(configurationPath)
-        let bspDirectory = configFileURL.deletingLastPathComponent()
-
-        // Create .bsp directory if it doesn't exist
-        try FileManager.default.createDirectory(
-            at: bspDirectory,
-            withIntermediateDirectories: true,
-            attributes: nil
-        )
-
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-
-        let data = try encoder.encode(configuration)
-        try data.write(to: configFileURL)
-    }
 }

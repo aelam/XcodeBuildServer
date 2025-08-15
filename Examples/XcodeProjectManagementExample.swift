@@ -37,12 +37,7 @@ struct XcodeProjectManagementExample {
             print("  - Workspace: \(project.workspaceURL.path)")
             print("  - Schemes: \(project.schemeInfoList.map(\.name).joined(separator: ", "))")
 
-            // Create command builder with project identifier
-            let projectIdentifier = XcodeProjectIdentifier(
-                rootURL: project.rootURL,
-                projectLocation: project.projectLocation
-            )
-            let commandBuilder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
+            let commandBuilder = XcodeBuildCommandBuilder()
 
             // Generate various commands
             print("\n📋 Available Commands:")
@@ -58,7 +53,7 @@ struct XcodeProjectManagementExample {
                 let settingsCommand = commandBuilder.buildCommand(
                     scheme: firstScheme.name,
                     configuration: firstScheme.configuration ?? "Debug",
-                    options: XcodeBuildOptions.buildSettingsJSON
+                    options: XcodeBuildOptions.buildSettingsJSON()
                 )
                 print("Build settings command: xcodebuild \(settingsCommand.joined(separator: " "))")
 

@@ -178,13 +178,12 @@ public actor XcodeSettingsLoader {
     public func loadBuildSettings(
         rootURL: URL,
         project: XcodeProjectConfiguration,
-        derivedDataPath: URL? = nil
     ) async throws -> [XcodeBuildSettings] {
         let command = commandBuilder.buildCommand(
             project: project,
             action: nil,
             destination: nil,
-            options: XcodeBuildOptions.buildSettingsJSON
+            options: XcodeBuildOptions.buildSettingsJSON()
         )
         logger.debug("loadBuildSettings command: \(command.joined(separator: " "))")
         let output = try await runXcodeBuild(arguments: command, workingDirectory: rootURL)
@@ -203,7 +202,7 @@ public actor XcodeSettingsLoader {
 
     /// Load build settings for index for all targets in same project
     /// it would perform much faster than loading settings for each target individually
-    public func loadBuildSettingsForIndex(
+    func loadBuildSettingsForIndex(
         rootURL: URL,
         projectURL: URL, // xcodeproj file URL
         targets: [String] = [],
@@ -216,7 +215,7 @@ public actor XcodeSettingsLoader {
                 configuration: nil
             ),
             destination: nil, // No destination needed for index settings
-            options: XcodeBuildOptions.buildSettingsForIndexJSON
+            options: XcodeBuildOptions.buildSettingsForIndexJSON(derivedDataPath: derivedDataPath.path)
         )
 
         let output = try await runXcodeBuild(arguments: command, workingDirectory: rootURL)
@@ -259,16 +258,6 @@ public actor XcodeSettingsLoader {
         }
 
         return (indexStoreURL: indexStoreURL, indexDatabaseURL: indexDatabaseURL)
-    }
-
-    public func getCompileArguments(
-        fileURI: String,
-        scheme: String,
-        buildSettingsForIndex: XcodeBuildSettingsForIndex
-    ) -> [String] {
-        let filePath = URL(filePath: fileURI).path
-        let fileBuildSettings = buildSettingsForIndex[scheme]?[filePath]
-        return fileBuildSettings?.swiftASTCommandArguments ?? []
     }
 
     func runXcodeBuild(

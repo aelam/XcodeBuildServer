@@ -9,11 +9,6 @@ import Testing
 @testable import XcodeProjectManagement
 
 struct XcodeBuildCommandBuilderTests {
-    let projectIdentifier = XcodeProjectIdentifier(
-        rootURL: URL(fileURLWithPath: "/test"),
-        projectLocation: .explicitWorkspace(URL(fileURLWithPath: "/test/Test.xcworkspace"))
-    )
-
     @Test
     func buildBasicCommand() {
         let builder = XcodeBuildCommandBuilder()
@@ -43,7 +38,7 @@ struct XcodeBuildCommandBuilderTests {
                 targets: ["TestTarget"],
                 configuration: "Debug"
             ),
-            options: XcodeBuildOptions.buildSettingsJSON
+            options: XcodeBuildOptions.buildSettingsJSON()
         )
 
         #expect(command.contains("-showBuildSettings"))
@@ -59,7 +54,7 @@ struct XcodeBuildCommandBuilderTests {
                 workspaceURL: URL(fileURLWithPath: "/test/Test.xcworkspace"),
                 configuration: "Debug"
             ),
-            options: XcodeBuildOptions.buildSettingsForIndexJSON
+            options: XcodeBuildOptions.buildSettingsForIndexJSON()
         )
 
         #expect(command.contains("-showBuildSettingsForIndex"))

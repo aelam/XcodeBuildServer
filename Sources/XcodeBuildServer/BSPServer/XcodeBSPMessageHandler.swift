@@ -6,7 +6,6 @@
 
 import Foundation
 import JSONRPCServer
-import XcodeProjectManagement
 
 /// Languages supported by XcodeBuildServer for Xcode projects
 public let xcodeBuildServerSupportedLanguages: Set<Language> = [.swift, .objective_c, .objective_cpp, .c, .cpp]

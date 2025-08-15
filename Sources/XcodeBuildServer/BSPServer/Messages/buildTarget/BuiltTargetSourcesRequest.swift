@@ -181,7 +181,6 @@ private extension BuiltTargetSourcesRequest {
         // 1. 直接使用targetIdentifier（向后兼容）
         if let files = indexSettings[targetIdentifierValue] {
             targetFiles = files
-            logger.debug("Found target using targetIdentifier: '\(targetIdentifierValue)'")
         } else {
             // 2. 尝试查找包含targetName的键（处理blueprintIdentifier格式）
             for (key, files) in indexSettings where key.contains(targetName) {
@@ -224,8 +223,6 @@ private extension BuiltTargetSourcesRequest {
         fileInfo: XcodeFileBuildSettingInfo,
         projectRoot: URL
     ) -> SourceItem? {
-        logger.debug("createSourceItem called for: \(filePath)")
-
         let fileURL: URL = if filePath.hasPrefix("/") {
             URL(fileURLWithPath: filePath)
         } else {
