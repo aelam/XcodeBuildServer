@@ -5,6 +5,7 @@
 //
 
 import Foundation
+import XcodeProj
 import XcodeProjectManagement
 
 /// Adapter for converting Xcode project information to BSP BuildTarget objects
@@ -65,13 +66,13 @@ public actor XcodeToBSPAdapter {
         let capabilities = createCapabilitiesForTarget(targetName)
         let sourceKitData = await createSourceKitData()
 
-        return BuildTarget(
+        return await BuildTarget(
             id: buildTargetIdentifier,
             displayName: displayName,
             baseDirectory: baseDirectory,
             tags: tags,
             languageIds: languages,
-            dependencies: [], // TODO: Extract dependencies from build settings
+            dependencies: extractDependencies(for: targetIdentifier),
             capabilities: capabilities,
             dataKind: .sourceKit,
             data: sourceKitData?.encodeToLSPAny()
@@ -221,5 +222,55 @@ public actor XcodeToBSPAdapter {
             canRun: !isTestTarget,
             canDebug: true
         )
+    }
+
+    /// Extract dependencies for a target using XcodeProj
+    private func extractDependencies(for targetIdentifier: String) async -> [BuildTargetIdentifier] {
+        // Parse target identifier: xcode:///path/to/project.xcodeproj/TargetName
+        guard let uri = try? URI(string: targetIdentifier) else {
+            return []
+        }
+
+        let url = uri.arbitrarySchemeURL
+
+        let targetName = url.lastPathComponent
+        let projectPath = url.deletingLastPathComponent()
+
+        do {
+            // Load project using XcodeProj
+            let project = try XcodeProj(pathString: projectPath.path)
+
+            // Find the target
+            guard let target = project.pbxproj.nativeTargets.first(where: { $0.name == targetName }) else {
+                return []
+            }
+
+            var dependencies: [BuildTargetIdentifier] = []
+
+            // Extract target dependencies
+            for dependency in target.dependencies {
+                if let dependentTarget = dependency.target {
+                    let depUriString = "xcode://\(projectPath.path)/\(dependentTarget.name)"
+                    if let depUri = try? URI(string: depUriString) {
+                        dependencies.append(BuildTargetIdentifier(uri: depUri))
+                    }
+                }
+
+                // Handle external project dependencies via targetProxy
+                if let proxy = dependency.targetProxy,
+                   let remoteInfo = proxy.remoteInfo {
+                    let depUriString = "xcode://\(projectPath.path)/\(remoteInfo)"
+                    if let depUri = try? URI(string: depUriString) {
+                        dependencies.append(BuildTargetIdentifier(uri: depUri))
+                    }
+                }
+            }
+
+            return dependencies
+
+        } catch {
+            logger.error("Failed to extract dependencies for \(targetIdentifier): \(error)")
+            return []
+        }
     }
 }
