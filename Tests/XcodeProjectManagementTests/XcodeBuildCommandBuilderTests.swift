@@ -110,7 +110,8 @@ struct XcodeBuildCommandBuilderTests {
             options: XcodeBuildOptions.buildSettingsJSON(derivedDataPath: testCase.path)
         )
 
-        let expectedArgs = ["-showBuildSettings", "-json", "TestTarget"] + testCase.expectedArgs
+        let expectedArgs = ["-showBuildSettings", "-json", "TestTarget"] +
+            testCase.expectedArgs
         for expectedArg in expectedArgs {
             #expect(command.contains(expectedArg))
         }
@@ -127,7 +128,8 @@ struct XcodeBuildCommandBuilderTests {
             options: XcodeBuildOptions.buildSettingsForIndexJSON(derivedDataPath: testCase.path)
         )
 
-        let expectedArgs = ["-showBuildSettingsForIndex", "-json"] + testCase.expectedArgs
+        let expectedArgs = ["-showBuildSettingsForIndex", "-json"] +
+            testCase.expectedArgs
         for expectedArg in expectedArgs {
             #expect(command.contains(expectedArg))
         }

@@ -275,7 +275,6 @@ public actor XcodeSettingsLoader {
         let output = result.output
         let error = result.error
         logger.debug("runXcodeBuild: command completed with exit code: \(result.exitCode)")
-        logger.debug("runXcodeBuild: output isEmpty: \(output.isEmpty)")
         logger.debug("runXcodeBuild: output length: \(output.count)")
 
         if !output.isEmpty {
