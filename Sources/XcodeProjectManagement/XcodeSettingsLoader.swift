@@ -36,7 +36,7 @@ public struct XcodeBuildSettings: Codable, Sendable {
 
 public enum XcodeLanguageDialect: String, Codable, Sendable {
     case c = "Xcode.SourceCodeLanguage.C"
-    case cpp = "Xcode.SourceCodeLanguage.C++"
+    case cpp = "Xcode.SourceCodeLanguage.C-Plus-Plus"
     case swift = "Xcode.SourceCodeLanguage.Swift"
     case objc = "Xcode.SourceCodeLanguage.Objective-C"
     case objcCpp = "Xcode.SourceCodeLanguage.Objective-C-Plus-Plus"
@@ -51,7 +51,7 @@ public enum XcodeLanguageDialect: String, Codable, Sendable {
         switch stringValue {
         case "Xcode.SourceCodeLanguage.C":
             self = .c
-        case "Xcode.SourceCodeLanguage.C++":
+        case "Xcode.SourceCodeLanguage.C-Plus-Plus":
             self = .cpp
         case "Xcode.SourceCodeLanguage.Swift":
             self = .swift
