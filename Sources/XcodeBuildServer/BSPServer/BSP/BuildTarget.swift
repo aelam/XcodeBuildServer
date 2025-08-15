@@ -79,6 +79,10 @@ public struct BuildTargetIdentifier: Codable, Hashable, Sendable {
     public init(uri: URI) {
         self.uri = uri
     }
+
+    var xcodeTargetName: String {
+        uri.arbitrarySchemeURL.lastPathComponent
+    }
 }
 
 /// A list of predefined tags that can be used to categorize build targets.

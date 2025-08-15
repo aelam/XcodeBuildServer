@@ -121,7 +121,7 @@ public struct TextDocumentSourceKitOptionsRequest: ContextualRequestType, Sendab
             do {
                 // Get compile arguments for the specific file using BSP target
                 let compilerArguments = try await context.getCompileArguments(
-                    target: params.target,
+                    targetIdentifier: params.target,
                     fileURI: params.textDocument.uri.stringValue
                 )
 

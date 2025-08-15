@@ -369,10 +369,7 @@ public actor XcodeProjectManager {
                 }
             }
 
-            logger
-                .debug(
-                    "--- Loaded \(allTargets.count) targets from workspace \(workspaceURL.path), \(allTargets.map(\.name).joined(separator: ", "))"
-                )
+            logger.debug("Loaded \(allTargets.count) targets from workspace \(workspaceURL.path)")
 
             return allTargets
         } catch {
@@ -401,39 +398,6 @@ public actor XcodeProjectManager {
             logger.error("Failed to parse workspace for project URLs: \(error)")
             return []
         }
-    }
-
-    /// Load targets from XcodeProj directly
-    private func loadTargetsFromXcodeProj(projectPath: URL) throws -> [String] {
-        let project = try XcodeProj(pathString: projectPath.path)
-        return project.pbxproj.nativeTargets.map(\.name)
-    }
-
-    /// Resolve project path from workspace file reference
-    private func resolveProjectPath(from location: XCWorkspaceDataElementLocationType, workspaceURL: URL) -> URL? {
-        let workspaceDir = workspaceURL.deletingLastPathComponent()
-
-        switch location {
-        case let .group(path):
-            return workspaceDir.appendingPathComponent(path)
-        case let .absolute(path):
-            return URL(fileURLWithPath: path)
-        case let .container(path):
-            return workspaceDir.appendingPathComponent(path)
-        case let .current(path):
-            return workspaceDir.appendingPathComponent(path)
-        case let .developer(path):
-            // Developer directory path - this is more complex, but for now treat as relative
-            return workspaceDir.appendingPathComponent(path)
-        case let .other(_, path):
-            // Fallback: treat as relative path
-            return workspaceDir.appendingPathComponent(path)
-        }
-    }
-
-    /// Load targets from a single project using XcodeProj
-    private func loadTargetsFromProject(projectURL: URL) async throws -> [String] {
-        try loadTargetsFromXcodeProj(projectPath: projectURL)
     }
 
     /// Load build settings with correct parameters based on project type
@@ -503,7 +467,9 @@ public actor XcodeProjectManager {
             return []
         }
     }
+}
 
+extension XcodeProjectManager {
     /// Load schemes for the project location
     private func loadSchemes(
         projectLocation: XcodeProjectLocation
@@ -517,7 +483,9 @@ public actor XcodeProjectManager {
             return []
         }
     }
+}
 
+extension XcodeProjectManager {
     /// Load buildSettingsForIndex for source file discovery
     private func loadBuildSettingsForIndex(
         targets: [XcodeTarget],
@@ -533,12 +501,50 @@ public actor XcodeProjectManager {
                 target: target.name,
                 derivedDataPath: derivedDataPath
             )
-            // update key from targetName to <projectURL>/<targetName>
+            /// update key from targetName to `xcode://<projectURL>/<targetName>`
             for (targetName, targetBuildSettings) in buildSettingForProject {
-                let newKey = projectURL.appendingPathComponent(targetName).path
-                buildSettings[newKey] = targetBuildSettings
+                let targetIdentifier = "xcode://" + projectURL.appendingPathComponent(targetName).path
+                logger.debug("Updating build settings for target: \(targetIdentifier)")
+                buildSettings[targetIdentifier] = targetBuildSettings
             }
         }
         return buildSettings
+    }
+}
+
+// MARK: - Utilities Extension
+
+extension XcodeProjectManager {
+    /// Load targets from XcodeProj directly
+    private func loadTargetsFromXcodeProj(projectPath: URL) throws -> [String] {
+        let project = try XcodeProj(pathString: projectPath.path)
+        return project.pbxproj.nativeTargets.map(\.name)
+    }
+
+    /// Resolve project path from workspace file reference
+    private func resolveProjectPath(from location: XCWorkspaceDataElementLocationType, workspaceURL: URL) -> URL? {
+        let workspaceDir = workspaceURL.deletingLastPathComponent()
+
+        switch location {
+        case let .group(path):
+            return workspaceDir.appendingPathComponent(path)
+        case let .absolute(path):
+            return URL(fileURLWithPath: path)
+        case let .container(path):
+            return workspaceDir.appendingPathComponent(path)
+        case let .current(path):
+            return workspaceDir.appendingPathComponent(path)
+        case let .developer(path):
+            // Developer directory path - this is more complex, but for now treat as relative
+            return workspaceDir.appendingPathComponent(path)
+        case let .other(_, path):
+            // Fallback: treat as relative path
+            return workspaceDir.appendingPathComponent(path)
+        }
+    }
+
+    /// Load targets from a single project using XcodeProj
+    private func loadTargetsFromProject(projectURL: URL) async throws -> [String] {
+        try loadTargetsFromXcodeProj(projectPath: projectURL)
     }
 }
