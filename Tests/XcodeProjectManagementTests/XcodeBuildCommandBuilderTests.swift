@@ -16,26 +16,33 @@ struct XcodeBuildCommandBuilderTests {
 
     @Test
     func buildBasicCommand() {
-        let builder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
+        let builder = XcodeBuildCommandBuilder()
         let command = builder.buildCommand(
-            targets: ["TestTarget"],
-            configuration: "Debug"
+            project: XcodeProjectConfiguration(
+                workspaceURL: URL(fileURLWithPath: "/test/Test.xcworkspace"),
+                scheme: "TestScheme",
+                configuration: "Debug"
+            ),
+            options: XcodeBuildOptions()
         )
 
         #expect(command.contains("-workspace"))
         #expect(command.contains("/test/Test.xcworkspace"))
-        #expect(command.contains("-target"))
-        #expect(command.contains("TestTarget"))
+        #expect(command.contains("-scheme"))
+        #expect(command.contains("TestScheme"))
         #expect(command.contains("-configuration"))
         #expect(command.contains("Debug"))
     }
 
     @Test
     func buildSettingsCommand() {
-        let builder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
+        let builder = XcodeBuildCommandBuilder()
         let command = builder.buildCommand(
-            targets: ["TestTarget"],
-            configuration: "Debug",
+            project: XcodeProjectConfiguration(
+                projectURL: URL(fileURLWithPath: "/test/Test.xcodeproj"),
+                targets: ["TestTarget"],
+                configuration: "Debug"
+            ),
             options: XcodeBuildOptions.buildSettingsJSON
         )
 
@@ -46,10 +53,12 @@ struct XcodeBuildCommandBuilderTests {
 
     @Test
     func buildSettingsForIndexCommand() {
-        let builder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
+        let builder = XcodeBuildCommandBuilder()
         let command = builder.buildCommand(
-            targets: ["TestTarget"],
-            configuration: "Debug",
+            project: XcodeProjectConfiguration(
+                workspaceURL: URL(fileURLWithPath: "/test/Test.xcworkspace"),
+                configuration: "Debug"
+            ),
             options: XcodeBuildOptions.buildSettingsForIndexJSON
         )
 
@@ -59,8 +68,14 @@ struct XcodeBuildCommandBuilderTests {
 
     @Test
     func listSchemesCommand() {
-        let builder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
-        let command = builder.buildCommand(options: XcodeBuildOptions.listSchemesJSON)
+        let builder = XcodeBuildCommandBuilder()
+        let command = builder.buildCommand(
+            project: XcodeProjectConfiguration(
+                workspaceURL: URL(fileURLWithPath: "/test/Test.xcworkspace"),
+                configuration: "Debug"
+            ),
+            options: XcodeBuildOptions.listSchemesJSON
+        )
 
         #expect(command.contains("-list"))
         #expect(command.contains("-json"))
@@ -69,11 +84,14 @@ struct XcodeBuildCommandBuilderTests {
 
     @Test
     func quietBuildCommand() {
-        let builder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
+        let builder = XcodeBuildCommandBuilder()
         let options = XcodeBuildOptions(quiet: true)
         let command = builder.buildCommand(
-            targets: ["TestTarget"],
-            configuration: "Debug",
+            project: XcodeProjectConfiguration(
+                projectURL: URL(fileURLWithPath: "/test/Test.xcodeproj"),
+                targets: ["TestTarget"],
+                configuration: "Debug"
+            ),
             options: options
         )
 

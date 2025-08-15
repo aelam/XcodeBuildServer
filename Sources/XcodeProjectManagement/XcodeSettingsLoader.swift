@@ -176,21 +176,18 @@ public actor XcodeSettingsLoader {
     }
 
     public func loadBuildSettings(
-        workspaceURL: URL? = nil,
-        projectURL: URL? = nil,
-        scheme: String? = nil,
-        destination: XcodeBuildDestination? = .iOSSimulator
+        rootURL: URL,
+        project: XcodeProjectConfiguration,
+        derivedDataPath: URL? = nil
     ) async throws -> [XcodeBuildSettings] {
-        let command = commandBuilder.buildSettingsCommand(
-            workspaceURL: workspaceURL,
-            projectURL: projectURL,
-            scheme: scheme,
-            targets: [],
-            destination: destination,
-            forIndex: false
+        let command = commandBuilder.buildCommand(
+            project: project,
+            action: nil,
+            destination: nil,
+            options: XcodeBuildOptions.buildSettingsJSON
         )
         logger.debug("loadBuildSettings command: \(command.joined(separator: " "))")
-        let output = try await runXcodeBuild(arguments: command)
+        let output = try await runXcodeBuild(arguments: command, workingDirectory: rootURL)
         guard let jsonString = output, !jsonString.isEmpty else {
             throw XcodeProjectError.invalidConfig("Failed to load build settings")
         }
@@ -204,22 +201,25 @@ public actor XcodeSettingsLoader {
         }
     }
 
+    /// Load build settings for index for all targets in same project
+    /// it would perform much faster than loading settings for each target individually
     public func loadBuildSettingsForIndex(
-        projectURL: URL,
+        rootURL: URL,
+        projectURL: URL, // xcodeproj file URL
         targets: [String] = [],
         derivedDataPath: URL
     ) async throws -> XcodeBuildSettingsForIndex {
-        let command = commandBuilder.buildSettingsCommand(
-            workspaceURL: nil,
-            projectURL: projectURL,
-            scheme: nil,
-            targets: targets,
+        let command = commandBuilder.buildCommand(
+            project: .project(
+                projectURL: projectURL,
+                buildMode: .targets(targets),
+                configuration: nil
+            ),
             destination: nil, // No destination needed for index settings
-            forIndex: true,
-            derivedDataPath: derivedDataPath
+            options: XcodeBuildOptions.buildSettingsForIndexJSON
         )
 
-        let output = try await runXcodeBuild(arguments: command)
+        let output = try await runXcodeBuild(arguments: command, workingDirectory: rootURL)
         guard let jsonString = output, !jsonString.isEmpty else {
             throw XcodeProjectError.invalidConfig("Failed to load build settings for index")
         }
@@ -271,51 +271,11 @@ public actor XcodeSettingsLoader {
         return fileBuildSettings?.swiftASTCommandArguments ?? []
     }
 
-    public func getBuildSetting(
-        _ key: String,
-        for target: String,
-        action: String = "build",
-        buildSettings: [XcodeBuildSettings]
-    ) -> String? {
-        buildSettings.first { $0.target == target && $0.action == action }?.buildSettings[key]
-    }
-
-    /// Load build settings for workspace using scheme
-    public func loadBuildSettingsForWorkspace(
-        workspaceURL: URL,
-        scheme: String,
-        destination: XcodeBuildDestination? = .iOSSimulator
-    ) async throws -> [XcodeBuildSettings] {
-        let command = commandBuilder.buildSettingsCommand(
-            workspaceURL: workspaceURL,
-            projectURL: nil,
-            scheme: scheme,
-            targets: [], // Don't specify target for workspace
-            destination: destination,
-            forIndex: false
-        )
-        logger.debug("loadBuildSettingsForWorkspace command: \(command.joined(separator: " "))")
-        let output = try await runXcodeBuild(arguments: command)
-        guard let jsonString = output, !jsonString.isEmpty else {
-            throw XcodeProjectError.invalidConfig("Failed to load build settings for workspace")
-        }
-
-        let data = Data(jsonString.utf8)
-        do {
-            return try jsonDecoder.decode([XcodeBuildSettings].self, from: data)
-        } catch {
-            logger.debug(jsonString)
-            throw XcodeProjectError.dataParsingError("Failed to parse build settings: \(error.localizedDescription)")
-        }
-    }
-
-    public func runXcodeBuildPublic(arguments: [String]) async throws -> String? {
-        try await runXcodeBuild(arguments: arguments)
-    }
-
-    private func runXcodeBuild(arguments: [String]) async throws -> String? {
+    func runXcodeBuild(
+        arguments: [String],
+        workingDirectory: URL
+    ) async throws -> String? {
         // Set working directory to project root for better relative path resolution
-        let workingDirectory = commandBuilder.projectIdentifier.rootURL
         logger.debug("runXcodeBuild: about to execute command with arguments: \(arguments.joined(separator: " "))")
         logger.debug("runXcodeBuild: working directory: \(workingDirectory.path)")
         let result = try await toolchain.executeXcodeBuild(
