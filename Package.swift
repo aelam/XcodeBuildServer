@@ -33,9 +33,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/SwiftyBeaver/SwiftyBeaver.git", from: "2.0.0"),
-        // .package(url: "https://github.com/yahoojapan/SwiftyXMLParser.git", from: "5.6.0"),
         .package(url: "https://github.com/tuist/XcodeProj.git", .upToNextMajor(from: "8.12.0")),
-
     ],
     targets: [
         .target(

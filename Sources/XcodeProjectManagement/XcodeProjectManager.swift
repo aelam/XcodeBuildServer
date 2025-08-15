@@ -158,8 +158,7 @@ public actor XcodeProjectManager {
             rootURL: rootURL,
             xcodeProjectReference: xcodeProjectReference
         )
-        let projectIdentifier = XcodeProjectIdentifier(rootURL: rootURL, projectLocation: projectLocation)
-        let settingsCommandBuilder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
+        let settingsCommandBuilder = XcodeBuildCommandBuilder()
         let settingsLoader = XcodeSettingsLoader(commandBuilder: settingsCommandBuilder, toolchain: toolchain)
         _ = await toolchain.getSelectedInstallation()
         // Load containers for workspace projects to get actual targets
@@ -168,7 +167,8 @@ public actor XcodeProjectManager {
         )
 
         // Load a build settings of any target to get DerivedData path
-        let buildSettingsList = try await loadBuildSettingsWithCorrectParameters(
+        let buildSettingsList = try await loadBuildSettings(
+            rootURL: rootURL,
             projectLocation: projectLocation,
             settingsLoader: settingsLoader
         )
@@ -180,11 +180,9 @@ public actor XcodeProjectManager {
             buildSettingsList: buildSettingsList
         )
 
-        // Load schemes for workspace projects
-        let schemes = try await loadSchemes(projectLocation: projectLocation)
-
         // Load buildSettingsForIndex for source file discovery
         let buildSettingsForIndex = try await loadBuildSettingsForIndex(
+            rootURL: rootURL,
             targets: actualTargets,
             settingsLoader: settingsLoader,
             derivedDataPath: indexPaths.derivedDataPath
@@ -196,7 +194,7 @@ public actor XcodeProjectManager {
             projectLocation: projectLocation,
             buildSettingsList: buildSettingsList,
             targets: actualTargets,
-            schemes: schemes,
+            schemes: [],
             derivedDataPath: indexPaths.derivedDataPath,
             indexStoreURL: indexPaths.indexStoreURL,
             indexDatabaseURL: indexPaths.indexDatabaseURL,
@@ -318,7 +316,8 @@ public actor XcodeProjectManager {
     }
 
     /// Load build settings with correct parameters based on project type
-    private func loadBuildSettingsWithCorrectParameters(
+    private func loadBuildSettings(
+        rootURL: URL,
         projectLocation: XcodeProjectLocation,
         settingsLoader: XcodeSettingsLoader
     ) async throws -> [XcodeBuildSettings] {
@@ -328,10 +327,10 @@ public actor XcodeProjectManager {
             // Try to get schemes from workspace and use the first one
             let schemes = try await getWorkspaceSchemes(projectLocation: projectLocation)
             if let firstScheme = schemes.first {
-                return try await settingsLoader.loadBuildSettingsForWorkspace(
-                    workspaceURL: projectLocation.workspaceURL,
-                    scheme: firstScheme,
-                    destination: nil
+                return try await settingsLoader.loadBuildSettings(
+                    rootURL: rootURL,
+                    project: .init(workspaceURL: projectLocation.workspaceURL, scheme: firstScheme),
+                    derivedDataPath: nil
                 )
             } else {
                 logger.warning("No schemes found for workspace, cannot load build settings")
@@ -339,9 +338,9 @@ public actor XcodeProjectManager {
         case let .implicitWorkspace(projectURL: projectURL, _):
             // For project, we can use target directly
             return try await settingsLoader.loadBuildSettings(
-                projectURL: projectURL,
-                scheme: nil,
-                destination: nil
+                rootURL: rootURL,
+                project: .init(projectURL: projectURL),
+                derivedDataPath: nil
             )
         }
         return []
@@ -354,13 +353,18 @@ public actor XcodeProjectManager {
         }
 
         // Create a temporary settings loader just for listing schemes
-        let projectIdentifier = XcodeProjectIdentifier(rootURL: rootURL, projectLocation: projectLocation)
-        let commandBuilder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
+        let commandBuilder = XcodeBuildCommandBuilder()
 
         // Use xcodebuild -list to get schemes
-        let command = commandBuilder.listSchemesCommand()
+        let command = commandBuilder.listSchemesCommand(
+            project: XcodeProjectConfiguration.workspace(
+                workspaceURL: workspaceURL,
+                scheme: nil,
+                configuration: nil
+            )
+        )
         let tempSettingsLoader = XcodeSettingsLoader(commandBuilder: commandBuilder, toolchain: toolchain)
-        let output = try await tempSettingsLoader.runXcodeBuildPublic(arguments: command)
+        let output = try await tempSettingsLoader.runXcodeBuild(arguments: command, workingDirectory: workspaceURL)
 
         guard let jsonString = output, !jsonString.isEmpty else {
             logger.warning("Failed to get schemes from workspace \(workspaceURL.path)")
@@ -387,24 +391,9 @@ public actor XcodeProjectManager {
 }
 
 extension XcodeProjectManager {
-    /// Load schemes for the project location
-    private func loadSchemes(
-        projectLocation: XcodeProjectLocation
-    ) async throws -> [XcodeScheme] {
-        switch projectLocation {
-        case let .explicitWorkspace(workspaceURL):
-            let schemeNames = try await getWorkspaceSchemes(projectLocation: projectLocation)
-            return schemeNames.map { XcodeScheme(name: $0, workspaceURL: workspaceURL) }
-        case .implicitWorkspace:
-            // Single projects don't have schemes in our model
-            return []
-        }
-    }
-}
-
-extension XcodeProjectManager {
     /// Load buildSettingsForIndex for source file discovery
     private func loadBuildSettingsForIndex(
+        rootURL: URL,
         targets: [XcodeTarget],
         settingsLoader: XcodeSettingsLoader,
         derivedDataPath: URL
@@ -416,6 +405,7 @@ extension XcodeProjectManager {
             for (projectURL, targets) in groupedTargets {
                 taskGroup.addTask {
                     let buildSettingForProject = try await settingsLoader.loadBuildSettingsForIndex(
+                        rootURL: rootURL,
                         projectURL: projectURL,
                         targets: targets.map(\.name),
                         derivedDataPath: derivedDataPath
