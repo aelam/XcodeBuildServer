@@ -225,7 +225,6 @@ private extension BuiltTargetSourcesRequest {
         projectRoot: URL
     ) -> SourceItem? {
         logger.debug("createSourceItem called for: \(filePath)")
-        logger.debug("fileInfo.languageDialect: \(String(describing: fileInfo.languageDialect))")
 
         let fileURL: URL = if filePath.hasPrefix("/") {
             URL(fileURLWithPath: filePath)
@@ -241,22 +240,14 @@ private extension BuiltTargetSourcesRequest {
         // Determine if the file is generated
         let generated = filePath.contains("DerivedData") ||
             filePath.contains("Build/") ||
+            filePath.contains("build/") ||
             filePath.hasSuffix(".generated.swift")
 
         // Determine language based on file type
-        let language: Language? = switch fileInfo.languageDialect {
-        case .swift:
-            .swift
-        case .objc:
-            .objective_c
-        case .interfaceBuilder:
-            nil // Interface Builder files might not have a specific BSP language
-        case .other:
-            detectLanguageFromExtension(fileURL.pathExtension)
-        case .none:
-            // If languageDialect is nil, try to detect from file extension
-            detectLanguageFromExtension(fileURL.pathExtension)
-        }
+        let language: Language? = Language(
+            xcodeLanguageDialect: fileInfo.languageDialect,
+            fileExtension: fileURL.pathExtension
+        )
 
         logger.debug("Detected language: \(String(describing: language)) for file: \(filePath)")
 
@@ -275,27 +266,7 @@ private extension BuiltTargetSourcesRequest {
             data: sourceKitData.encodeToLSPAny()
         )
 
-        logger.debug("Successfully created SourceItem for: \(filePath)")
         return sourceItem
-    }
-
-    func detectLanguageFromExtension(_ ext: String) -> Language? {
-        switch ext.lowercased() {
-        case "swift":
-            .swift
-        case "c":
-            .c
-        case "cpp", "cc", "cxx", "c++":
-            .cpp
-        case "m":
-            .objective_c
-        case "mm":
-            .objective_cpp
-        case "h", "hpp", "hxx", "h++":
-            .c // Could be C or C++, default to C
-        default:
-            nil
-        }
     }
 
     func determineSourceKind(fileURL: URL, generated: Bool) -> SourceKitSourceItemKind {

@@ -423,7 +423,6 @@ extension XcodeProjectManager {
                     var targetBuildSettings: XcodeBuildSettingsForIndex = [:]
                     for (targetName, settings) in buildSettingForProject {
                         let targetIdentifier = "xcode://" + projectURL.appendingPathComponent(targetName).path
-                        logger.debug("Updating build settings for target: \(targetIdentifier)")
                         targetBuildSettings[targetIdentifier] = settings
                     }
                     return targetBuildSettings

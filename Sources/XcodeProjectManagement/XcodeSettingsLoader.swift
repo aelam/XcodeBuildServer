@@ -35,8 +35,12 @@ public struct XcodeBuildSettings: Codable, Sendable {
 }
 
 public enum XcodeLanguageDialect: String, Codable, Sendable {
+    case c = "Xcode.SourceCodeLanguage.C"
+    case cpp = "Xcode.SourceCodeLanguage.C++"
     case swift = "Xcode.SourceCodeLanguage.Swift"
     case objc = "Xcode.SourceCodeLanguage.Objective-C"
+    case objcCpp = "Xcode.SourceCodeLanguage.Objective-C-Plus-Plus"
+    case metal = "Xcode.SourceCodeLanguage.Metal"
     case interfaceBuilder = "Xcode.SourceCodeLanguage.InterfaceBuilder"
     case other
 
@@ -45,10 +49,18 @@ public enum XcodeLanguageDialect: String, Codable, Sendable {
         let stringValue = try container.decode(String.self)
 
         switch stringValue {
+        case "Xcode.SourceCodeLanguage.C":
+            self = .c
+        case "Xcode.SourceCodeLanguage.C++":
+            self = .cpp
         case "Xcode.SourceCodeLanguage.Swift":
             self = .swift
         case "Xcode.SourceCodeLanguage.Objective-C":
             self = .objc
+        case "Xcode.SourceCodeLanguage.Objective-C-Plus-Plus":
+            self = .objcCpp
+        case "Xcode.SourceCodeLanguage.Metal":
+            self = .metal
         case "Xcode.SourceCodeLanguage.InterfaceBuilder":
             self = .interfaceBuilder
         default:
