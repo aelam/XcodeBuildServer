@@ -34,7 +34,7 @@ struct XcodeBuildCommandBuilderTests {
     func buildSettingsCommand() {
         let builder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
         let command = builder.buildCommand(
-            target: "TestTarget",
+            targets: ["TestTarget"],
             configuration: "Debug",
             options: XcodeBuildOptions.buildSettingsJSON
         )

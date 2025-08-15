@@ -231,89 +231,6 @@ public actor XcodeProjectManager {
         toolchain
     }
 
-    /// Load build settings from all projects in an explicit workspace
-    private func loadBuildSettingsFromWorkspace(
-        workspaceURL: URL,
-        derivedDataPath: URL
-    ) async throws -> XcodeBuildSettingsForIndex {
-        var mergedBuildSettings: XcodeBuildSettingsForIndex = [:]
-
-        // Get project URLs from workspace using XcodeProj
-        let projectURLs = getProjectURLsFromWorkspace(workspaceURL: workspaceURL)
-
-        // For each project, load all its targets
-        for projectURL in projectURLs {
-            do {
-                let projectBuildSettings = try await loadBuildSettingsFromProject(
-                    projectURL: projectURL,
-                    derivedDataPath: derivedDataPath
-                )
-
-                // Merge into the main buildSettings
-                for (key, value) in projectBuildSettings {
-                    mergedBuildSettings[key] = value
-                }
-
-            } catch {
-                logger.error("Failed to load build settings from project \(projectURL.path): \(error)")
-                // Continue with other projects
-            }
-        }
-
-        return mergedBuildSettings
-    }
-
-    /// Load build settings from a single project by listing all its targets
-    private func loadBuildSettingsFromProject(
-        projectURL: URL,
-        derivedDataPath: URL
-    ) async throws -> XcodeBuildSettingsForIndex {
-        var projectBuildSettings: XcodeBuildSettingsForIndex = [:]
-
-        // Create project-specific settings loader
-        let projectIdentifier = XcodeProjectIdentifier(
-            rootURL: projectURL.deletingLastPathComponent(),
-            projectLocation: .implicitWorkspace(projectURL: projectURL, workspaceURL: projectURL)
-        )
-        let commandBuilder = XcodeBuildCommandBuilder(projectIdentifier: projectIdentifier)
-        let projectSettingsLoader = XcodeSettingsLoader(commandBuilder: commandBuilder, toolchain: toolchain)
-
-        // Get list of all targets using XcodeProj
-        let targetNames: [String]
-        do {
-            targetNames = try loadTargetsFromXcodeProj(projectPath: projectURL)
-        } catch {
-            logger.error("Failed to load targets from project \(projectURL.path): \(error)")
-            return [:]
-        }
-
-        // Load build settings for each target
-        for targetName in targetNames {
-            do {
-                let targetBuildSettings = try await projectSettingsLoader.loadBuildSettingsForIndex(
-                    projectURL: projectURL,
-                    target: targetName,
-                    derivedDataPath: derivedDataPath
-                )
-
-                // Use project path + target name as key
-                let targetKey = "\(projectURL.path)/\(targetName)"
-
-                // Merge the target's build settings
-                for (_, fileInfos) in targetBuildSettings {
-                    projectBuildSettings[targetKey] = fileInfos
-                    break // We only expect one entry per target
-                }
-
-            } catch {
-                logger.error("Failed to load build settings for target '\(targetName)'" +
-                    "in project \(projectURL.path): \(error)")
-            }
-        }
-
-        return projectBuildSettings
-    }
-
     /// Load actual targets, handling both workspace and project cases
     private func loadActualTargets(
         projectLocation: XcodeProjectLocation
@@ -493,16 +410,19 @@ extension XcodeProjectManager {
         derivedDataPath: URL
     ) async throws -> XcodeBuildSettingsForIndex {
         try await withThrowingTaskGroup(of: XcodeBuildSettingsForIndex.self) { taskGroup in
-            for target in targets {
+            // group targets under same project
+            let groupedTargets = Dictionary(grouping: targets) { $0.projectURL }
+
+            for (projectURL, targets) in groupedTargets {
                 taskGroup.addTask {
                     let buildSettingForProject = try await settingsLoader.loadBuildSettingsForIndex(
-                        projectURL: target.projectURL,
-                        target: target.name,
+                        projectURL: projectURL,
+                        targets: targets.map(\.name),
                         derivedDataPath: derivedDataPath
                     )
                     var targetBuildSettings: XcodeBuildSettingsForIndex = [:]
                     for (targetName, settings) in buildSettingForProject {
-                        let targetIdentifier = "xcode://" + target.projectURL.appendingPathComponent(targetName).path
+                        let targetIdentifier = "xcode://" + projectURL.appendingPathComponent(targetName).path
                         logger.debug("Updating build settings for target: \(targetIdentifier)")
                         targetBuildSettings[targetIdentifier] = settings
                     }

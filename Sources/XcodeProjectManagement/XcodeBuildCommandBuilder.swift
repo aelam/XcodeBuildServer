@@ -49,11 +49,11 @@ public enum XcodeBuildDestination: Sendable {
 }
 
 public enum XcodeProjectConfiguration: Sendable {
-    case project(projectURL: URL, target: String?, configuration: String?)
+    case project(projectURL: URL, targets: [String], configuration: String?)
     case workspace(workspaceURL: URL, scheme: String, configuration: String?)
 
-    public init(projectURL: URL, target: String? = nil, configuration: String? = nil) {
-        self = .project(projectURL: projectURL, target: target, configuration: configuration)
+    public init(projectURL: URL, targets: [String] = [], configuration: String? = nil) {
+        self = .project(projectURL: projectURL, targets: targets, configuration: configuration)
     }
 
     public init(workspaceURL: URL, scheme: String, configuration: String? = nil) {
@@ -131,10 +131,12 @@ public struct XcodeBuildCommandBuilder {
         var arguments: [String] = []
 
         switch project {
-        case let .project(projectURL, target, configuration):
+        case let .project(projectURL, targets, configuration):
             arguments.append(contentsOf: ["-project", projectURL.path])
-            if let target {
-                arguments.append(contentsOf: ["-target", target])
+            if !targets.isEmpty {
+                for target in targets {
+                    arguments.append(contentsOf: ["-target", target])
+                }
             }
             if let configuration {
                 arguments.append(contentsOf: ["-configuration", configuration])
@@ -170,7 +172,7 @@ public struct XcodeBuildCommandBuilder {
         projectURL: URL? = nil,
         action: XcodeBuildAction? = nil,
         scheme: String? = nil, // required for workspace project
-        target: String? = nil, // only work with non-workspace
+        targets: [String] = [], // only work with non-workspace
         configuration: String? = nil,
         destination: XcodeBuildDestination? = nil,
         options: XcodeBuildOptions = XcodeBuildOptions(),
@@ -182,7 +184,7 @@ public struct XcodeBuildCommandBuilder {
         if let projectURL {
             projectConfig = XcodeProjectConfiguration(
                 projectURL: projectURL,
-                target: target,
+                targets: targets,
                 configuration: configuration
             )
         } else if let workspaceURL, let scheme {
@@ -199,8 +201,11 @@ public struct XcodeBuildCommandBuilder {
             if let scheme {
                 arguments.append(contentsOf: ["-scheme", scheme])
             }
-            if let target {
-                arguments.append(contentsOf: ["-target", target])
+            if !targets.isEmpty {
+                // -target <target> -target <target>
+                for target in targets {
+                    arguments.append(contentsOf: ["-target", target])
+                }
             }
             if let configuration {
                 arguments.append(contentsOf: ["-configuration", configuration])
@@ -235,7 +240,7 @@ public struct XcodeBuildCommandBuilder {
         workspaceURL: URL?,
         projectURL: URL?,
         scheme: String?,
-        target: String?,
+        targets: [String] = [],
         destination: XcodeBuildDestination? = nil,
         forIndex: Bool = false,
         derivedDataPath: URL? = nil
@@ -245,7 +250,7 @@ public struct XcodeBuildCommandBuilder {
             workspaceURL: workspaceURL,
             projectURL: projectURL,
             scheme: scheme,
-            target: target,
+            targets: targets,
             destination: destination,
             options: options
         )
