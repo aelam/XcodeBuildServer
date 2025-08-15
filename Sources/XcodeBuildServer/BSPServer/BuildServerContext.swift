@@ -8,7 +8,6 @@ import Foundation
 import Logger
 import XcodeProjectManagement
 
-/// 加载状态枚举
 public enum BuildServerContextState: Sendable {
     case uninitialized
     case loaded(LoadedState)
@@ -123,7 +122,7 @@ public extension BuildServerContext {
     // MARK: - SourceKit Options Support
 
     func getCompileArguments(
-        target: BuildTargetIdentifier,
+        targetIdentifier: BuildTargetIdentifier,
         fileURI: String
     ) async throws -> [String] {
         let state = try loadedState
@@ -133,19 +132,12 @@ public extension BuildServerContext {
             return []
         }
 
-        // Extract scheme name from BuildTargetIdentifier
-        // Expected format: "xcode:///ProjectPath/TargetName"
-        guard let xcodeTargetIdentifier = extractXcodeTargetIdentifierForBuildSettingsFromBuildTarget(target) else {
-            logger.warning("Could not extract scheme from build target: \(target.uri)")
-            return []
-        }
-
         // Convert file URI to path
         let filePath = URL(string: fileURI)?.path ?? fileURI
 
         // Get file build settings from the index
-        guard let targetSettings = buildSettingsForIndex[xcodeTargetIdentifier] else {
-            logger.warning("No build settings found for scheme: \(xcodeTargetIdentifier)")
+        guard let targetSettings = buildSettingsForIndex[targetIdentifier.uri.stringValue] else {
+            logger.warning("No build settings found for scheme: \(targetIdentifier.uri.stringValue)")
             return []
         }
 
@@ -179,14 +171,5 @@ public extension BuildServerContext {
     func getWorkingDirectory() throws -> String? {
         let state = try loadedState
         return state.rootURL.path
-    }
-
-    func extractXcodeTargetIdentifierForBuildSettingsFromBuildTarget(_ target: BuildTargetIdentifier) -> String? {
-        // Parse URI like "xcode:///ProjectName/TargetName"
-        // get ProjectPath/TargetName
-        let uriString = target.uri.stringValue
-        guard uriString.hasPrefix("xcode://") else { return nil }
-        let targetPath = uriString.dropFirst("xcode://".count)
-        return String(targetPath)
     }
 }
