@@ -173,7 +173,7 @@ public actor XcodeSettingsLoader {
             workspaceURL: workspaceURL,
             projectURL: projectURL,
             scheme: scheme,
-            target: nil, // Don't specify target for workspace
+            targets: [],
             destination: destination,
             forIndex: false
         )
@@ -194,14 +194,14 @@ public actor XcodeSettingsLoader {
 
     public func loadBuildSettingsForIndex(
         projectURL: URL,
-        target: String? = nil,
+        targets: [String] = [],
         derivedDataPath: URL
     ) async throws -> XcodeBuildSettingsForIndex {
         let command = commandBuilder.buildSettingsCommand(
             workspaceURL: nil,
             projectURL: projectURL,
             scheme: nil,
-            target: target,
+            targets: targets,
             destination: nil, // No destination needed for index settings
             forIndex: true,
             derivedDataPath: derivedDataPath
@@ -278,7 +278,7 @@ public actor XcodeSettingsLoader {
             workspaceURL: workspaceURL,
             projectURL: nil,
             scheme: scheme,
-            target: nil, // Don't specify target for workspace
+            targets: [], // Don't specify target for workspace
             destination: destination,
             forIndex: false
         )
