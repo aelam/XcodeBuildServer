@@ -492,23 +492,30 @@ extension XcodeProjectManager {
         settingsLoader: XcodeSettingsLoader,
         derivedDataPath: URL
     ) async throws -> XcodeBuildSettingsForIndex {
-        var buildSettings: XcodeBuildSettingsForIndex = [:]
-        for target in targets {
-            let projectURL = target.projectURL
-
-            let buildSettingForProject = try await settingsLoader.loadBuildSettingsForIndex(
-                projectURL: projectURL,
-                target: target.name,
-                derivedDataPath: derivedDataPath
-            )
-            /// update key from targetName to `xcode://<projectURL>/<targetName>`
-            for (targetName, targetBuildSettings) in buildSettingForProject {
-                let targetIdentifier = "xcode://" + projectURL.appendingPathComponent(targetName).path
-                logger.debug("Updating build settings for target: \(targetIdentifier)")
-                buildSettings[targetIdentifier] = targetBuildSettings
+        try await withThrowingTaskGroup(of: XcodeBuildSettingsForIndex.self) { taskGroup in
+            for target in targets {
+                taskGroup.addTask {
+                    let buildSettingForProject = try await settingsLoader.loadBuildSettingsForIndex(
+                        projectURL: target.projectURL,
+                        target: target.name,
+                        derivedDataPath: derivedDataPath
+                    )
+                    var targetBuildSettings: XcodeBuildSettingsForIndex = [:]
+                    for (targetName, settings) in buildSettingForProject {
+                        let targetIdentifier = "xcode://" + target.projectURL.appendingPathComponent(targetName).path
+                        logger.debug("Updating build settings for target: \(targetIdentifier)")
+                        targetBuildSettings[targetIdentifier] = settings
+                    }
+                    return targetBuildSettings
+                }
             }
+
+            var buildSettings: XcodeBuildSettingsForIndex = [:]
+            for try await targetSettings in taskGroup {
+                buildSettings.merge(targetSettings) { _, new in new }
+            }
+            return buildSettings
         }
-        return buildSettings
     }
 }
 

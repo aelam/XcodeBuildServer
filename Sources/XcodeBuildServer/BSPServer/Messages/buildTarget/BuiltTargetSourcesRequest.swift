@@ -64,12 +64,12 @@ struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
     }
 
     private func buildSourcesItem(
-        for targetId: BuildTargetIdentifier,
+        for targetIdentifier: BuildTargetIdentifier,
         context: BuildServerContext
     ) async -> SourcesItem {
         do {
             // 异步并行处理目标解析和项目信息获取
-            let targetInfo = try self.parseTargetIdentifier(targetId.uri.stringValue)
+            let targetInfo = try self.parseTargetIdentifier(targetIdentifier.uri.stringValue)
             let projectInfo = try await context.getProjectBasicInfo()
 
             logger
@@ -78,28 +78,28 @@ struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
 
             // Build sources directly from buildSettingsForIndex
             return await buildSourcesItemFromIndex(
-                targetId: targetId,
+                targetIdentifier: targetIdentifier,
                 targetName: targetInfo.targetName,
                 projectInfo: projectInfo
             )
         } catch {
             logger.error("Error in buildSourcesItem: \(error)")
-            return createEmptySourcesItem(for: targetId)
+            return createEmptySourcesItem(for: targetIdentifier)
         }
     }
 
     private func buildSourcesItemFromIndex(
-        targetId: BuildTargetIdentifier,
+        targetIdentifier: BuildTargetIdentifier,
         targetName: String,
         projectInfo: XcodeProjectInfo
     ) async -> SourcesItem {
         // 从target URI中提取blueprintIdentifier用于查找buildSettingsForIndex
-        let targetURI = targetId.uri.stringValue
+        let targetURI = targetIdentifier.uri.stringValue
         logger.debug("Building sources for target URI: \(targetURI)")
 
         // 异步并行处理URI转换和源文件构建
         async let sourceItems = buildSourceItemsFromIndexSettings(
-            targetURI: targetURI,
+            targetIdentifierValue: targetURI,
             targetName: targetName,
             projectInfo: projectInfo
         )
@@ -117,7 +117,7 @@ struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
             )
 
         return SourcesItem(
-            target: targetId,
+            target: targetIdentifier,
             sources: items,
             roots: roots
         )
@@ -162,7 +162,7 @@ private extension BuiltTargetSourcesRequest {
     }
 
     func buildSourceItemsFromIndexSettings(
-        targetURI: String,
+        targetIdentifierValue: String,
         targetName: String,
         projectInfo: XcodeProjectInfo
     ) -> [SourceItem] {
@@ -173,15 +173,15 @@ private extension BuiltTargetSourcesRequest {
         }
 
         logger.debug("buildSettingsForIndex has \(indexSettings.count) targets: \(Array(indexSettings.keys))")
-        logger.debug("Looking for target URI: '\(targetURI)', targetName: '\(targetName)'")
+        logger.debug("Looking for targetIdentifier: '\(targetIdentifierValue)', targetName: '\(targetName)'")
 
         var targetFiles: [String: XcodeFileBuildSettingInfo]?
 
         // 尝试多种查找策略：
-        // 1. 直接使用targetName（向后兼容）
-        if let files = indexSettings[targetName] {
+        // 1. 直接使用targetIdentifier（向后兼容）
+        if let files = indexSettings[targetIdentifierValue] {
             targetFiles = files
-            logger.debug("Found target using targetName: '\(targetName)'")
+            logger.debug("Found target using targetIdentifier: '\(targetIdentifierValue)'")
         } else {
             // 2. 尝试查找包含targetName的键（处理blueprintIdentifier格式）
             for (key, files) in indexSettings where key.contains(targetName) {
@@ -194,7 +194,7 @@ private extension BuiltTargetSourcesRequest {
 
         // 3. 如果还没找到，打印所有可用的键帮助调试
         if targetFiles == nil {
-            logger.warning("No files found for target '\(targetName)' with URI '\(targetURI)'")
+            logger.warning("No files found for target '\(targetName)' with identifier '\(targetIdentifierValue)'")
             logger.debug("Available keys in buildSettingsForIndex: \(Array(indexSettings.keys))")
             return []
         }
