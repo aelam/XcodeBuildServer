@@ -55,12 +55,12 @@ let settingsManager = XcodeSettingsManager(commandBuilder: commandBuilder)
 // Load build settings
 try await settingsManager.loadBuildSettings()
 try await settingsManager.loadBuildSettingsForIndex()
-try await settingsManager.loadIndexingPaths(scheme: "MyScheme")
+try await settingsManager.loadIndexingPaths(target: "MyTarget")
 
 // Get compile arguments for a file
 let compileArgs = settingsManager.getCompileArguments(
+    target: "MyTarget",
     fileURI: "file:///path/to/file.swift",
-    scheme: "MyScheme"
 )
 ```
 

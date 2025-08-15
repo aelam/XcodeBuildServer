@@ -24,7 +24,6 @@ struct XcodeProjectManagerTests {
         let project = try await projectManager.resolveProjectInfo()
 
         #expect(project.rootURL == projectFolder)
-        #expect(!project.schemeInfoList.isEmpty)
 
         switch project.projectLocation {
         case let .explicitWorkspace(url):
@@ -32,6 +31,8 @@ struct XcodeProjectManagerTests {
         case .implicitWorkspace:
             Issue.record("Expected explicit workspace, got implicit project workspace")
         }
+        #expect(project.buildSettingsForIndex?.count == 3)
+        #expect(project.targets.count == 3)
     }
 
     @Test
@@ -46,53 +47,16 @@ struct XcodeProjectManagerTests {
             locator: XcodeProjectLocator()
         )
         try await projectManager.initialize()
-        let project = try await projectManager.resolveProjectInfo()
+        let projectInfo = try await projectManager.resolveProjectInfo()
 
-        #expect(project.rootURL == projectFolder)
-        #expect(!project.schemeInfoList.isEmpty)
+        #expect(projectInfo.rootURL == projectFolder)
 
-        switch project.projectLocation {
+        switch projectInfo.projectLocation {
         case .explicitWorkspace:
             Issue.record("Expected implicit project workspace, got explicit workspace")
         case let .implicitWorkspace(_, url):
             #expect(url.path.contains("Hello.xcodeproj/project.xcworkspace"))
         }
-    }
-
-    @Test
-    func getAvailableSchemes() async throws {
-        let projectFolder = Bundle.module.resourceURL!
-            .appendingPathComponent("DemoProjects")
-            .appendingPathComponent("HelloProject")
-
-        let projectManager = XcodeProjectManager(
-            rootURL: projectFolder,
-            toolchain: XcodeToolchain(),
-            locator: XcodeProjectLocator()
-        )
-        try await projectManager.initialize()
-        let basicInfo = try await projectManager.resolveProjectInfo()
-        let schemeNames = basicInfo.schemeInfoList.map(\.name)
-        #expect(!schemeNames.isEmpty)
-        #expect(schemeNames.contains("Hello"))
-    }
-
-    @Test
-    func getAvailableConfigurations() async throws {
-        let projectFolder = Bundle.module.resourceURL!
-            .appendingPathComponent("DemoProjects")
-            .appendingPathComponent("HelloProject")
-
-        let projectManager = XcodeProjectManager(
-            rootURL: projectFolder,
-            toolchain: XcodeToolchain(),
-            locator: XcodeProjectLocator()
-        )
-        try await projectManager.initialize()
-        let basicInfo = try await projectManager.resolveProjectInfo()
-
-        // Note: Configuration testing would require actual xcodebuild execution
-        // For now, we'll just verify the project loaded successfully
-        #expect(!basicInfo.schemeInfoList.isEmpty)
+        #expect(projectInfo.buildSettingsForIndex?.count == 3)
     }
 }

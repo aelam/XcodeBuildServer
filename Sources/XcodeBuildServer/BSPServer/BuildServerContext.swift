@@ -134,7 +134,7 @@ public extension BuildServerContext {
         }
 
         // Extract scheme name from BuildTargetIdentifier
-        // Expected format: "xcode:///ProjectPath/TargetName"
+        // Expected format: "xcode:///ProjectName/SchemeName/TargetName"
         guard let targetScheme = extractSchemeFromBuildTarget(target) else {
             logger.warning("Could not extract scheme from build target: \(target.uri)")
             return []
@@ -150,30 +150,12 @@ public extension BuildServerContext {
         }
 
         guard let fileBuildSettings = targetSettings[filePath] else {
-            logger.warning("No specific build settings found for file: \(filePath)")
-            logger.debug("Available files in scheme '\(targetScheme)': \(Array(targetSettings.keys))")
-
-            // Instead of using first file, try to find a file with similar extension
-            let fileExtension = (filePath as NSString).pathExtension.lowercased()
-
-            // Look for files with same extension as fallback
-            let sameExtensionFiles = targetSettings.filter { key, _ in
-                let keyExtension = (key as NSString).pathExtension.lowercased()
-                return keyExtension == fileExtension
-            }
-
-            if let similarFileSettings = sameExtensionFiles.first?.value {
-                logger.debug("Using fallback build settings from similar file with extension .\(fileExtension)")
-                return enhanceCompilerArgumentsForSourceKit(similarFileSettings.swiftASTCommandArguments ?? [])
-            }
-
-            // Only use first file as absolute last resort
+            logger.debug("No specific build settings found for file: \(filePath)")
+            // Try to get the first available file's settings as fallback
             if let firstFileSettings = targetSettings.values.first {
-                logger.warning("Using fallback build settings from first available file (last resort)")
+                logger.debug("Using fallback build settings from first available file")
                 return enhanceCompilerArgumentsForSourceKit(firstFileSettings.swiftASTCommandArguments ?? [])
             }
-
-            logger.error("No fallback build settings available for scheme: \(targetScheme)")
             return []
         }
 
@@ -200,7 +182,7 @@ public extension BuildServerContext {
     }
 
     func extractSchemeFromBuildTarget(_ target: BuildTargetIdentifier) -> String? {
-        // Parse URI like "xcode:///ProjectPath/SchemeName/TargetName"
+        // Parse URI like "xcode:///ProjectName/SchemeName/TargetName"
         let uriString = target.uri.stringValue
         guard uriString.hasPrefix("xcode:///") else { return nil }
 

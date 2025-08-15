@@ -369,6 +369,11 @@ public actor XcodeProjectManager {
                 }
             }
 
+            logger
+                .debug(
+                    "--- Loaded \(allTargets.count) targets from workspace \(workspaceURL.path), \(allTargets.map(\.name).joined(separator: ", "))"
+                )
+
             return allTargets
         } catch {
             logger.error("Failed to parse workspace \(workspaceURL.path): \(error)")
@@ -525,8 +530,10 @@ public actor XcodeProjectManager {
 
             let buildSettingForProject = try await settingsLoader.loadBuildSettingsForIndex(
                 projectURL: projectURL,
+                target: target.name,
                 derivedDataPath: derivedDataPath
             )
+            // update key from targetName to <projectURL>/<targetName>
             for (targetName, targetBuildSettings) in buildSettingForProject {
                 let newKey = projectURL.appendingPathComponent(targetName).path
                 buildSettings[newKey] = targetBuildSettings
