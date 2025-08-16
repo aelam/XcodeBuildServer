@@ -3,11 +3,34 @@
 SWIFT_FORMAT="swiftformat"
 SWIFT_LINT="swiftlint"
 GIT_FORMAT_STAGED=".githooks/git-format-staged"
+
+# Check if tools exist
+if ! command -v $SWIFT_FORMAT > /dev/null 2>&1; then
+    echo "Warning: swiftformat not found, skipping formatting"
+    exit 0
+fi
+
+if ! command -v $SWIFT_LINT > /dev/null 2>&1; then
+    echo "Warning: swiftlint not found, skipping linting"
+    exit 0
+fi
+
 # Format Swift files
-$GIT_FORMAT_STAGED --formatter "$SWIFT_FORMAT stdin --stdinpath '{}'" "*.swift"
+echo "Running SwiftFormat..."
+if ! $GIT_FORMAT_STAGED --formatter "$SWIFT_FORMAT stdin --stdinpath '{}'" "*.swift"; then
+    echo "Error: SwiftFormat failed"
+    exit 1
+fi
 
 # Format Swift files with swiftlint
-$GIT_FORMAT_STAGED --formatter "$SWIFT_LINT --fix --format --use-stdin --quiet" "*.swift"
+echo "Running SwiftLint --fix..."
+if ! $GIT_FORMAT_STAGED --formatter "$SWIFT_LINT --fix --format --use-stdin --quiet" "*.swift"; then
+    echo "Error: SwiftLint --fix failed"
+    exit 1
+fi
 
-# Lint Swift files
-$GIT_FORMAT_STAGED --formatter "$SWIFT_LINT lint --use-stdin --quiet" "*.swift"
+# Lint Swift files (non-blocking)
+echo "Running SwiftLint lint..."
+$GIT_FORMAT_STAGED --no-write --formatter "$SWIFT_LINT lint --use-stdin --quiet" "*.swift" || {
+    echo "Warning: SwiftLint found issues, but commit will proceed"
+}

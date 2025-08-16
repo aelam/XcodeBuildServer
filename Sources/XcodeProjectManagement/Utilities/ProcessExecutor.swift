@@ -23,24 +23,10 @@ public struct ProcessExecutionResult: Sendable {
     }
 }
 
-public enum ProcessExecutorError: Error, LocalizedError {
-    case executableNotFound(String)
-    case processStartFailed(Error)
+public enum ProcessExecutorError: Error, LocalizedError, Equatable {
+    case processStartFailed(String) // System error message
     case invalidWorkingDirectory(String)
     case timeout(TimeInterval)
-
-    public var errorDescription: String? {
-        switch self {
-        case let .executableNotFound(path):
-            "Executable not found: \(path)"
-        case let .processStartFailed(error):
-            "Failed to start process: \(error.localizedDescription)"
-        case let .invalidWorkingDirectory(path):
-            "Invalid working directory: \(path)"
-        case let .timeout(duration):
-            "Process timed out after \(duration) seconds"
-        }
-    }
 }
 
 public actor ProcessExecutor {
@@ -82,10 +68,7 @@ public actor ProcessExecutor {
         do {
             try process.run()
         } catch {
-            if error.localizedDescription.contains("No such file") {
-                throw ProcessExecutorError.executableNotFound(executable)
-            }
-            throw ProcessExecutorError.processStartFailed(error)
+            throw ProcessExecutorError.processStartFailed(error.localizedDescription)
         }
 
         // Handle timeout if specified
@@ -147,7 +130,7 @@ extension ProcessExecutor {
         arguments: [String],
         workingDirectory: URL? = nil,
         xcodeInstallationPath: URL,
-        timeout: TimeInterval? = 60.0 // 增加到60秒超时，因为showBuildSettings可能需要更长时间
+        timeout: TimeInterval? = nil
     ) async throws -> ProcessExecutionResult {
         // Use the system xcodebuild (which might be managed by xcenv)
         // instead of forcing a specific path
@@ -169,7 +152,7 @@ extension ProcessExecutor {
             arguments: xcrunArgs,
             workingDirectory: workingDirectory,
             environment: environment,
-            timeout: timeout // 传入timeout参数
+            timeout: timeout
         )
     }
 

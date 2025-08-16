@@ -2,7 +2,8 @@
     "editor.defaultFormatter": "vknabel.vscode-swiftformat",
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
-        "source.fixAll": "always"
+        "source.fixAll": "always",
+        "source.fixAll.swiftlint": "always"
     },
     "files.exclude": {
         ".dist": true,
@@ -16,5 +17,13 @@
         "DerivedData": true
     },
     "explorer.excludeGitIgnore": true,
-    "sweetpad.build.xcodeWorkspacePath": ".swiftpm/xcode/package.xcworkspace"
+    "swiftformat.enable": true,
+    "swiftlint.enable": true,
+    "[swift]": {
+        "editor.defaultFormatter": "vknabel.vscode-swiftformat",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.fixAll.swiftlint": "always"
+        }
+    }
 }
