@@ -28,19 +28,6 @@ public enum ProcessExecutorError: Error, LocalizedError {
     case processStartFailed(Error)
     case invalidWorkingDirectory(String)
     case timeout(TimeInterval)
-
-    public var errorDescription: String? {
-        switch self {
-        case let .executableNotFound(path):
-            "Executable not found: \(path)"
-        case let .processStartFailed(error):
-            "Failed to start process: \(error.localizedDescription)"
-        case let .invalidWorkingDirectory(path):
-            "Invalid working directory: \(path)"
-        case let .timeout(duration):
-            "Process timed out after \(duration) seconds"
-        }
-    }
 }
 
 public actor ProcessExecutor {
