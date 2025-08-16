@@ -147,7 +147,7 @@ extension ProcessExecutor {
         arguments: [String],
         workingDirectory: URL? = nil,
         xcodeInstallationPath: URL,
-        timeout: TimeInterval? = nil // 增加到60秒超时，因为showBuildSettings可能需要更长时间
+        timeout: TimeInterval? = 60.0 // 增加到60秒超时，因为showBuildSettings可能需要更长时间
     ) async throws -> ProcessExecutionResult {
         // Use the system xcodebuild (which might be managed by xcenv)
         // instead of forcing a specific path
