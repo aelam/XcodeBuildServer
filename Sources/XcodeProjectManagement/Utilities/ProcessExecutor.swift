@@ -39,7 +39,10 @@ public actor ProcessExecutor {
         environment: [String: String]? = nil,
         timeout: TimeInterval? = nil
     ) async throws -> ProcessExecutionResult {
-        logger.debug("ProcessExecutor: \(executable) \(arguments.joined(separator: " "))")
+        logger.debug("ProcessExecutor: execute command \n\(executable) \(arguments.joined(separator: " "))")
+        if let workingDirectory {
+            logger.debug("ProcessExecutor: working directory: \(workingDirectory.path)")
+        }
 
         let process = Process()
         process.executableURL = URL(fileURLWithPath: executable)
@@ -71,14 +74,35 @@ public actor ProcessExecutor {
             throw ProcessExecutorError.processStartFailed(error.localizedDescription)
         }
 
+        let startTime = Date()
         // Handle timeout if specified
-        if let timeout {
-            return try await withTimeout(timeout) {
+        let result: ProcessExecutionResult = if let timeout {
+            try await withTimeout(timeout) {
                 try await self.readProcessOutput(process: process, outputPipe: outputPipe, errorPipe: errorPipe)
             }
         } else {
-            return try await readProcessOutput(process: process, outputPipe: outputPipe, errorPipe: errorPipe)
+            try await readProcessOutput(process: process, outputPipe: outputPipe, errorPipe: errorPipe)
         }
+
+        logger
+            .debug(
+                "ProcessExecutor: command completed \n"
+                    + "exit code: \(result.exitCode) , "
+                    + "duration: \(Date().timeIntervalSince(startTime)) , "
+                    + "length: \(result.output.count)"
+            )
+
+        logger
+            .debug("ProcessExecutor: output preview: \(String(result.output.prefix(min(20000, result.output.count))))")
+
+        if result.exitCode != 0 {
+            logger.error("ProcessExecutor: command failed with exit code \(result.exitCode)")
+            if let error = result.error {
+                logger.error("ProcessExecutor: error output: \(error)")
+            }
+        }
+
+        return result
     }
 
     private func readProcessOutput(
