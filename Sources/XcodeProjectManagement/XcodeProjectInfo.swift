@@ -1,6 +1,6 @@
 import Foundation
 
-public struct XcodeProjectInfo: Sendable {
+public struct XcodeProjectInfo: Sendable, Codable {
     public let rootURL: URL
     public let projectLocation: XcodeProjectLocation
     public let buildSettingsList: [XcodeBuildSettings]
@@ -9,7 +9,7 @@ public struct XcodeProjectInfo: Sendable {
     public let derivedDataPath: URL
     public let indexStoreURL: URL
     public let indexDatabaseURL: URL
-    public let buildSettingsForIndex: XcodeBuildSettingsForIndex?
+    public let buildSettingsForIndex: XcodeBuildSettingsForIndex
 
     public init(
         rootURL: URL,
@@ -20,7 +20,7 @@ public struct XcodeProjectInfo: Sendable {
         derivedDataPath: URL,
         indexStoreURL: URL,
         indexDatabaseURL: URL,
-        buildSettingsForIndex: XcodeBuildSettingsForIndex? = nil
+        buildSettingsForIndex: XcodeBuildSettingsForIndex
     ) {
         self.rootURL = rootURL
         self.projectLocation = projectLocation

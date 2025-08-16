@@ -1,4 +1,17 @@
 {
     "version": "2.0.0",
-    "tasks": []
+    "tasks": [
+        {
+            "label": "swift: Build Debug XcodeBuildServerCLI",
+            "type": "shell",
+            "command": "swift build -c debug",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$swiftc"
+            ]
+        },
+    ]
 }

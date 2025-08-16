@@ -9,7 +9,7 @@ import Logger
 import XcodeProj
 
 /// Target information with complete project context
-public struct XcodeTarget: Sendable, Hashable {
+public struct XcodeTarget: Sendable, Hashable, Codable {
     public let name: String
     public let projectURL: URL
     public let projectName: String
@@ -33,6 +33,10 @@ public struct XcodeTarget: Sendable, Hashable {
         self.isFromWorkspace = isFromWorkspace
         self.buildForTesting = buildForTesting
         self.buildForRunning = buildForRunning
+    }
+
+    public var debugDescription: String {
+        "XcodeTarget(name: \(name), projectURL: \(projectURL.path), isFromWorkspace: \(isFromWorkspace))"
     }
 }
 
@@ -144,15 +148,28 @@ public actor XcodeProjectManager {
             xcodeProjectReference: xcodeProjectReference
         )
         _ = await toolchain.getSelectedInstallation()
-        // Load containers for workspace projects to get actual targets
-        let actualTargets = try await loadActualTargets(
-            projectLocation: projectLocation
+
+        let schemeManager = XCSchemeManager()
+        let schemes = try schemeManager.listSchemes(
+            projectLocation: projectLocation,
+            includeUserSchemes: true
         )
 
+        let interestingSchemes = schemeManager.filterInterestingSchemes(
+            schemes,
+            filterOutTests: true,
+            filterOutPods: true
+        )
+
+        let firstScheme = interestingSchemes.first ?? schemes.first
+        guard let firstScheme else {
+            throw XcodeProjectError.noSchemesFound("No schemes found in project at \(rootURL.path)")
+        }
         // Load a build settings of any target to get DerivedData path
         let buildSettingsList = try await loadBuildSettings(
             rootURL: rootURL,
             projectLocation: projectLocation,
+            scheme: firstScheme,
             settingsLoader: settingsLoader
         )
 
@@ -161,6 +178,11 @@ public actor XcodeProjectManager {
             settingsLoader: settingsLoader,
             projectLocation: projectLocation,
             buildSettingsList: buildSettingsList
+        )
+
+        // Load containers for workspace projects to get actual targets
+        let actualTargets = try await loadActualTargets(
+            projectLocation: projectLocation
         )
 
         // Load buildSettingsForIndex for source file discovery
@@ -307,35 +329,31 @@ public actor XcodeProjectManager {
     private func loadBuildSettings(
         rootURL: URL,
         projectLocation: XcodeProjectLocation,
+        scheme: XcodeScheme,
+        configuration: String = "Debug",
         settingsLoader: XcodeSettingsLoader
     ) async throws -> [XcodeBuildSettings] {
         switch projectLocation {
         case .explicitWorkspace:
-            // For workspace, we need to use a scheme, not a target
-            // Try to get schemes from workspace and use the first one
-            let schemes = try await getWorkspaceSchemes(projectLocation: projectLocation)
-            if let firstScheme = schemes.first {
-                return try await settingsLoader.loadBuildSettings(
-                    rootURL: rootURL,
-                    project: .init(workspaceURL: projectLocation.workspaceURL, scheme: firstScheme)
-                )
-            } else {
-                logger.warning("No schemes found for workspace, cannot load build settings")
-            }
-        case let .implicitWorkspace(projectURL: projectURL, _):
-            // For project, we can use target directly
-            return try await settingsLoader.loadBuildSettings(
+            try await settingsLoader.loadBuildSettings(
                 rootURL: rootURL,
-                project: .init(projectURL: projectURL)
+                project: .workspace(
+                    workspaceURL: projectLocation.workspaceURL,
+                    scheme: scheme.name,
+                    configuration: configuration
+                ),
             )
-        case let .standaloneProject(projectURL):
-            // For standalone project, we can use target directly
-            return try await settingsLoader.loadBuildSettings(
+        case let .implicitWorkspace(projectURL: projectURL, _), let .standaloneProject(projectURL):
+            // For project, we can use target directly
+            try await settingsLoader.loadBuildSettings(
                 rootURL: rootURL,
-                project: .init(projectURL: projectURL)
+                project: .project(
+                    projectURL: projectURL,
+                    buildMode: .scheme(scheme.name),
+                    configuration: configuration
+                )
             )
         }
-        return []
     }
 }
 

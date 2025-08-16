@@ -12,6 +12,7 @@ public enum XcodeProjectError: Error, CustomStringConvertible, Equatable {
     case toolchainError(String)
     case indexPathsError(String)
     case dataParsingError(String)
+    case noSchemesFound(String)
 
     public var description: String {
         switch self {
@@ -38,6 +39,8 @@ public enum XcodeProjectError: Error, CustomStringConvertible, Equatable {
             "Index paths error: \(message)"
         case let .dataParsingError(message):
             "Data parsing error: \(message)"
+        case let .noSchemesFound(message):
+            "No schemes found: \(message)"
         }
     }
 }
@@ -64,7 +67,7 @@ public struct XcodeProjectReference: Codable, Sendable {
     }
 }
 
-public enum XcodeProjectLocation: Equatable, Sendable {
+public enum XcodeProjectLocation: Equatable, Sendable, Codable {
     case explicitWorkspace(URL) // User provided or auto-detected .xcworkspace
     case implicitWorkspace(
         projectURL: URL,

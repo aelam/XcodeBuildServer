@@ -34,15 +34,49 @@ public struct XcodeBuildSettings: Codable, Sendable {
     }
 }
 
-public enum XcodeLanguageDialect: String, Codable, Sendable {
-    case c = "Xcode.SourceCodeLanguage.C"
-    case cpp = "Xcode.SourceCodeLanguage.C-Plus-Plus"
-    case swift = "Xcode.SourceCodeLanguage.Swift"
-    case objc = "Xcode.SourceCodeLanguage.Objective-C"
-    case objcCpp = "Xcode.SourceCodeLanguage.Objective-C-Plus-Plus"
-    case metal = "Xcode.SourceCodeLanguage.Metal"
-    case interfaceBuilder = "Xcode.SourceCodeLanguage.InterfaceBuilder"
-    case other
+public enum XcodeLanguageDialect: Codable, Sendable {
+    public var rawValue: String {
+        switch self {
+        case .c: "Xcode.SourceCodeLanguage.C"
+        case .cpp: "Xcode.SourceCodeLanguage.C-Plus-Plus"
+        case .swift: "Xcode.SourceCodeLanguage.Swift"
+        case .objc: "Xcode.SourceCodeLanguage.Objective-C"
+        case .objcCpp: "Xcode.SourceCodeLanguage.Objective-C-Plus-Plus"
+        case .metal: "Xcode.SourceCodeLanguage.Metal"
+        case .interfaceBuilder: "Xcode.SourceCodeLanguage.InterfaceBuilder"
+        case let .other(languageName): languageName
+        }
+    }
+
+    case c
+    case cpp
+    case swift
+    case objc
+    case objcCpp
+    case metal
+    case interfaceBuilder
+    case other(languageName: String)
+
+    public init?(rawValue: String) {
+        switch rawValue {
+        case "Xcode.SourceCodeLanguage.C":
+            self = .c
+        case "Xcode.SourceCodeLanguage.C-Plus-Plus":
+            self = .cpp
+        case "Xcode.SourceCodeLanguage.Swift":
+            self = .swift
+        case "Xcode.SourceCodeLanguage.Objective-C":
+            self = .objc
+        case "Xcode.SourceCodeLanguage.Objective-C-Plus-Plus":
+            self = .objcCpp
+        case "Xcode.SourceCodeLanguage.Metal":
+            self = .metal
+        case "Xcode.SourceCodeLanguage.InterfaceBuilder":
+            self = .interfaceBuilder
+        default:
+            self = .other(languageName: rawValue)
+        }
+    }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
@@ -65,7 +99,7 @@ public enum XcodeLanguageDialect: String, Codable, Sendable {
             self = .interfaceBuilder
         default:
             logger.debug("Unknown language dialect: '\(stringValue)', using .other")
-            self = .other
+            self = .other(languageName: stringValue)
         }
     }
 
@@ -185,7 +219,6 @@ public actor XcodeSettingsLoader {
             project: project,
             options: XcodeBuildOptions.buildSettingsJSON()
         )
-        logger.debug("loadBuildSettings command: \(command.joined(separator: " "))")
         let output = try await runXcodeBuild(arguments: command, workingDirectory: rootURL)
         guard let jsonString = output, !jsonString.isEmpty else {
             throw XcodeProjectError.invalidConfig("Failed to load build settings")
@@ -301,7 +334,7 @@ public actor XcodeSettingsLoader {
         workingDirectory: URL
     ) async throws -> String? {
         // Set working directory to project root for better relative path resolution
-        logger.debug("runXcodeBuild: about to execute command with arguments: \(arguments.joined(separator: " "))")
+        logger.debug("runXcodeBuild: arguments: \(arguments.joined(separator: " "))")
         logger.debug("runXcodeBuild: working directory: \(workingDirectory.path)")
         let result = try await toolchain.executeXcodeBuild(
             arguments: arguments,
@@ -310,7 +343,7 @@ public actor XcodeSettingsLoader {
         let exitCode = result.exitCode
         let output = result.output
         let error = result.error
-        logger.debug("runXcodeBuild: command completed with exit code: \(result.exitCode)")
+        logger.debug("runXcodeBuild: completed exit code: \(result.exitCode)")
         logger.debug("runXcodeBuild: output length: \(output.count)")
 
         if !output.isEmpty {

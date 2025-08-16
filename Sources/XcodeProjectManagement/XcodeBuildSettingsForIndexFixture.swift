@@ -15,10 +15,11 @@ enum XcodeBuildSettingsForIndexFixture {
         projectBuildSettings: ProjectBuildSettings
     ) -> XcodeBuildSettingsForIndex {
         // Fix the build settings by ensuring all paths are absolute
-        var fixedSettings = buildSettingsForIndex
-        for (key, value) in fixedSettings {
-            // fixedSettings[key] = value.absolutePath
-        }
-        return fixedSettings
+        // var fixedSettings = buildSettingsForIndex
+        // for (key, value) in fixedSettings {
+        //     fixedSettings[key] = value.absolutePath
+        // }
+        // fixedSettings
+        buildSettingsForIndex
     }
 }

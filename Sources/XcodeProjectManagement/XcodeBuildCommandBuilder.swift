@@ -14,14 +14,6 @@ public enum XcodeProjectConfiguration: Sendable {
 
     case project(projectURL: URL, buildMode: ProjectBuildMode, configuration: String?)
     case workspace(workspaceURL: URL, scheme: String?, configuration: String?)
-
-    public init(projectURL: URL, targets: [String] = [], configuration: String? = nil) {
-        self = .project(projectURL: projectURL, buildMode: .targets(targets), configuration: configuration)
-    }
-
-    public init(workspaceURL: URL, scheme: String? = nil, configuration: String? = nil) {
-        self = .workspace(workspaceURL: workspaceURL, scheme: scheme, configuration: configuration)
-    }
 }
 
 public enum XcodeBuildDestination: Sendable {

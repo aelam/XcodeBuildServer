@@ -76,6 +76,17 @@ struct XCSchemeManager {
         return deduped.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
 
+    func filterInterestingSchemes(
+        _ schemes: [XcodeScheme],
+        filterOutTests: Bool = true,
+        filterOutPods: Bool = true
+    ) -> [XcodeScheme] {
+        schemes.filter { scheme in
+            (!filterOutTests || !scheme.name.contains("Tests")) &&
+                (!filterOutPods || !scheme.container.contains("Pods"))
+        }
+    }
+
     private func loadSchemes(
         at containerDir: Path,
         containerName: String,
@@ -97,7 +108,7 @@ struct XCSchemeManager {
         if includeUserSchemes {
             let usersDir = containerDir + "xcuserdata"
             if usersDir.exists {
-                for file in (usersDir.glob("*.xcuserdatad/xcschemes/*.xcscheme")) ?? [] {
+                for file in usersDir.glob("*.xcuserdatad/xcschemes/*.xcscheme") {
                     if let scheme = try? XCScheme(path: file) {
                         schemes.append(.init(name: scheme.name, path: file.url, container: containerName))
                     }

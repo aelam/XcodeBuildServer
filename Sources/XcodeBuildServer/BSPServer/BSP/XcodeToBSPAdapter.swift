@@ -26,11 +26,7 @@ public actor XcodeToBSPAdapter {
         var buildTargets: [BuildTarget] = []
 
         // Create BuildTargets based on what's available in buildSettingsForIndex
-        guard let buildSettingsForIndex = xcodeProjectInfo.buildSettingsForIndex else {
-            logger.warning("No buildSettingsForIndex available, cannot create build targets")
-            return []
-        }
-
+        let buildSettingsForIndex = xcodeProjectInfo.buildSettingsForIndex
         logger.debug("Creating BuildTargets from \(buildSettingsForIndex.count) targets in buildSettingsForIndex")
 
         for (targetIdentifier, _) in buildSettingsForIndex {

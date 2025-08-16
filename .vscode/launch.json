@@ -4,6 +4,16 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "Build Debug XcodeProjectCLI",
+            "program": "${workspaceFolder:XcodeBuildServer}/.build/debug/XcodeProjectCLI",
+            "args": [
+                "/Users/wang.lun/Desktop/HelloWorkspace"
+            ],
+            "preLaunchTask": "swift: Build Debug XcodeBuildServerCLI"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Build Debug XcodeBuildServerCLI",
             "program": "${workspaceFolder:XcodeBuildServer}/.build/debug/XcodeBuildServerCLI",
             "preLaunchTask": "swift: Build Debug XcodeBuildServerCLI"
