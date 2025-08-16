@@ -221,7 +221,7 @@ public struct XcodeBuildCommandBuilder {
 
     private func destinationArguments(from destination: XcodeBuildDestination?) -> [String] {
         guard let destination else { return [] }
-        return ["-destination", "\'\(destination.destinationString)'"]
+        return ["-destination", "\(destination.destinationString)"]
     }
 
     private func configurationArguments(from configuration: String?) -> [String] {

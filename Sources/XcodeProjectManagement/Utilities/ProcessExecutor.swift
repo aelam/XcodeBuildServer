@@ -39,10 +39,7 @@ public actor ProcessExecutor {
         environment: [String: String]? = nil,
         timeout: TimeInterval? = nil
     ) async throws -> ProcessExecutionResult {
-        logger.debug("ProcessExecutor: execute command \n\(executable) \(arguments.joined(separator: " "))")
-        if let workingDirectory {
-            logger.debug("ProcessExecutor: working directory: \(workingDirectory.path)")
-        }
+        logger.debug("ProcessExecutor: \(executable) \(arguments.joined(separator: " "))")
 
         let process = Process()
         process.executableURL = URL(fileURLWithPath: executable)
