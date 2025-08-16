@@ -39,7 +39,7 @@ public actor ProcessExecutor {
         environment: [String: String]? = nil,
         timeout: TimeInterval? = nil
     ) async throws -> ProcessExecutionResult {
-        logger.debug("ProcessExecutor: \(executable) \(arguments.joined(separator: " "))")
+        logger.debug("\(executable) \(arguments.joined(separator: " "))")
 
         let process = Process()
         process.executableURL = URL(fileURLWithPath: executable)
@@ -83,19 +83,21 @@ public actor ProcessExecutor {
 
         logger
             .debug(
-                "ProcessExecutor: command completed \n"
+                "Command completed \n"
                     + "exit code: \(result.exitCode) , "
                     + "duration: \(Date().timeIntervalSince(startTime)) , "
                     + "length: \(result.output.count)"
             )
 
         logger
-            .debug("ProcessExecutor: output preview: \(String(result.output.prefix(min(20000, result.output.count))))")
+            .debug(
+                "Output preview:\n \(String(result.output.prefix(min(200_000, result.output.count))))"
+            )
 
         if result.exitCode != 0 {
-            logger.error("ProcessExecutor: command failed with exit code \(result.exitCode)")
+            logger.error("Command failed with exit code \(result.exitCode)")
             if let error = result.error {
-                logger.error("ProcessExecutor: error output: \(error)")
+                logger.error("Error output: \(error)")
             }
         }
 

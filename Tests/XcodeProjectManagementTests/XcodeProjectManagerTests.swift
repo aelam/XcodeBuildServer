@@ -38,7 +38,7 @@ struct XcodeProjectManagerTests {
         case .standaloneProject:
             Issue.record("Expected explicit workspace, got standalone project")
         }
-        #expect(project.buildSettingsForIndex?.count == 3)
+        #expect(project.buildSettingsForIndex.count == 3)
         #expect(project.targets.count == 3)
     }
 
@@ -71,6 +71,6 @@ struct XcodeProjectManagerTests {
         case .standaloneProject:
             Issue.record("Expected implicit project workspace, got standalone project")
         }
-        #expect(projectInfo.buildSettingsForIndex?.count == 3)
+        #expect(projectInfo.buildSettingsForIndex.count == 3)
     }
 }
