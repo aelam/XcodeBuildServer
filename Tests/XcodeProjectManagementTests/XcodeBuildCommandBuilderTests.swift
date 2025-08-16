@@ -161,7 +161,10 @@ struct XcodeBuildCommandBuilderTests {
     ))
     func quietBuildCommand(testCase: TestCase, derivedCase: (path: String?, expectedArgs: [String])) {
         let builder = XcodeBuildCommandBuilder()
-        let options = XcodeBuildOptions(quiet: true, derivedDataPath: derivedCase.path)
+        let options = XcodeBuildOptions(
+            command: .list,
+            flags: XcodeBuildFlags.quiet
+        )
         let command = builder.buildCommand(
             project: testCase.config,
             options: options

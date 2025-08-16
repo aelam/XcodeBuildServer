@@ -181,8 +181,6 @@ public actor XcodeSettingsLoader {
     ) async throws -> [XcodeBuildSettings] {
         let command = commandBuilder.buildCommand(
             project: project,
-            action: nil,
-            destination: nil,
             options: XcodeBuildOptions.buildSettingsJSON()
         )
         logger.debug("loadBuildSettings command: \(command.joined(separator: " "))")
@@ -214,7 +212,6 @@ public actor XcodeSettingsLoader {
                 buildMode: .targets(targets),
                 configuration: nil
             ),
-            destination: nil, // No destination needed for index settings
             options: XcodeBuildOptions.buildSettingsForIndexJSON(derivedDataPath: derivedDataPath.path)
         )
 
