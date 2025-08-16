@@ -6,14 +6,22 @@
 
 import Foundation
 
-public enum XcodeBuildAction: String, CaseIterable, Sendable {
-    case build
-    case clean
-    case test
-    case archive
-    case analyze
-    case installsrc
-    case install
+public enum XcodeProjectConfiguration: Sendable {
+    public enum ProjectBuildMode: Sendable {
+        case scheme(String)
+        case targets([String])
+    }
+
+    case project(projectURL: URL, buildMode: ProjectBuildMode, configuration: String?)
+    case workspace(workspaceURL: URL, scheme: String?, configuration: String?)
+
+    public init(projectURL: URL, targets: [String] = [], configuration: String? = nil) {
+        self = .project(projectURL: projectURL, buildMode: .targets(targets), configuration: configuration)
+    }
+
+    public init(workspaceURL: URL, scheme: String? = nil, configuration: String? = nil) {
+        self = .workspace(workspaceURL: workspaceURL, scheme: scheme, configuration: configuration)
+    }
 }
 
 public enum XcodeBuildDestination: Sendable {
@@ -48,103 +56,128 @@ public enum XcodeBuildDestination: Sendable {
     }
 }
 
-public enum XcodeProjectConfiguration: Sendable {
-    public enum ProjectBuildMode: Sendable {
-        case scheme(String)
-        case targets([String])
+public enum XcodeBuildCommand: Sendable {
+    case list
+    case showdestinations
+    case showBuildSettings(
+        destination: XcodeBuildDestination?,
+        configuration: String?,
+        derivedDataPath: String?
+    )
+    case showBuildSettingsForIndex(
+        destination: XcodeBuildDestination?,
+        configuration: String?,
+        derivedDataPath: String?
+    )
+    case build(
+        action: BuildAction,
+        destination: XcodeBuildDestination?,
+        configuration: String?,
+        derivedDataPath: String?,
+        resultBundlePath: String?
+    )
+
+    public enum BuildAction: String, CaseIterable, Sendable {
+        case build
+        case clean
+        case test
+        case archive
+        case analyze
+        case installsrc
+        case install
     }
+}
 
-    case project(projectURL: URL, buildMode: ProjectBuildMode, configuration: String?)
-    case workspace(workspaceURL: URL, scheme: String?, configuration: String?)
+public struct XcodeBuildFlags: OptionSet, Sendable {
+    public static let json = XcodeBuildFlags(rawValue: 1 << 0)
+    public static let quiet = XcodeBuildFlags(rawValue: 1 << 1)
+    public static let verbose = XcodeBuildFlags(rawValue: 1 << 2)
+    public static let dryRun = XcodeBuildFlags(rawValue: 1 << 3)
 
-    public init(projectURL: URL, targets: [String] = [], configuration: String? = nil) {
-        self = .project(projectURL: projectURL, buildMode: .targets(targets), configuration: configuration)
-    }
+    public let rawValue: Int
 
-    public init(workspaceURL: URL, scheme: String? = nil, configuration: String? = nil) {
-        self = .workspace(workspaceURL: workspaceURL, scheme: scheme, configuration: configuration)
+    public init(rawValue: Int) {
+        self.rawValue = rawValue
     }
 }
 
 public struct XcodeBuildOptions: Sendable {
-    public let showBuildSettings: Bool
-    public let showBuildSettingsForIndex: Bool
-    public let json: Bool
-    public let quiet: Bool
-    public let verbose: Bool
-    public let dryRun: Bool
-    public let list: Bool
-    public let showdestinations: Bool
-    public let derivedDataPath: String?
-    public let resultBundlePath: String?
+    public let command: XcodeBuildCommand
+    public let flags: XcodeBuildFlags
     public let customFlags: [String]
 
     public init(
-        showBuildSettings: Bool = false,
-        showBuildSettingsForIndex: Bool = false,
-        json: Bool = false,
-        quiet: Bool = false,
-        verbose: Bool = false,
-        dryRun: Bool = false,
-        list: Bool = false,
-        showdestinations: Bool = false,
-        derivedDataPath: String? = nil,
-        resultBundlePath: String? = nil,
+        command: XcodeBuildCommand = .build(
+            action: .build,
+            destination: nil,
+            configuration: nil,
+            derivedDataPath: nil,
+            resultBundlePath: nil
+        ),
+        flags: XcodeBuildFlags = [],
         customFlags: [String] = []
     ) {
-        self.showBuildSettings = showBuildSettings
-        self.showBuildSettingsForIndex = showBuildSettingsForIndex
-        self.json = json
-        self.quiet = quiet
-        self.verbose = verbose
-        self.dryRun = dryRun
-        self.list = list
-        self.showdestinations = showdestinations
-        self.derivedDataPath = derivedDataPath
-        self.resultBundlePath = resultBundlePath
+        self.command = command
+        self.flags = flags
         self.customFlags = customFlags
     }
+}
 
-    public static func buildSettingsJSON(derivedDataPath: String? = nil) -> XcodeBuildOptions {
+public extension XcodeBuildOptions {
+    static func buildSettingsJSON(
+        destination: XcodeBuildDestination? = nil,
+        configuration: String? = nil,
+        derivedDataPath: String? = nil
+    ) -> XcodeBuildOptions {
         XcodeBuildOptions(
-            showBuildSettings: true,
-            json: true,
-            derivedDataPath: derivedDataPath
+            command: .showBuildSettings(
+                destination: destination,
+                configuration: configuration,
+                derivedDataPath: derivedDataPath
+            ),
+            flags: [.json]
         )
     }
 
-    public static func buildSettingsForIndexJSON(derivedDataPath: String? = nil) -> XcodeBuildOptions {
+    static func buildSettingsForIndexJSON(
+        destination: XcodeBuildDestination? = nil,
+        configuration: String? = nil,
+        derivedDataPath: String? = nil
+    ) -> XcodeBuildOptions {
         XcodeBuildOptions(
-            showBuildSettingsForIndex: true,
-            json: true,
-            derivedDataPath: derivedDataPath
+            command: .showBuildSettingsForIndex(
+                destination: destination,
+                configuration: configuration,
+                derivedDataPath: derivedDataPath
+            ),
+            flags: [.json]
         )
     }
 
-    public static let listSchemesJSON = XcodeBuildOptions(json: true, list: true)
+    static let listSchemesJSON = XcodeBuildOptions(command: .list, flags: [.json])
 }
 
 public struct XcodeBuildCommandBuilder {
-    /// New buildCommand method using XcodeProjectConfiguration
     public func buildCommand(
         project: XcodeProjectConfiguration,
-        action: XcodeBuildAction? = nil,
-        destination: XcodeBuildDestination? = nil,
         options: XcodeBuildOptions = XcodeBuildOptions()
     ) -> [String] {
+        var arguments: [String] = []
+
+        arguments.append(contentsOf: projectArguments(from: project))
+        arguments.append(contentsOf: commandArguments(from: options.command))
+        arguments.append(contentsOf: buildOptionsArguments(options: options))
+
+        return arguments
+    }
+
+    private func projectArguments(from project: XcodeProjectConfiguration) -> [String] {
         var arguments: [String] = []
 
         switch project {
         case let .project(projectURL, buildMode, configuration):
             arguments.append(contentsOf: ["-project", projectURL.path])
-            switch buildMode {
-            case let .targets(targets):
-                for target in targets {
-                    arguments.append(contentsOf: ["-target", target])
-                }
-            case let .scheme(scheme):
-                arguments.append(contentsOf: ["-scheme", scheme])
-            }
+            arguments.append(contentsOf: buildModeArguments(from: buildMode))
             if let configuration {
                 arguments.append(contentsOf: ["-configuration", configuration])
             }
@@ -158,17 +191,64 @@ public struct XcodeBuildCommandBuilder {
             }
         }
 
-        if let destination {
-            arguments.append(contentsOf: ["-destination", destination.destinationString])
-        }
+        return arguments
+    }
 
-        if let action {
-            arguments.append(action.rawValue)
-        }
+    private func buildModeArguments(from buildMode: XcodeProjectConfiguration.ProjectBuildMode) -> [String] {
+        var arguments: [String] = []
 
-        arguments.append(contentsOf: buildOptionsArguments(options: options))
+        switch buildMode {
+        case let .targets(targets):
+            for target in targets {
+                arguments.append(contentsOf: ["-target", target])
+            }
+        case let .scheme(scheme):
+            arguments.append(contentsOf: ["-scheme", scheme])
+        }
 
         return arguments
+    }
+
+    private func commandArguments(from command: XcodeBuildCommand) -> [String] {
+        var arguments: [String] = []
+
+        switch command {
+        case let .build(action, destination, configuration, derivedDataPath, resultBundlePath):
+            arguments.append(contentsOf: destinationArguments(from: destination))
+            arguments.append(contentsOf: configurationArguments(from: configuration))
+            arguments.append(action.rawValue)
+            arguments.append(contentsOf: derivedDataArguments(from: derivedDataPath))
+            arguments.append(contentsOf: resultBundleArguments(from: resultBundlePath))
+        case let .showBuildSettings(destination, configuration, derivedDataPath),
+             let .showBuildSettingsForIndex(destination, configuration, derivedDataPath):
+            arguments.append(contentsOf: destinationArguments(from: destination))
+            arguments.append(contentsOf: configurationArguments(from: configuration))
+            arguments.append(contentsOf: derivedDataArguments(from: derivedDataPath))
+        case .list, .showdestinations:
+            break
+        }
+
+        return arguments
+    }
+
+    private func destinationArguments(from destination: XcodeBuildDestination?) -> [String] {
+        guard let destination else { return [] }
+        return ["-destination", destination.destinationString]
+    }
+
+    private func configurationArguments(from configuration: String?) -> [String] {
+        guard let configuration else { return [] }
+        return ["-configuration", configuration]
+    }
+
+    private func derivedDataArguments(from derivedDataPath: String?) -> [String] {
+        guard let derivedDataPath else { return [] }
+        return ["-derivedDataPath", derivedDataPath]
+    }
+
+    private func resultBundleArguments(from resultBundlePath: String?) -> [String] {
+        guard let resultBundlePath else { return [] }
+        return ["-resultBundlePath", resultBundlePath]
     }
 
     public func listSchemesCommand(project: XcodeProjectConfiguration) -> [String] {
@@ -181,44 +261,33 @@ public struct XcodeBuildCommandBuilder {
     private func buildOptionsArguments(options: XcodeBuildOptions) -> [String] {
         var arguments: [String] = []
 
-        if options.showBuildSettings {
+        switch options.command {
+        case .build:
+            break
+        case .showBuildSettings:
             arguments.append("-showBuildSettings")
-        }
-
-        if options.showBuildSettingsForIndex {
+        case .showBuildSettingsForIndex:
             arguments.append("-showBuildSettingsForIndex")
-        }
-
-        if options.json {
-            arguments.append("-json")
-        }
-
-        if options.quiet {
-            arguments.append("-quiet")
-        }
-
-        if options.verbose {
-            arguments.append("-verbose")
-        }
-
-        if options.dryRun {
-            arguments.append("-dry-run")
-        }
-
-        if options.list {
+        case .list:
             arguments.append("-list")
-        }
-
-        if options.showdestinations {
+        case .showdestinations:
             arguments.append("-showdestinations")
         }
 
-        if let derivedDataPath = options.derivedDataPath {
-            arguments.append(contentsOf: ["-derivedDataPath", derivedDataPath])
+        if options.flags.contains(.json) {
+            arguments.append("-json")
         }
 
-        if let resultBundlePath = options.resultBundlePath {
-            arguments.append(contentsOf: ["-resultBundlePath", resultBundlePath])
+        if options.flags.contains(.quiet) {
+            arguments.append("-quiet")
+        }
+
+        if options.flags.contains(.verbose) {
+            arguments.append("-verbose")
+        }
+
+        if options.flags.contains(.dryRun) {
+            arguments.append("-dry-run")
         }
 
         arguments.append(contentsOf: options.customFlags)
