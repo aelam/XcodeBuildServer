@@ -12,8 +12,8 @@ public enum XcodeProjectConfiguration: Sendable {
         case targets([String])
     }
 
-    case project(projectURL: URL, buildMode: ProjectBuildMode, configuration: String?)
-    case workspace(workspaceURL: URL, scheme: String?, configuration: String?)
+    case project(projectURL: URL, buildMode: ProjectBuildMode)
+    case workspace(workspaceURL: URL, scheme: String?)
 }
 
 public enum XcodeBuildDestination: Sendable {
@@ -169,19 +169,13 @@ public struct XcodeBuildCommandBuilder {
         var arguments: [String] = []
 
         switch project {
-        case let .project(projectURL, buildMode, configuration):
+        case let .project(projectURL, buildMode):
             arguments.append(contentsOf: ["-project", projectURL.path])
             arguments.append(contentsOf: buildModeArguments(from: buildMode))
-            if let configuration {
-                arguments.append(contentsOf: ["-configuration", configuration])
-            }
-        case let .workspace(workspaceURL, scheme, configuration):
+        case let .workspace(workspaceURL, scheme):
             arguments.append(contentsOf: ["-workspace", workspaceURL.path])
             if let scheme {
                 arguments.append(contentsOf: ["-scheme", scheme])
-            }
-            if let configuration {
-                arguments.append(contentsOf: ["-configuration", configuration])
             }
         }
 
@@ -227,7 +221,7 @@ public struct XcodeBuildCommandBuilder {
 
     private func destinationArguments(from destination: XcodeBuildDestination?) -> [String] {
         guard let destination else { return [] }
-        return ["-destination", destination.destinationString]
+        return ["-destination", "\'\(destination.destinationString)'"]
     }
 
     private func configurationArguments(from configuration: String?) -> [String] {

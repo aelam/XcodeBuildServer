@@ -51,7 +51,6 @@ extension XcodeSettingsLoader {
             project: .project(
                 projectURL: projectURL,
                 buildMode: .targets(targets),
-                configuration: nil
             ),
             options: XcodeBuildOptions.buildSettingsForIndexJSON(derivedDataPath: derivedDataPath.path)
         )

@@ -15,7 +15,6 @@ extension XcodeProjectManager {
             project: XcodeProjectConfiguration.workspace(
                 workspaceURL: workspaceURL,
                 scheme: nil,
-                configuration: nil
             )
         )
 

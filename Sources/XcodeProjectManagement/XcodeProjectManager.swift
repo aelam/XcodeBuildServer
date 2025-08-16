@@ -340,7 +340,6 @@ public actor XcodeProjectManager {
                 project: .workspace(
                     workspaceURL: projectLocation.workspaceURL,
                     scheme: scheme.name,
-                    configuration: configuration
                 ),
             )
         case let .implicitWorkspace(projectURL: projectURL, _), let .standaloneProject(projectURL):
@@ -350,7 +349,6 @@ public actor XcodeProjectManager {
                 project: .project(
                     projectURL: projectURL,
                     buildMode: .scheme(scheme.name),
-                    configuration: configuration
                 )
             )
         }

@@ -10,7 +10,11 @@ public extension XcodeSettingsLoader {
     ) async throws -> [XcodeBuildSettings] {
         let command = commandBuilder.buildCommand(
             project: project,
-            options: XcodeBuildOptions.buildSettingsJSON()
+            options: XcodeBuildOptions.buildSettingsJSON(
+                destination: .iOSSimulator,
+                configuration: "Debug",
+                derivedDataPath: nil
+            )
         )
         let output = try await runXcodeBuild(arguments: command, workingDirectory: rootURL)
         guard let jsonString = output, !jsonString.isEmpty else {
