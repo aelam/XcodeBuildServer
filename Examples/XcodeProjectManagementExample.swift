@@ -25,7 +25,9 @@ struct XcodeProjectManagementExample {
                 rootURL: projectURL,
                 xcodeProjectReference: nil,
                 toolchain: XcodeToolchain(),
-                locator: XcodeProjectLocator()
+                locator: XcodeProjectLocator(),
+                settingsLoader: XcodeSettingsLoader(),
+                commandBuilder: XcodeBuildCommandBuilder()
             )
 
             // Load the project

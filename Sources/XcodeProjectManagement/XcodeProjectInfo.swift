@@ -35,14 +35,14 @@ public struct XcodeProjectInfo: Sendable {
 
     public var workspaceURL: URL {
         switch projectLocation {
-        case let .explicitWorkspace(url), let .implicitWorkspace(_, url):
+        case let .explicitWorkspace(url), let .implicitWorkspace(_, url), let .standaloneProject(url):
             url
         }
     }
 
     public var name: String {
         switch projectLocation {
-        case let .explicitWorkspace(url), let .implicitWorkspace(url, _):
+        case let .explicitWorkspace(url), let .implicitWorkspace(url, _), let .standaloneProject(url):
             url.lastPathComponent
         }
     }

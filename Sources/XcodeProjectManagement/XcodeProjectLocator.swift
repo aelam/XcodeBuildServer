@@ -70,6 +70,7 @@ public enum XcodeProjectLocation: Equatable, Sendable {
         projectURL: URL,
         workspaceURL: URL // {projectURL}/project.xcworkspace
     ) // Converted from .xcodeproj
+    case standaloneProject(URL) // .xcodeproj without project.xcworkspace
 
     var workspaceURL: URL {
         switch self {
@@ -77,20 +78,18 @@ public enum XcodeProjectLocation: Equatable, Sendable {
             url
         case .implicitWorkspace(projectURL: _, workspaceURL: let url):
             url
+        case let .standaloneProject(url):
+            url // For standalone projects, the project itself acts as the workspace
         }
     }
 
     public var name: String {
         switch self {
         case let .explicitWorkspace(url),
-             let .implicitWorkspace(projectURL: url, _):
+             let .implicitWorkspace(projectURL: url, _),
+             let .standaloneProject(url):
             url.lastPathComponent
         }
-    }
-
-    public var schemesFolderURLs: [URL] {
-        // Scheme loading is no longer supported
-        []
     }
 }
 
@@ -160,7 +159,9 @@ public final class XcodeProjectLocator {
             let implicitWorkspaceURL = projectURL.appendingPathComponent("project.xcworkspace")
             guard FileManager.default.fileExists(atPath: implicitWorkspaceURL.path) else {
                 logger.debug("No implicit workspace found for project at \(projectURL.path)")
-                return .explicitWorkspace(projectURL)
+                // For standalone projects without workspace, use the new standaloneProject case
+                // This handles older Xcode projects that don't have project.xcworkspace
+                return .standaloneProject(projectURL)
             }
             logger.debug("Resolved implicit workspace for project: \(implicitWorkspaceURL.path)")
             // Return implicit workspace created from .xcodeproj

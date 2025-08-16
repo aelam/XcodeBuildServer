@@ -268,7 +268,7 @@ public actor XcodeSettingsLoader {
 
     /// Load build settings for index for all targets in same project
     /// it would perform much faster than loading settings for each target individually
-    func loadBuildSettingsForIndex(
+    private func loadBuildSettingsForIndex(
         rootURL: URL,
         projectURL: URL, // xcodeproj file URL
         targets: [String] = [],

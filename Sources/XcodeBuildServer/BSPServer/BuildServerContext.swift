@@ -72,7 +72,11 @@ public actor BuildServerContext {
             rootURL: rootURL,
             xcodeProjectReference: config?.projectReference,
             toolchain: xcodeToolchain,
-            locator: XcodeProjectLocator()
+            locator: XcodeProjectLocator(),
+            settingsLoader: XcodeSettingsLoader(
+                commandBuilder: XcodeBuildCommandBuilder(),
+                toolchain: xcodeToolchain
+            )
         )
 
         try await projectManager.initialize()

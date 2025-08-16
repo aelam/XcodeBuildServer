@@ -36,19 +36,6 @@ public struct XcodeTarget: Sendable, Hashable {
     }
 }
 
-/// Scheme information for workspace projects
-public struct XcodeScheme: Sendable {
-    public let name: String
-    public let workspaceURL: URL
-
-    public init(name: String, workspaceURL: URL) {
-        self.name = name
-        self.workspaceURL = workspaceURL
-    }
-}
-
-// Legacy type aliases for compatibility
-public typealias XcodeSchemeInfo = XcodeScheme
 public typealias XcodeSchemeTargetInfo = XcodeTarget
 
 public struct XcodeIndexPaths: Sendable {
@@ -128,8 +115,9 @@ public actor XcodeProjectManager {
     public let rootURL: URL
     private let locator: XcodeProjectLocator
     private let toolchain: XcodeToolchain
-    private let xcodeProjectReference: XcodeProjectReference?
+    let settingsLoader: XcodeSettingsLoader
 
+    private let xcodeProjectReference: XcodeProjectReference?
     private(set) var currentProject: XcodeProjectInfo?
 
     public init(
@@ -137,11 +125,13 @@ public actor XcodeProjectManager {
         xcodeProjectReference: XcodeProjectReference? = nil,
         toolchain: XcodeToolchain,
         locator: XcodeProjectLocator,
+        settingsLoader: XcodeSettingsLoader
     ) {
         self.rootURL = rootURL
         self.xcodeProjectReference = xcodeProjectReference
         self.toolchain = toolchain
         self.locator = locator
+        self.settingsLoader = settingsLoader
     }
 
     public func initialize() async throws {
@@ -153,8 +143,6 @@ public actor XcodeProjectManager {
             rootURL: rootURL,
             xcodeProjectReference: xcodeProjectReference
         )
-        let settingsCommandBuilder = XcodeBuildCommandBuilder()
-        let settingsLoader = XcodeSettingsLoader(commandBuilder: settingsCommandBuilder, toolchain: toolchain)
         _ = await toolchain.getSelectedInstallation()
         // Load containers for workspace projects to get actual targets
         let actualTargets = try await loadActualTargets(
@@ -233,6 +221,12 @@ public actor XcodeProjectManager {
             return try await loadTargetsFromWorkspaceContainers(projectLocation: projectLocation)
         case let .implicitWorkspace(projectURL, _):
             // For project, load targets using XcodeProj
+            let targetNames = try loadTargetsFromXcodeProj(projectPath: projectURL)
+            return targetNames.map { targetName in
+                XcodeTarget(name: targetName, projectURL: projectURL, isFromWorkspace: false)
+            }
+        case let .standaloneProject(projectURL):
+            // For standalone project, load targets using XcodeProj
             let targetNames = try loadTargetsFromXcodeProj(projectPath: projectURL)
             return targetNames.map { targetName in
                 XcodeTarget(name: targetName, projectURL: projectURL, isFromWorkspace: false)
@@ -334,52 +328,14 @@ public actor XcodeProjectManager {
                 rootURL: rootURL,
                 project: .init(projectURL: projectURL)
             )
+        case let .standaloneProject(projectURL):
+            // For standalone project, we can use target directly
+            return try await settingsLoader.loadBuildSettings(
+                rootURL: rootURL,
+                project: .init(projectURL: projectURL)
+            )
         }
         return []
-    }
-
-    /// Get schemes from workspace using xcodebuild -list
-    private func getWorkspaceSchemes(projectLocation: XcodeProjectLocation) async throws -> [String] {
-        guard case let .explicitWorkspace(workspaceURL) = projectLocation else {
-            return []
-        }
-
-        // Create a temporary settings loader just for listing schemes
-        let commandBuilder = XcodeBuildCommandBuilder()
-
-        // Use xcodebuild -list to get schemes
-        let command = commandBuilder.listSchemesCommand(
-            project: XcodeProjectConfiguration.workspace(
-                workspaceURL: workspaceURL,
-                scheme: nil,
-                configuration: nil
-            )
-        )
-        let tempSettingsLoader = XcodeSettingsLoader(commandBuilder: commandBuilder, toolchain: toolchain)
-
-        let output = try await tempSettingsLoader.runXcodeBuild(arguments: command, workingDirectory: workspaceURL)
-
-        guard let jsonString = output, !jsonString.isEmpty else {
-            logger.warning("Failed to get schemes from workspace \(workspaceURL.path)")
-            return []
-        }
-
-        // Parse the JSON to extract schemes
-        let data = Data(jsonString.utf8)
-        do {
-            if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let workspace = json["workspace"] as? [String: Any],
-               let schemes = workspace["schemes"] as? [String] {
-                logger.debug("Found schemes for workspace: \(schemes)")
-                return schemes
-            } else {
-                logger.warning("Unexpected JSON format when listing schemes")
-                return []
-            }
-        } catch {
-            logger.error("Failed to parse schemes JSON: \(error)")
-            return []
-        }
     }
 }
 

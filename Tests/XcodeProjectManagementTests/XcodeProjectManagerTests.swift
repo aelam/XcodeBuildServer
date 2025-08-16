@@ -15,10 +15,15 @@ struct XcodeProjectManagerTests {
             .appendingPathComponent("DemoProjects")
             .appendingPathComponent("HelloWorkspace")
 
+        let toolchain = XcodeToolchain()
         let projectManager = XcodeProjectManager(
             rootURL: projectFolder,
-            toolchain: XcodeToolchain(),
-            locator: XcodeProjectLocator()
+            toolchain: toolchain,
+            locator: XcodeProjectLocator(),
+            settingsLoader: XcodeSettingsLoader(
+                commandBuilder: XcodeBuildCommandBuilder(),
+                toolchain: toolchain
+            )
         )
         try await projectManager.initialize()
         let project = try await projectManager.resolveProjectInfo()
@@ -30,6 +35,8 @@ struct XcodeProjectManagerTests {
             #expect(url.lastPathComponent == "Hello.xcworkspace")
         case .implicitWorkspace:
             Issue.record("Expected explicit workspace, got implicit project workspace")
+        case .standaloneProject:
+            Issue.record("Expected explicit workspace, got standalone project")
         }
         #expect(project.buildSettingsForIndex?.count == 3)
         #expect(project.targets.count == 3)
@@ -41,10 +48,15 @@ struct XcodeProjectManagerTests {
             .appendingPathComponent("DemoProjects")
             .appendingPathComponent("HelloProject")
 
+        let toolchain = XcodeToolchain()
         let projectManager = XcodeProjectManager(
             rootURL: projectFolder,
-            toolchain: XcodeToolchain(),
-            locator: XcodeProjectLocator()
+            toolchain: toolchain,
+            locator: XcodeProjectLocator(),
+            settingsLoader: XcodeSettingsLoader(
+                commandBuilder: XcodeBuildCommandBuilder(),
+                toolchain: toolchain
+            )
         )
         try await projectManager.initialize()
         let projectInfo = try await projectManager.resolveProjectInfo()
@@ -56,6 +68,8 @@ struct XcodeProjectManagerTests {
             Issue.record("Expected implicit project workspace, got explicit workspace")
         case let .implicitWorkspace(_, url):
             #expect(url.path.contains("Hello.xcodeproj/project.xcworkspace"))
+        case .standaloneProject:
+            Issue.record("Expected implicit project workspace, got standalone project")
         }
         #expect(projectInfo.buildSettingsForIndex?.count == 3)
     }

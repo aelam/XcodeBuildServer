@@ -158,6 +158,8 @@ public extension XcodeBuildOptions {
 }
 
 public struct XcodeBuildCommandBuilder {
+    public init() {}
+
     public func buildCommand(
         project: XcodeProjectConfiguration,
         options: XcodeBuildOptions = XcodeBuildOptions()
