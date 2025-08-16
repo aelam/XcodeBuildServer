@@ -175,6 +175,8 @@ public actor XcodeSettingsLoader {
         self.toolchain = toolchain
     }
 
+    // MARK: - BuildSettings
+
     public func loadBuildSettings(
         rootURL: URL,
         project: XcodeProjectConfiguration,
@@ -195,6 +197,72 @@ public actor XcodeSettingsLoader {
         } catch {
             logger.debug(jsonString)
             throw XcodeProjectError.invalidConfig("Failed to decode build settings: \(error)")
+        }
+    }
+
+    public func loadIndexingPaths(
+        buildSettingsList: [XcodeBuildSettings]
+    ) async throws -> (indexStoreURL: URL, indexDatabaseURL: URL) {
+        guard let settings = buildSettingsList.first?.buildSettings else {
+            throw XcodeProjectError.invalidConfig("No build settings found")
+        }
+
+        guard let buildFolderPath = settings["BUILD_DIR"] else {
+            throw XcodeProjectError.invalidConfig("BUILD_DIR not found in build settings")
+        }
+
+        let outputFolder = URL(fileURLWithPath: buildFolderPath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+
+        let indexStoreURL = outputFolder.appendingPathComponent("Index.noIndex/DataStore")
+        let indexDatabaseURL = outputFolder.appendingPathComponent("IndexDatabase.noIndex")
+
+        do {
+            if !FileManager.default.fileExists(atPath: indexDatabaseURL.path) {
+                try FileManager.default.createDirectory(at: indexDatabaseURL, withIntermediateDirectories: true)
+            }
+        } catch {
+            throw XcodeProjectError.invalidConfig("Failed to create index database directory: \(error)")
+        }
+
+        return (indexStoreURL: indexStoreURL, indexDatabaseURL: indexDatabaseURL)
+    }
+
+    // MARK: - BuildSettingsForIndex
+
+    /// Load buildSettingsForIndex for source file discovery
+    public func loadBuildSettingsForIndex(
+        rootURL: URL,
+        targets: [XcodeTarget],
+        derivedDataPath: URL
+    ) async throws -> XcodeBuildSettingsForIndex {
+        try await withThrowingTaskGroup(of: XcodeBuildSettingsForIndex.self) { taskGroup in
+            // group targets under same project
+            let groupedTargets = Dictionary(grouping: targets) { $0.projectURL }
+
+            for (projectURL, targets) in groupedTargets {
+                taskGroup.addTask {
+                    let buildSettingForProject = try await self.loadBuildSettingsForIndex(
+                        rootURL: rootURL,
+                        projectURL: projectURL,
+                        targets: targets.map(\.name),
+                        derivedDataPath: derivedDataPath
+                    )
+                    var targetBuildSettings: XcodeBuildSettingsForIndex = [:]
+                    for (targetName, settings) in buildSettingForProject {
+                        let targetIdentifier = "xcode://" + projectURL.appendingPathComponent(targetName).path
+                        targetBuildSettings[targetIdentifier] = settings
+                    }
+                    return targetBuildSettings
+                }
+            }
+
+            var buildSettings: XcodeBuildSettingsForIndex = [:]
+            for try await targetSettings in taskGroup {
+                buildSettings.merge(targetSettings) { _, new in new }
+            }
+            return buildSettings
         }
     }
 
@@ -228,36 +296,7 @@ public actor XcodeSettingsLoader {
         }
     }
 
-    public func loadIndexingPaths(
-        buildSettingsList: [XcodeBuildSettings]
-    ) async throws -> (indexStoreURL: URL, indexDatabaseURL: URL) {
-        guard let settings = buildSettingsList.first?.buildSettings else {
-            throw XcodeProjectError.invalidConfig("No build settings found")
-        }
-
-        guard let buildFolderPath = settings["BUILD_DIR"] else {
-            throw XcodeProjectError.invalidConfig("BUILD_DIR not found in build settings")
-        }
-
-        let outputFolder = URL(fileURLWithPath: buildFolderPath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-
-        let indexStoreURL = outputFolder.appendingPathComponent("Index.noIndex/DataStore")
-        let indexDatabaseURL = outputFolder.appendingPathComponent("IndexDatabase.noIndex")
-
-        do {
-            if !FileManager.default.fileExists(atPath: indexDatabaseURL.path) {
-                try FileManager.default.createDirectory(at: indexDatabaseURL, withIntermediateDirectories: true)
-            }
-        } catch {
-            throw XcodeProjectError.invalidConfig("Failed to create index database directory: \(error)")
-        }
-
-        return (indexStoreURL: indexStoreURL, indexDatabaseURL: indexDatabaseURL)
-    }
-
-    func runXcodeBuild(
+    public func runXcodeBuild(
         arguments: [String],
         workingDirectory: URL
     ) async throws -> String? {

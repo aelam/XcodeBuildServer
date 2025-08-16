@@ -176,10 +176,9 @@ public actor XcodeProjectManager {
         )
 
         // Load buildSettingsForIndex for source file discovery
-        let buildSettingsForIndex = try await loadBuildSettingsForIndex(
+        let buildSettingsForIndex = try await settingsLoader.loadBuildSettingsForIndex(
             rootURL: rootURL,
             targets: actualTargets,
-            settingsLoader: settingsLoader,
             derivedDataPath: indexPaths.derivedDataPath
         )
         logger.debug("buildSettingsForIndex: \(buildSettingsForIndex)")
@@ -357,6 +356,7 @@ public actor XcodeProjectManager {
             )
         )
         let tempSettingsLoader = XcodeSettingsLoader(commandBuilder: commandBuilder, toolchain: toolchain)
+
         let output = try await tempSettingsLoader.runXcodeBuild(arguments: command, workingDirectory: workspaceURL)
 
         guard let jsonString = output, !jsonString.isEmpty else {
@@ -379,44 +379,6 @@ public actor XcodeProjectManager {
         } catch {
             logger.error("Failed to parse schemes JSON: \(error)")
             return []
-        }
-    }
-}
-
-extension XcodeProjectManager {
-    /// Load buildSettingsForIndex for source file discovery
-    private func loadBuildSettingsForIndex(
-        rootURL: URL,
-        targets: [XcodeTarget],
-        settingsLoader: XcodeSettingsLoader,
-        derivedDataPath: URL
-    ) async throws -> XcodeBuildSettingsForIndex {
-        try await withThrowingTaskGroup(of: XcodeBuildSettingsForIndex.self) { taskGroup in
-            // group targets under same project
-            let groupedTargets = Dictionary(grouping: targets) { $0.projectURL }
-
-            for (projectURL, targets) in groupedTargets {
-                taskGroup.addTask {
-                    let buildSettingForProject = try await settingsLoader.loadBuildSettingsForIndex(
-                        rootURL: rootURL,
-                        projectURL: projectURL,
-                        targets: targets.map(\.name),
-                        derivedDataPath: derivedDataPath
-                    )
-                    var targetBuildSettings: XcodeBuildSettingsForIndex = [:]
-                    for (targetName, settings) in buildSettingForProject {
-                        let targetIdentifier = "xcode://" + projectURL.appendingPathComponent(targetName).path
-                        targetBuildSettings[targetIdentifier] = settings
-                    }
-                    return targetBuildSettings
-                }
-            }
-
-            var buildSettings: XcodeBuildSettingsForIndex = [:]
-            for try await targetSettings in taskGroup {
-                buildSettings.merge(targetSettings) { _, new in new }
-            }
-            return buildSettings
         }
     }
 }
