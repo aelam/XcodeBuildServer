@@ -28,10 +28,6 @@ struct ProcessExecutorTests {
             )
         }
 
-        guard case let .timeout(duration) = error else {
-            Issue.record("Expected timeout error, got \(error)")
-            return
-        }
-        #expect(duration == 0.5)
+        #expect(error == ProcessExecutorError.timeout(0.5))
     }
 }

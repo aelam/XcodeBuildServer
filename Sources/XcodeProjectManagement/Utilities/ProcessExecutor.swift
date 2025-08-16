@@ -23,9 +23,8 @@ public struct ProcessExecutionResult: Sendable {
     }
 }
 
-public enum ProcessExecutorError: Error, LocalizedError {
-    case executableNotFound(String)
-    case processStartFailed(Error)
+public enum ProcessExecutorError: Error, LocalizedError, Equatable {
+    case processStartFailed(String) // System error message
     case invalidWorkingDirectory(String)
     case timeout(TimeInterval)
 }
@@ -69,10 +68,7 @@ public actor ProcessExecutor {
         do {
             try process.run()
         } catch {
-            if error.localizedDescription.contains("No such file") {
-                throw ProcessExecutorError.executableNotFound(executable)
-            }
-            throw ProcessExecutorError.processStartFailed(error)
+            throw ProcessExecutorError.processStartFailed(error.localizedDescription)
         }
 
         // Handle timeout if specified
