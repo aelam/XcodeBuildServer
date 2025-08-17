@@ -158,7 +158,7 @@ public actor XcodeProjectManager {
             buildSettingsList: buildSettingsList
         )
 
-        _ = try await settingsLoader.loadBuildSettingsMap(
+        let buildSettingsMap = try await settingsLoader.loadBuildSettingsMap(
             rootURL: rootURL,
             targets: actualTargets,
             customFlags: [
@@ -166,13 +166,18 @@ public actor XcodeProjectManager {
             ]
         )
 
-        // Load buildSettingsForIndex for source file discovery
-        let buildSettingsForIndex = try await settingsLoader.loadBuildSettingsForIndex(
+        let buildSettingsForIndex = IndexSettingsGeneration.generate(
             rootURL: rootURL,
-            targets: actualTargets,
-            derivedDataPath: primaryBuildSettings.derivedDataPath
+            buildSettingsMap: buildSettingsMap
         )
-        logger.debug("buildSettingsForIndex: \n\(buildSettingsForIndex)")
+
+        // // Load buildSettingsForIndex for source file discovery
+        // let buildSettingsForIndex = try await settingsLoader.loadBuildSettingsForIndex(
+        //     rootURL: rootURL,
+        //     targets: actualTargets,
+        //     derivedDataPath: primaryBuildSettings.derivedDataPath
+        // )
+        // logger.debug("buildSettingsForIndex: \n\(buildSettingsForIndex)")
 
         return XcodeProjectInfo(
             rootURL: rootURL,
@@ -183,7 +188,7 @@ public actor XcodeProjectManager {
             derivedDataPath: primaryBuildSettings.derivedDataPath,
             indexStoreURL: primaryBuildSettings.indexStoreURL,
             indexDatabaseURL: primaryBuildSettings.indexDatabaseURL,
-            buildSettingsForIndex: buildSettingsForIndex
+            buildSettingsForIndex: XcodeBuildSettingsForIndex()
         )
     }
 
