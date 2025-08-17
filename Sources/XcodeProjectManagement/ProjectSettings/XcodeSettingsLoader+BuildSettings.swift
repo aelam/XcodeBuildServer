@@ -7,13 +7,18 @@ public extension XcodeSettingsLoader {
     func loadBuildSettings(
         rootURL: URL,
         project: XcodeProjectConfiguration,
+        sdk: XcodeSDK? = .iOSSimulator,
+        destination: XcodeBuildDestination? = nil,
+        configuration: String? = "Debug",
+        customFlags: [String] = [],
     ) async throws -> [XcodeBuildSettings] {
         let command = commandBuilder.buildCommand(
             project: project,
             options: XcodeBuildOptions.buildSettingsJSON(
-                destination: .iOSSimulator,
-                configuration: "Debug",
-                derivedDataPath: nil
+                sdk: sdk,
+                destination: destination,
+                configuration: configuration,
+                customFlags: customFlags
             )
         )
         let output = try await runXcodeBuild(arguments: command, workingDirectory: rootURL)
@@ -27,6 +32,56 @@ public extension XcodeSettingsLoader {
         } catch {
             logger.debug(jsonString)
             throw XcodeProjectError.invalidConfig("Failed to decode build settings: \(error)")
+        }
+    }
+}
+
+public extension XcodeSettingsLoader {
+    // MARK: - BuildSettingsForIndex
+
+    /// Load buildSettingsMap for targets
+    func loadBuildSettingsMap(
+        rootURL: URL,
+        targets: [XcodeTarget],
+        configuration: String? = "Debug",
+        customFlags: [String] = []
+    ) async throws -> XcodeBuildSettingsMap {
+        try await withThrowingTaskGroup(of: XcodeBuildSettingsMap.self) { taskGroup in
+            // group targets under same project with same platform
+            let groupedTargets = Dictionary(grouping: targets) { GroupedTargetsKey(
+                projectURL: $0.projectURL,
+                platform: $0.platform
+            ) }
+
+            for (groupedTargetsKey, targets) in groupedTargets {
+                let projectURL = groupedTargetsKey.projectURL
+                let sdk = groupedTargetsKey.platform.sdk(simulator: true)
+                taskGroup.addTask {
+                    let buildSettings = try await self.loadBuildSettings(
+                        rootURL: rootURL,
+                        project: .project(
+                            projectURL: projectURL,
+                            buildMode: .targets(targets.map(\.name))
+                        ),
+                        sdk: sdk,
+                        destination: nil,
+                        configuration: configuration,
+                        customFlags: customFlags
+                    )
+                    var targetBuildSettings: XcodeBuildSettingsMap = [:]
+                    for settings in buildSettings {
+                        let targetIdentifier = "xcode://" + projectURL.appendingPathComponent(settings.target).path
+                        targetBuildSettings[targetIdentifier] = settings
+                    }
+                    return targetBuildSettings
+                }
+            }
+
+            var buildSettingsMap = XcodeBuildSettingsMap()
+            for try await targetSettings in taskGroup {
+                buildSettingsMap.merge(targetSettings) { _, new in new }
+            }
+            return buildSettingsMap
         }
     }
 }

@@ -1,3 +1,5 @@
+public typealias XcodeBuildSettingsMap = [String: XcodeBuildSettings]
+
 public struct XcodeBuildSettings: Codable, Sendable {
     public let target: String
     public let action: String
@@ -14,7 +16,6 @@ public struct XcodeBuildSettings: Codable, Sendable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.target = try container.decode(String.self, forKey: .target)
         self.action = try container.decode(String.self, forKey: .action)
-
         // Handle mixed value types in buildSettings
         let rawBuildSettings = try container.decode([String: BuildSettingValue].self, forKey: .buildSettings)
         self.buildSettings = rawBuildSettings.mapValues { $0.stringValue }

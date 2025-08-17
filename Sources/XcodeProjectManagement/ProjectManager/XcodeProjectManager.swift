@@ -8,49 +8,29 @@ import Foundation
 import Logger
 import XcodeProj
 
-/// Target information with complete project context
-public struct XcodeTarget: Sendable, Hashable, Codable {
-    public let name: String
-    public let projectURL: URL
-    public let projectName: String
-    public let isFromWorkspace: Bool
-    public let buildForTesting: Bool
-    public let buildForRunning: Bool
-
-    // Computed property for legacy compatibility
-    public var targetName: String { name }
-
-    public init(
-        name: String,
-        projectURL: URL,
-        isFromWorkspace: Bool = false,
-        buildForTesting: Bool = true,
-        buildForRunning: Bool = true
-    ) {
-        self.name = name
-        self.projectURL = projectURL
-        self.projectName = projectURL.deletingPathExtension().lastPathComponent
-        self.isFromWorkspace = isFromWorkspace
-        self.buildForTesting = buildForTesting
-        self.buildForRunning = buildForRunning
-    }
-
-    public var debugDescription: String {
-        "XcodeTarget(name: \(name), projectURL: \(projectURL.path), isFromWorkspace: \(isFromWorkspace))"
-    }
-}
-
-public typealias XcodeSchemeTargetInfo = XcodeTarget
-
-public struct XcodeIndexPaths: Sendable {
+public struct XcodeProjectPrimaryBuildSetting: Sendable {
     public let derivedDataPath: URL
     public let indexStoreURL: URL
     public let indexDatabaseURL: URL
+    public let configuration: String
 
-    public init(derivedDataPath: URL, indexStoreURL: URL, indexDatabaseURL: URL) {
+    public init(derivedDataPath: URL, indexStoreURL: URL, indexDatabaseURL: URL, configuration: String) {
         self.derivedDataPath = derivedDataPath
         self.indexStoreURL = indexStoreURL
         self.indexDatabaseURL = indexDatabaseURL
+        self.configuration = configuration
+    }
+
+    /// Custom flags for `xcodebuild -project {project} -target {target} SYSROOT={SYSROOT} -showBuildSettings -json`
+    public var customFlagsMap: [String: String] {
+        [
+            "SYMROOT": derivedDataPath.path,
+            // "DERIVED_DATA_PATH": derivedDataPath.path, // doesn't work
+        ]
+    }
+
+    public var customFlags: [String] {
+        customFlagsMap.map { "\($0.key)=\($0.value)" }
     }
 }
 
@@ -155,6 +135,11 @@ public actor XcodeProjectManager {
             includeUserSchemes: true
         )
 
+        // Load containers for workspace projects to get actual targets
+        let actualTargets = try await loadActualTargets(
+            projectLocation: projectLocation
+        )
+
         let interestingSchemes = schemeManager.filterInterestingSchemes(
             schemes,
             filterOutTests: true,
@@ -174,24 +159,28 @@ public actor XcodeProjectManager {
         )
 
         // Get index URLs using the first available scheme (shared per workspace)
-        let indexPaths = try await loadIndexURLs(
+        let primaryBuildSettings = try await loadPathsFromPrimayBuildSettings(
             settingsLoader: settingsLoader,
             projectLocation: projectLocation,
             buildSettingsList: buildSettingsList
         )
 
-        // Load containers for workspace projects to get actual targets
-        let actualTargets = try await loadActualTargets(
-            projectLocation: projectLocation
+        let buildSettingsMap = try await settingsLoader.loadBuildSettingsMap(
+            rootURL: rootURL,
+            targets: actualTargets,
+            customFlags: [
+                "SYMROOT=/tmp/__A__",
+                "CONFIGURATION=Debug",
+            ]
         )
 
         // Load buildSettingsForIndex for source file discovery
         let buildSettingsForIndex = try await settingsLoader.loadBuildSettingsForIndex(
             rootURL: rootURL,
             targets: actualTargets,
-            derivedDataPath: indexPaths.derivedDataPath
+            derivedDataPath: primaryBuildSettings.derivedDataPath
         )
-        logger.debug("buildSettingsForIndex: \(buildSettingsForIndex)")
+        logger.debug("buildSettingsForIndex: \n\(buildSettingsForIndex)")
 
         return XcodeProjectInfo(
             rootURL: rootURL,
@@ -199,20 +188,20 @@ public actor XcodeProjectManager {
             buildSettingsList: buildSettingsList,
             targets: actualTargets,
             schemes: [],
-            derivedDataPath: indexPaths.derivedDataPath,
-            indexStoreURL: indexPaths.indexStoreURL,
-            indexDatabaseURL: indexPaths.indexDatabaseURL,
+            derivedDataPath: primaryBuildSettings.derivedDataPath,
+            indexStoreURL: primaryBuildSettings.indexStoreURL,
+            indexDatabaseURL: primaryBuildSettings.indexDatabaseURL,
             buildSettingsForIndex: buildSettingsForIndex
         )
     }
 
-    private func loadIndexURLs(
+    private func loadPathsFromPrimayBuildSettings(
         settingsLoader: XcodeSettingsLoader,
         projectLocation: XcodeProjectLocation,
         scheme: String? = nil,
         buildSettingsList: [XcodeBuildSettings]
-    ) async throws -> XcodeIndexPaths {
-        let (indexStoreURL, indexDatabaseURL) = try await settingsLoader.loadIndexingPaths(
+    ) async throws -> XcodeProjectPrimaryBuildSetting {
+        let (indexStoreURL, indexDatabaseURL, configuration) = try await settingsLoader.loadIndexingPaths(
             buildSettingsList: buildSettingsList
         )
 
@@ -222,10 +211,11 @@ public actor XcodeProjectManager {
             .deletingLastPathComponent()
             .deletingLastPathComponent()
 
-        return XcodeIndexPaths(
+        return XcodeProjectPrimaryBuildSetting(
             derivedDataPath: derivedDataPath,
             indexStoreURL: indexStoreURL,
-            indexDatabaseURL: indexDatabaseURL
+            indexDatabaseURL: indexDatabaseURL,
+            configuration: configuration
         )
     }
 
@@ -240,19 +230,13 @@ public actor XcodeProjectManager {
         switch projectLocation {
         case .explicitWorkspace:
             // For workspace, load containers to get actual targets from projects
-            return try await loadTargetsFromWorkspaceContainers(projectLocation: projectLocation)
+            try await loadTargetsFromWorkspaceContainers(projectLocation: projectLocation)
         case let .implicitWorkspace(projectURL, _):
             // For project, load targets using XcodeProj
-            let targetNames = try loadTargetsFromXcodeProj(projectPath: projectURL)
-            return targetNames.map { targetName in
-                XcodeTarget(name: targetName, projectURL: projectURL, isFromWorkspace: false)
-            }
+            try loadTargetsFromXcodeProj(projectPath: projectURL)
         case let .standaloneProject(projectURL):
             // For standalone project, load targets using XcodeProj
-            let targetNames = try loadTargetsFromXcodeProj(projectPath: projectURL)
-            return targetNames.map { targetName in
-                XcodeTarget(name: targetName, projectURL: projectURL, isFromWorkspace: false)
-            }
+            try loadTargetsFromXcodeProj(projectPath: projectURL)
         }
     }
 
@@ -281,10 +265,7 @@ public actor XcodeProjectManager {
 
                     if let projectPath {
                         do {
-                            let projectTargetNames = try loadTargetsFromXcodeProj(projectPath: projectPath)
-                            let projectTargets = projectTargetNames.map { targetName in
-                                XcodeTarget(name: targetName, projectURL: projectPath, isFromWorkspace: true)
-                            }
+                            let projectTargets = try loadTargetsFromXcodeProj(projectPath: projectPath)
                             allTargets.append(contentsOf: projectTargets)
                         } catch {
                             logger.error("Failed to load targets from project \(projectPath): \(error)")
@@ -339,7 +320,7 @@ public actor XcodeProjectManager {
                 rootURL: rootURL,
                 project: .workspace(
                     workspaceURL: projectLocation.workspaceURL,
-                    scheme: scheme.name,
+                    scheme: scheme.name
                 ),
             )
         case let .implicitWorkspace(projectURL: projectURL, _), let .standaloneProject(projectURL):
@@ -359,9 +340,23 @@ public actor XcodeProjectManager {
 
 extension XcodeProjectManager {
     /// Load targets from XcodeProj directly
-    private func loadTargetsFromXcodeProj(projectPath: URL) throws -> [String] {
+    private func loadTargetsFromXcodeProj(projectPath: URL) throws -> [XcodeTarget] {
+        var targets = [XcodeTarget]()
         let project = try XcodeProj(pathString: projectPath.path)
-        return project.pbxproj.nativeTargets.map(\.name)
+        for target in project.pbxproj.nativeTargets {
+            let buildConfiguration = target.buildConfigurationList?.buildConfigurations.first?.buildSettings
+            let SDKROOT: String = buildConfiguration?["SDKROOT"] as? String ?? "iphoneos"
+            let platform = XcodeTarget.Platform(rawValue: SDKROOT) ?? .iOS
+            targets.append(
+                XcodeTarget(
+                    name: target.name,
+                    projectURL: projectPath,
+                    isFromWorkspace: false,
+                    platform: platform
+                )
+            )
+        }
+        return targets
     }
 
     /// Resolve project path from workspace file reference
@@ -387,7 +382,7 @@ extension XcodeProjectManager {
     }
 
     /// Load targets from a single project using XcodeProj
-    private func loadTargetsFromProject(projectURL: URL) async throws -> [String] {
+    private func loadTargetsFromProject(projectURL: URL) async throws -> [XcodeTarget] {
         try loadTargetsFromXcodeProj(projectPath: projectURL)
     }
 }

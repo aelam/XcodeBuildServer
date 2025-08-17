@@ -19,7 +19,7 @@ public actor XcodeSettingsLoader {
 
     public func loadIndexingPaths(
         buildSettingsList: [XcodeBuildSettings]
-    ) async throws -> (indexStoreURL: URL, indexDatabaseURL: URL) {
+    ) async throws -> (indexStoreURL: URL, indexDatabaseURL: URL, configuration: String) {
         guard let settings = buildSettingsList.first?.buildSettings else {
             throw XcodeProjectError.invalidConfig("No build settings found")
         }
@@ -27,6 +27,8 @@ public actor XcodeSettingsLoader {
         guard let buildFolderPath = settings["BUILD_DIR"] else {
             throw XcodeProjectError.invalidConfig("BUILD_DIR not found in build settings")
         }
+
+        let configuration = settings["CONFIGURATION"] ?? "Debug"
 
         let outputFolder = URL(fileURLWithPath: buildFolderPath)
             .deletingLastPathComponent()
@@ -43,7 +45,7 @@ public actor XcodeSettingsLoader {
             throw XcodeProjectError.invalidConfig("Failed to create index database directory: \(error)")
         }
 
-        return (indexStoreURL: indexStoreURL, indexDatabaseURL: indexDatabaseURL)
+        return (indexStoreURL: indexStoreURL, indexDatabaseURL: indexDatabaseURL, configuration: configuration)
     }
 
     public func runXcodeBuild(

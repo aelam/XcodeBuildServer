@@ -12,9 +12,13 @@ extension XcodeSettingsLoader {
     ) async throws -> XcodeBuildSettingsForIndex {
         try await withThrowingTaskGroup(of: XcodeBuildSettingsForIndex.self) { taskGroup in
             // group targets under same project
-            let groupedTargets = Dictionary(grouping: targets) { $0.projectURL }
+            let groupedTargets = Dictionary(grouping: targets) { GroupedTargetsKey(
+                projectURL: $0.projectURL,
+                platform: $0.platform
+            ) }
 
-            for (projectURL, targets) in groupedTargets {
+            for (groupedTargetsKey, targets) in groupedTargets {
+                let projectURL = groupedTargetsKey.projectURL
                 taskGroup.addTask {
                     let buildSettingForProject = try await self.loadBuildSettingsForIndex(
                         rootURL: rootURL,
@@ -50,7 +54,7 @@ extension XcodeSettingsLoader {
         let command = commandBuilder.buildCommand(
             project: .project(
                 projectURL: projectURL,
-                buildMode: .targets(targets),
+                buildMode: .targets(targets)
             ),
             options: XcodeBuildOptions.buildSettingsForIndexJSON(derivedDataPath: derivedDataPath.path)
         )

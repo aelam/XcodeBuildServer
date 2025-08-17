@@ -14,7 +14,7 @@ extension XcodeProjectManager {
         let command = commandBuilder.listSchemesCommand(
             project: XcodeProjectConfiguration.workspace(
                 workspaceURL: workspaceURL,
-                scheme: nil,
+                scheme: nil
             )
         )
 

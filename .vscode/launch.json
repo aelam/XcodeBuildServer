@@ -7,7 +7,8 @@
             "name": "Build Debug XcodeProjectCLI",
             "program": "${workspaceFolder:XcodeBuildServer}/.build/debug/XcodeProjectCLI",
             "args": [
-                "/Users/wang.lun/Desktop/HelloWorkspace"
+                // "/Users/wang.lun/Desktop/HelloWorkspace"
+                "/Users/wang.lun/Work/line-stickers-ios/"
             ],
             "preLaunchTask": "swift: Build Debug XcodeBuildServerCLI"
         },
@@ -50,6 +51,24 @@
             "program": "${workspaceFolder:XcodeBuildServer}/.build/debug/XcodeBuildServerCLI",
             "waitFor": true,
             "preLaunchTask": ""
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:XcodeBuildServer}",
+            "name": "Debug XcodeProjectCLI",
+            "program": "${workspaceFolder:XcodeBuildServer}/.build/debug/XcodeProjectCLI",
+            "preLaunchTask": "swift: Build Debug XcodeProjectCLI"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:XcodeBuildServer}",
+            "name": "Release XcodeProjectCLI",
+            "program": "${workspaceFolder:XcodeBuildServer}/.build/release/XcodeProjectCLI",
+            "preLaunchTask": "swift: Build Release XcodeProjectCLI"
         }
     ]
 }

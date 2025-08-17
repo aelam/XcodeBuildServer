@@ -43,6 +43,9 @@ public enum BuildSettingValue: Codable {
 
 public struct XcodeFileBuildSettingInfo: Codable, Sendable {
     public var assetSymbolIndexPath: String?
+    public var clangASTBuiltProductsDir: String?
+    public var clangASTCommandArguments: [String]?
+    public var clangPrefixFilePath: String?
     public var languageDialect: XcodeLanguageDialect?
     public var outputFilePath: String?
     public var swiftASTBuiltProductsDir: String?
@@ -52,6 +55,9 @@ public struct XcodeFileBuildSettingInfo: Codable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case assetSymbolIndexPath
+        case clangASTBuiltProductsDir
+        case clangASTCommandArguments
+        case clangPrefixFilePath
         case languageDialect = "LanguageDialect" // Note: Xcode uses capital 'L'
         case outputFilePath
         case swiftASTBuiltProductsDir
@@ -62,6 +68,9 @@ public struct XcodeFileBuildSettingInfo: Codable, Sendable {
 
     public init(
         assetSymbolIndexPath: String? = nil,
+        clangASTBuiltProductsDir: String? = nil,
+        clangASTCommandArguments: [String]? = nil,
+        clangPrefixFilePath: String? = nil,
         languageDialect: XcodeLanguageDialect? = nil,
         outputFilePath: String? = nil,
         swiftASTBuiltProductsDir: String? = nil,
@@ -70,6 +79,9 @@ public struct XcodeFileBuildSettingInfo: Codable, Sendable {
         toolchains: [String]? = nil
     ) {
         self.assetSymbolIndexPath = assetSymbolIndexPath
+        self.clangASTBuiltProductsDir = clangASTBuiltProductsDir
+        self.clangASTCommandArguments = clangASTCommandArguments
+        self.clangPrefixFilePath = clangPrefixFilePath
         self.languageDialect = languageDialect
         self.outputFilePath = outputFilePath
         self.swiftASTBuiltProductsDir = swiftASTBuiltProductsDir
