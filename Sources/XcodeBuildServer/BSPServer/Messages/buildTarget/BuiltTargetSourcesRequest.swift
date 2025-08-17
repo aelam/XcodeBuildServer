@@ -241,8 +241,6 @@ private extension BuiltTargetSourcesRequest {
             fileExtension: fileURL.pathExtension
         )
 
-        logger.debug("Detected language: \(String(describing: language)) for file: \(filePath)")
-
         // Create SourceKitSourceItemData
         let sourceKitData = SourceKitSourceItemData(
             language: language,

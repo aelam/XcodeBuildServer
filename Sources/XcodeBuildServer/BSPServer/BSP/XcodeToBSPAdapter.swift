@@ -30,8 +30,6 @@ public actor XcodeToBSPAdapter {
         logger.debug("Creating BuildTargets from \(buildSettingsForIndex.count) targets in buildSettingsForIndex")
 
         for (targetIdentifier, _) in buildSettingsForIndex {
-            logger.debug("Processing target key: \(targetIdentifier)")
-
             // Extract target name from the key (format: xcode:///path/to/project.xcodeproj/TargetName)
 
             let buildTarget = await createBuildTarget(

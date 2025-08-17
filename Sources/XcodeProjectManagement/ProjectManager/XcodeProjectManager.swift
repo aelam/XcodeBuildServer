@@ -13,12 +13,23 @@ public struct XcodeProjectPrimaryBuildSettings: Sendable {
     public let indexStoreURL: URL
     public let indexDatabaseURL: URL
     public let configuration: String
+    public let sdkStatCacheDir: String // SDK_STAT_CACHE_DIR
+    public let sdkStatCachePath: String // SDK_STAT_CACHE_PATH
 
-    public init(derivedDataPath: URL, indexStoreURL: URL, indexDatabaseURL: URL, configuration: String) {
+    public init(
+        derivedDataPath: URL,
+        indexStoreURL: URL,
+        indexDatabaseURL: URL,
+        configuration: String,
+        sdkStatCacheDir: String,
+        sdkStatCachePath: String
+    ) {
         self.derivedDataPath = derivedDataPath
         self.indexStoreURL = indexStoreURL
         self.indexDatabaseURL = indexDatabaseURL
         self.configuration = configuration
+        self.sdkStatCacheDir = sdkStatCacheDir
+        self.sdkStatCachePath = sdkStatCachePath
     }
 
     /// Custom flags for `xcodebuild -project {project} -target {target} SYSROOT={SYSROOT} -showBuildSettings -json`
@@ -158,19 +169,31 @@ public actor XcodeProjectManager {
             buildSettingsList: buildSettingsList
         )
 
+        // Wrong
+        // "SDK_STAT_CACHE_DIR" :
+        // "/var/folders/br/14spnq5s6d5dp4t62rsyv8t40000gp/C/com.apple.DeveloperTools/16.4-16F6/Xcode",
+        // "SDK_STAT_CACHE_PATH" :
+        // "/var/folders/br/14spnq5s6d5dp4t62rsyv8t40000gp/C/com.apple.DeveloperTools/16.4-16F6/Xcode/SDKStatCaches.noindex/iphonesimulator18.5-22F76-d5fc8ad4295d2ef488fb7d0f804ce0c4.sdkstatcache",
+
+        //  Correct
+        // "SDK_STAT_CACHE_DIR" : "/Users/wang.lun/Library/Developer/Xcode/DerivedData",
+        // "SDK_STAT_CACHE_PATH" : "/Users/wang.lun/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphonesimulator18.5-22F76-d5fc8ad4295d2ef488fb7d0f804ce0c4.sdkstatcache",
+
         let buildSettingsMap = try await settingsLoader.loadBuildSettingsMap(
             rootURL: rootURL,
             targets: actualTargets,
             customFlags: [
-                "SYMROOT=/tmp/__A__/Build/Products",
-                "OBJROOT=/tmp/__A__/Build/Intermediates.noindex",
-//                "BUILD_DIR=/tmp/__A__/Build/Products"
-//                "BUILD_ROOT=/tmp/__A__/Build/Products"
+                "SYMROOT=" + primaryBuildSettings.derivedDataPath.path + "Build/Products",
+                "OBJROOT=" + primaryBuildSettings.derivedDataPath.path + "Build/Intermediates.noindex",
+                "SDK_STAT_CACHE_DIR=" + primaryBuildSettings.derivedDataPath.deletingLastPathComponent().path,
+                // "BUILD_DIR=/tmp/__A__/Build/Products"
+                // "BUILD_ROOT=/tmp/__A__/Build/Products"
             ]
         )
 
         let buildSettingsForIndex = IndexSettingsGeneration.generate(
             rootURL: rootURL,
+            primaryBuildSettings: primaryBuildSettings,
             buildSettingsMap: buildSettingsMap
         )
 
@@ -191,7 +214,7 @@ public actor XcodeProjectManager {
             derivedDataPath: primaryBuildSettings.derivedDataPath,
             indexStoreURL: primaryBuildSettings.indexStoreURL,
             indexDatabaseURL: primaryBuildSettings.indexDatabaseURL,
-            buildSettingsForIndex: XcodeBuildSettingsForIndex()
+            buildSettingsForIndex: buildSettingsForIndex
         )
     }
 

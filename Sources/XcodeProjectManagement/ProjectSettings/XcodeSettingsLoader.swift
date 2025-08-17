@@ -36,6 +36,8 @@ public actor XcodeSettingsLoader {
 
         let indexStoreURL = derivedDataPath.appendingPathComponent("Index.noIndex/DataStore")
         let indexDatabaseURL = derivedDataPath.appendingPathComponent("IndexDatabase.noIndex")
+        let sdkStatCacheDir = settings["SDK_STAT_CACHE_DIR"] ?? derivedDataPath.deletingLastPathComponent().path
+        let sdkStatCachePath = settings["SDK_STAT_CACHE_PATH"] ?? sdkStatCacheDir.appending("SDKStatCache")
 
         do {
             if !FileManager.default.fileExists(atPath: indexDatabaseURL.path) {
@@ -49,7 +51,9 @@ public actor XcodeSettingsLoader {
             derivedDataPath: derivedDataPath,
             indexStoreURL: indexStoreURL,
             indexDatabaseURL: indexDatabaseURL,
-            configuration: configuration
+            configuration: configuration,
+            sdkStatCacheDir: sdkStatCacheDir,
+            sdkStatCachePath: sdkStatCachePath
         )
     }
 
