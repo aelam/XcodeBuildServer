@@ -166,12 +166,7 @@ private extension BuiltTargetSourcesRequest {
         targetName: String,
         projectInfo: XcodeProjectInfo
     ) -> [SourceItem] {
-        // Debug: Check if buildSettingsForIndex exists
-        guard let indexSettings = projectInfo.buildSettingsForIndex else {
-            logger.error("buildSettingsForIndex is nil")
-            return []
-        }
-
+        let indexSettings = projectInfo.buildSettingsForIndex
         logger.debug("buildSettingsForIndex has \(indexSettings.count) targets: \(Array(indexSettings.keys))")
         logger.debug("Looking for targetIdentifier: '\(targetIdentifierValue)', targetName: '\(targetName)'")
 
@@ -245,8 +240,6 @@ private extension BuiltTargetSourcesRequest {
             xcodeLanguageDialect: fileInfo.languageDialect,
             fileExtension: fileURL.pathExtension
         )
-
-        logger.debug("Detected language: \(String(describing: language)) for file: \(filePath)")
 
         // Create SourceKitSourceItemData
         let sourceKitData = SourceKitSourceItemData(

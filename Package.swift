@@ -56,6 +56,13 @@ let package = Package(
             ],
             resources: [.copy("README.md")]
         ),
+        .executableTarget(
+            name: "XcodeProjectCLI",
+            dependencies: [
+                "XcodeProjectManagement",
+                "Logger",
+            ]
+        ),
         .target(
             name: "XcodeBuildServer",
             dependencies: [

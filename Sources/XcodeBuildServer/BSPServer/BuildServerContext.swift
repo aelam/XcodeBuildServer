@@ -72,7 +72,11 @@ public actor BuildServerContext {
             rootURL: rootURL,
             xcodeProjectReference: config?.projectReference,
             toolchain: xcodeToolchain,
-            locator: XcodeProjectLocator()
+            locator: XcodeProjectLocator(),
+            settingsLoader: XcodeSettingsLoader(
+                commandBuilder: XcodeBuildCommandBuilder(),
+                toolchain: xcodeToolchain
+            )
         )
 
         try await projectManager.initialize()
@@ -127,10 +131,7 @@ public extension BuildServerContext {
     ) async throws -> [String] {
         let state = try loadedState
 
-        guard let buildSettingsForIndex = state.xcodeProjectInfo.buildSettingsForIndex else {
-            logger.warning("No buildSettingsForIndex available")
-            return []
-        }
+        let buildSettingsForIndex = state.xcodeProjectInfo.buildSettingsForIndex
 
         // Convert file URI to path
         let filePath = URL(string: fileURI)?.path ?? fileURI

@@ -12,16 +12,20 @@ public enum XcodeProjectConfiguration: Sendable {
         case targets([String])
     }
 
-    case project(projectURL: URL, buildMode: ProjectBuildMode, configuration: String?)
-    case workspace(workspaceURL: URL, scheme: String?, configuration: String?)
+    case project(projectURL: URL, buildMode: ProjectBuildMode)
+    case workspace(workspaceURL: URL, scheme: String?)
+}
 
-    public init(projectURL: URL, targets: [String] = [], configuration: String? = nil) {
-        self = .project(projectURL: projectURL, buildMode: .targets(targets), configuration: configuration)
-    }
-
-    public init(workspaceURL: URL, scheme: String? = nil, configuration: String? = nil) {
-        self = .workspace(workspaceURL: workspaceURL, scheme: scheme, configuration: configuration)
-    }
+public enum XcodeSDK: String, Sendable {
+    case macOS = "macosx"
+    case iOS = "iphoneos"
+    case iOSSimulator = "iphonesimulator"
+    case watchOS = "watchos"
+    case watchSimulator = "watchsimulator"
+    case tvOS = "appletvos"
+    case tvSimulator = "appletvsimulator"
+    case visionOS = "xros"
+    case visionSimulator = "xrsimulator"
 }
 
 public enum XcodeBuildDestination: Sendable {
@@ -29,9 +33,9 @@ public enum XcodeBuildDestination: Sendable {
     case iOS
     case iOSSimulator
     case watchOS
-    case watchOSSimulator
+    case watchSimulator
     case tvOS
-    case tvOSSimulator
+    case tvSimulator
     case custom(String)
 
     public var destinationString: String {
@@ -44,11 +48,11 @@ public enum XcodeBuildDestination: Sendable {
             "generic/platform=iOS Simulator"
         case .watchOS:
             "generic/platform=watchOS"
-        case .watchOSSimulator:
+        case .watchSimulator:
             "generic/platform=watchOS Simulator"
         case .tvOS:
             "generic/platform=tvOS"
-        case .tvOSSimulator:
+        case .tvSimulator:
             "generic/platform=tvOS Simulator"
         case let .custom(destination):
             destination
@@ -60,17 +64,20 @@ public enum XcodeBuildCommand: Sendable {
     case list
     case showdestinations
     case showBuildSettings(
+        sdk: XcodeSDK?,
         destination: XcodeBuildDestination?,
         configuration: String?,
         derivedDataPath: String?
     )
     case showBuildSettingsForIndex(
+        sdk: XcodeSDK?,
         destination: XcodeBuildDestination?,
         configuration: String?,
         derivedDataPath: String?
     )
     case build(
         action: BuildAction,
+        sdk: XcodeSDK?,
         destination: XcodeBuildDestination?,
         configuration: String?,
         derivedDataPath: String?,
@@ -109,6 +116,7 @@ public struct XcodeBuildOptions: Sendable {
     public init(
         command: XcodeBuildCommand = .build(
             action: .build,
+            sdk: nil,
             destination: nil,
             configuration: nil,
             derivedDataPath: nil,
@@ -125,27 +133,33 @@ public struct XcodeBuildOptions: Sendable {
 
 public extension XcodeBuildOptions {
     static func buildSettingsJSON(
+        sdk: XcodeSDK? = nil,
         destination: XcodeBuildDestination? = nil,
         configuration: String? = nil,
-        derivedDataPath: String? = nil
+        derivedDataPath: String? = nil,
+        customFlags: [String] = []
     ) -> XcodeBuildOptions {
         XcodeBuildOptions(
             command: .showBuildSettings(
+                sdk: sdk,
                 destination: destination,
                 configuration: configuration,
                 derivedDataPath: derivedDataPath
             ),
-            flags: [.json]
+            flags: [.json],
+            customFlags: customFlags
         )
     }
 
     static func buildSettingsForIndexJSON(
+        sdk: XcodeSDK? = nil,
         destination: XcodeBuildDestination? = nil,
         configuration: String? = nil,
         derivedDataPath: String? = nil
     ) -> XcodeBuildOptions {
         XcodeBuildOptions(
             command: .showBuildSettingsForIndex(
+                sdk: sdk,
                 destination: destination,
                 configuration: configuration,
                 derivedDataPath: derivedDataPath
@@ -158,6 +172,8 @@ public extension XcodeBuildOptions {
 }
 
 public struct XcodeBuildCommandBuilder {
+    public init() {}
+
     public func buildCommand(
         project: XcodeProjectConfiguration,
         options: XcodeBuildOptions = XcodeBuildOptions()
@@ -175,19 +191,13 @@ public struct XcodeBuildCommandBuilder {
         var arguments: [String] = []
 
         switch project {
-        case let .project(projectURL, buildMode, configuration):
+        case let .project(projectURL, buildMode):
             arguments.append(contentsOf: ["-project", projectURL.path])
             arguments.append(contentsOf: buildModeArguments(from: buildMode))
-            if let configuration {
-                arguments.append(contentsOf: ["-configuration", configuration])
-            }
-        case let .workspace(workspaceURL, scheme, configuration):
+        case let .workspace(workspaceURL, scheme):
             arguments.append(contentsOf: ["-workspace", workspaceURL.path])
             if let scheme {
                 arguments.append(contentsOf: ["-scheme", scheme])
-            }
-            if let configuration {
-                arguments.append(contentsOf: ["-configuration", configuration])
             }
         }
 
@@ -213,15 +223,21 @@ public struct XcodeBuildCommandBuilder {
         var arguments: [String] = []
 
         switch command {
-        case let .build(action, destination, configuration, derivedDataPath, resultBundlePath):
-            arguments.append(contentsOf: destinationArguments(from: destination))
+        case let .build(action, sdk, destination, configuration, derivedDataPath, resultBundlePath):
+            arguments.append(contentsOf: sdkArguments(from: sdk))
+            arguments.append(contentsOf: destinationArguments(from: destination, withSingleQuote: false))
             arguments.append(contentsOf: configurationArguments(from: configuration))
             arguments.append(action.rawValue)
             arguments.append(contentsOf: derivedDataArguments(from: derivedDataPath))
             arguments.append(contentsOf: resultBundleArguments(from: resultBundlePath))
-        case let .showBuildSettings(destination, configuration, derivedDataPath),
-             let .showBuildSettingsForIndex(destination, configuration, derivedDataPath):
-            arguments.append(contentsOf: destinationArguments(from: destination))
+        case let .showBuildSettings(sdk, destination, configuration, derivedDataPath):
+            arguments.append(contentsOf: sdkArguments(from: sdk))
+            arguments.append(contentsOf: destinationArguments(from: destination, withSingleQuote: false))
+            arguments.append(contentsOf: configurationArguments(from: configuration))
+            arguments.append(contentsOf: derivedDataArguments(from: derivedDataPath))
+        case let .showBuildSettingsForIndex(sdk, destination, configuration, derivedDataPath):
+            arguments.append(contentsOf: sdkArguments(from: sdk))
+            arguments.append(contentsOf: destinationArguments(from: destination, withSingleQuote: false))
             arguments.append(contentsOf: configurationArguments(from: configuration))
             arguments.append(contentsOf: derivedDataArguments(from: derivedDataPath))
         case .list, .showdestinations:
@@ -231,9 +247,15 @@ public struct XcodeBuildCommandBuilder {
         return arguments
     }
 
-    private func destinationArguments(from destination: XcodeBuildDestination?) -> [String] {
+    private func sdkArguments(from sdk: XcodeSDK?) -> [String] {
+        guard let sdk else { return [] }
+        return ["-sdk", sdk.rawValue]
+    }
+
+    private func destinationArguments(from destination: XcodeBuildDestination?, withSingleQuote: Bool) -> [String] {
         guard let destination else { return [] }
-        return ["-destination", destination.destinationString]
+        let destinationString = withSingleQuote ? "'\(destination.destinationString)'" : destination.destinationString
+        return ["-destination", destinationString]
     }
 
     private func configurationArguments(from configuration: String?) -> [String] {

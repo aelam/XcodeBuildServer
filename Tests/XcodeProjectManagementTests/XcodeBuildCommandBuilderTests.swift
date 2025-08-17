@@ -31,42 +31,36 @@ struct XcodeBuildCommandBuilderTests {
     static let testConfigurations = [
         TestCase(
             name: "workspace",
-            config: XcodeProjectConfiguration(
+            config: .workspace(
                 workspaceURL: URL(fileURLWithPath: "/test/Test.xcworkspace"),
-                scheme: "TestScheme",
-                configuration: "Debug"
+                scheme: "TestScheme"
             ),
             expectedArgs: [
                 "-workspace", "/test/Test.xcworkspace",
                 "-scheme", "TestScheme",
-                "-configuration", "Debug"
             ]
         ),
         TestCase(
             name: "projectWithScheme",
-            config: XcodeProjectConfiguration.project(
+            config: .project(
                 projectURL: URL(fileURLWithPath: "/test/Test.xcodeproj"),
-                buildMode: .scheme("TestScheme"),
-                configuration: "Debug"
+                buildMode: .scheme("TestScheme")
             ),
             expectedArgs: [
                 "-project", "/test/Test.xcodeproj",
                 "-scheme", "TestScheme",
-                "-configuration", "Debug"
             ]
         ),
         TestCase(
             name: "projectWithTargets",
-            config: XcodeProjectConfiguration(
+            config: .project(
                 projectURL: URL(fileURLWithPath: "/test/Test.xcodeproj"),
-                targets: ["TestTarget1", "TestTarget2"],
-                configuration: "Debug"
+                buildMode: .targets(["TestTarget1", "TestTarget2"])
             ),
             expectedArgs: [
                 "-project", "/test/Test.xcodeproj",
                 "-target", "TestTarget1",
                 "-target", "TestTarget2",
-                "-configuration", "Debug"
             ],
             additionalExpectedArgs: ["TestTarget1", "TestTarget2"]
         )
@@ -102,10 +96,9 @@ struct XcodeBuildCommandBuilderTests {
     func buildSettingsCommand(testCase: (path: String?, expectedArgs: [String])) {
         let builder = XcodeBuildCommandBuilder()
         let command = builder.buildCommand(
-            project: XcodeProjectConfiguration(
+            project: .project(
                 projectURL: URL(fileURLWithPath: "/test/Test.xcodeproj"),
-                targets: ["TestTarget"],
-                configuration: "Debug"
+                buildMode: .targets(["TestTarget"])
             ),
             options: XcodeBuildOptions.buildSettingsJSON(derivedDataPath: testCase.path)
         )
@@ -121,9 +114,9 @@ struct XcodeBuildCommandBuilderTests {
     func buildSettingsForIndexCommand(testCase: (path: String?, expectedArgs: [String])) {
         let builder = XcodeBuildCommandBuilder()
         let command = builder.buildCommand(
-            project: XcodeProjectConfiguration(
+            project: .workspace(
                 workspaceURL: URL(fileURLWithPath: "/test/Test.xcworkspace"),
-                configuration: "Debug"
+                scheme: "TestScheme"
             ),
             options: XcodeBuildOptions.buildSettingsForIndexJSON(derivedDataPath: testCase.path)
         )
