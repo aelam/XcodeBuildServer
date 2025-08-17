@@ -6,7 +6,11 @@ import XcodeProj // @tuist ~> 8.8.0
 struct XcodeProjTests {
     @Test
     func workspaceInitialization() throws {
-        let workspacePath = Path("/Users/wang.lun/Work/line-stickers-ios/UserStickers.xcworkspace")
+        let projectFolder = Bundle.module.resourceURL!
+            .appendingPathComponent("DemoProjects")
+            .appendingPathComponent("HelloWorkspace")
+            .appendingPathComponent("Hello.xcworkspace")
+        let workspacePath = Path(projectFolder.path)
         let workspace = try XCWorkspace(path: workspacePath)
         for child in workspace.data.children {
             if case let .file(fileElement) = child {
