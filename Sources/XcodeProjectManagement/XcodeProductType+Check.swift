@@ -28,7 +28,7 @@ public extension XcodeProductType {
 
     var isRunnableType: Bool {
         switch self {
-        case .application, .watchApp, .commandLineTool:
+        case .application, .watchApp, .watch2App, .commandLineTool, .appExtension:
             true
         default:
             false
