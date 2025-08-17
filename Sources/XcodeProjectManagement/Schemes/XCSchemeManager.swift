@@ -18,6 +18,7 @@ struct XCSchemeManager {
             result += loadSchemes(
                 at: wsPath,
                 containerName: "workspace",
+                isInWorkspace: true,
                 includeUserSchemes: includeUserSchemes
             )
 
@@ -33,6 +34,7 @@ struct XCSchemeManager {
                     result += loadSchemes(
                         at: projPath,
                         containerName: projPath.lastComponentWithoutExtension,
+                        isInWorkspace: false,
                         includeUserSchemes: includeUserSchemes
                     )
                 }
@@ -47,11 +49,13 @@ struct XCSchemeManager {
             result += loadSchemes(
                 at: projPath,
                 containerName: projPath.lastComponentWithoutExtension,
+                isInWorkspace: false,
                 includeUserSchemes: includeUserSchemes
             )
             result += loadSchemes(
                 at: wsPath,
                 containerName: "workspace",
+                isInWorkspace: true,
                 includeUserSchemes: includeUserSchemes
             )
 
@@ -61,6 +65,7 @@ struct XCSchemeManager {
             result += loadSchemes(
                 at: projPath,
                 containerName: projPath.lastComponentWithoutExtension,
+                isInWorkspace: false,
                 includeUserSchemes: includeUserSchemes
             )
         }
@@ -76,20 +81,10 @@ struct XCSchemeManager {
         return deduped.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
 
-    func filterInterestingSchemes(
-        _ schemes: [XcodeScheme],
-        filterOutTests: Bool = true,
-        filterOutPods: Bool = true
-    ) -> [XcodeScheme] {
-        schemes.filter { scheme in
-            (!filterOutTests || !scheme.name.contains("Tests")) &&
-                (!filterOutPods || !scheme.container.contains("Pods"))
-        }
-    }
-
     private func loadSchemes(
         at containerDir: Path,
         containerName: String,
+        isInWorkspace: Bool,
         includeUserSchemes: Bool
     ) -> [XcodeScheme] {
         var schemes: [XcodeScheme] = []
@@ -99,7 +94,15 @@ struct XCSchemeManager {
         if sharedDir.exists {
             for file in sharedDir.glob("*.xcscheme") {
                 if let scheme = try? XCScheme(path: file) {
-                    schemes.append(.init(name: scheme.name, path: file.url, container: containerName))
+                    schemes.append(
+                        XcodeScheme(
+                            xcscheme: scheme,
+                            isInWorkspace: isInWorkspace,
+                            isUserScheme: false,
+                            projectURL: containerDir.url,
+                            path: file.url
+                        )
+                    )
                 }
             }
         }
@@ -110,7 +113,15 @@ struct XCSchemeManager {
             if usersDir.exists {
                 for file in usersDir.glob("*.xcuserdatad/xcschemes/*.xcscheme") {
                     if let scheme = try? XCScheme(path: file) {
-                        schemes.append(.init(name: scheme.name, path: file.url, container: containerName))
+                        schemes.append(
+                            XcodeScheme(
+                                xcscheme: scheme,
+                                isInWorkspace: isInWorkspace,
+                                isUserScheme: true,
+                                projectURL: containerDir.url,
+                                path: file.url
+                            )
+                        )
                     }
                 }
             }

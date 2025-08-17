@@ -49,7 +49,7 @@ public struct XcodeTargetInfo: Sendable {
     }
 
     public var isUITestTarget: Bool {
-        xcodeProductType == .uiTest || name.contains("UITest")
+        xcodeProductType == .uiTestBundle || name.contains("UITest")
     }
 
     public var isRunnableTarget: Bool {
@@ -129,24 +129,19 @@ public actor XcodeProjectManager {
         )
         _ = await toolchain.getSelectedInstallation()
 
+        // Load containers for workspace projects to get actual targets
+        let actualTargets = try await loadActualTargets(
+            projectLocation: projectLocation
+        )
+
         let schemeManager = XCSchemeManager()
         let schemes = try schemeManager.listSchemes(
             projectLocation: projectLocation,
             includeUserSchemes: true
         )
 
-        // Load containers for workspace projects to get actual targets
-        let actualTargets = try await loadActualTargets(
-            projectLocation: projectLocation
-        )
-
-        let interestingSchemes = schemeManager.filterInterestingSchemes(
-            schemes,
-            filterOutTests: true,
-            filterOutPods: true
-        )
-
-        let firstScheme = interestingSchemes.first ?? schemes.first
+        let sortedSchemes = loadSchemsWithPriority(schemes: schemes, targets: actualTargets)
+        let firstScheme = sortedSchemes.first
         guard let firstScheme else {
             throw XcodeProjectError.noSchemesFound("No schemes found in project at \(rootURL.path)")
         }
@@ -196,89 +191,6 @@ public actor XcodeProjectManager {
         toolchain
     }
 
-    /// Load actual targets, handling both workspace and project cases
-    private func loadActualTargets(
-        projectLocation: XcodeProjectLocation
-    ) async throws -> [XcodeTarget] {
-        switch projectLocation {
-        case .explicitWorkspace:
-            // For workspace, load containers to get actual targets from projects
-            try await loadTargetsFromWorkspaceContainers(projectLocation: projectLocation)
-        case let .implicitWorkspace(projectURL, _):
-            // For project, load targets using XcodeProj
-            try loadTargetsFromXcodeProj(projectPath: projectURL)
-        case let .standaloneProject(projectURL):
-            // For standalone project, load targets using XcodeProj
-            try loadTargetsFromXcodeProj(projectPath: projectURL)
-        }
-    }
-
-    /// Load targets from workspace containers using XcodeProj
-    private func loadTargetsFromWorkspaceContainers(
-        projectLocation: XcodeProjectLocation
-    ) async throws -> [XcodeTarget] {
-        guard case let .explicitWorkspace(workspaceURL) = projectLocation else {
-            return []
-        }
-
-        do {
-            // Use XcodeProj to parse workspace
-            let workspace = try XCWorkspace(pathString: workspaceURL.path)
-            var allTargets: [XcodeTarget] = []
-
-            // Get all project references from workspace
-            for element in workspace.data.children {
-                if case let .file(fileRef) = element,
-                   fileRef.location.path.hasSuffix(".xcodeproj") {
-                    // Resolve project path relative to workspace
-                    let projectPath = resolveProjectPath(
-                        from: fileRef.location,
-                        workspaceURL: workspaceURL
-                    )
-
-                    if let projectPath {
-                        do {
-                            let projectTargets = try loadTargetsFromXcodeProj(projectPath: projectPath)
-                            allTargets.append(contentsOf: projectTargets)
-                        } catch {
-                            logger.error("Failed to load targets from project \(projectPath): \(error)")
-                            // Continue with other projects
-                        }
-                    }
-                }
-            }
-
-            logger.debug("Loaded \(allTargets.count) targets from workspace \(workspaceURL.path)")
-
-            return allTargets
-        } catch {
-            logger.error("Failed to parse workspace \(workspaceURL.path): \(error)")
-            return []
-        }
-    }
-
-    /// Simple container parser using XcodeProj to get project URLs from workspace
-    private func getProjectURLsFromWorkspace(workspaceURL: URL) -> [URL] {
-        do {
-            let workspace = try XCWorkspace(pathString: workspaceURL.path)
-            var projectURLs: [URL] = []
-
-            for element in workspace.data.children {
-                if case let .file(fileRef) = element,
-                   fileRef.location.path.hasSuffix(".xcodeproj") {
-                    if let projectPath = resolveProjectPath(from: fileRef.location, workspaceURL: workspaceURL) {
-                        projectURLs.append(projectPath)
-                    }
-                }
-            }
-
-            return projectURLs
-        } catch {
-            logger.error("Failed to parse workspace for project URLs: \(error)")
-            return []
-        }
-    }
-
     /// Load build settings with correct parameters based on project type
     private func loadBuildSettings(
         rootURL: URL,
@@ -312,28 +224,8 @@ public actor XcodeProjectManager {
 // MARK: - Utilities Extension
 
 extension XcodeProjectManager {
-    /// Load targets from XcodeProj directly
-    private func loadTargetsFromXcodeProj(projectPath: URL) throws -> [XcodeTarget] {
-        var targets = [XcodeTarget]()
-        let project = try XcodeProj(pathString: projectPath.path)
-        for target in project.pbxproj.nativeTargets {
-            let buildConfiguration = target.buildConfigurationList?.buildConfigurations.first?.buildSettings
-            let SDKROOT: String = buildConfiguration?["SDKROOT"] as? String ?? "iphoneos"
-            let platform = XcodeTarget.Platform(rawValue: SDKROOT) ?? .iOS
-            targets.append(
-                XcodeTarget(
-                    name: target.name,
-                    projectURL: projectPath,
-                    isFromWorkspace: false,
-                    platform: platform
-                )
-            )
-        }
-        return targets
-    }
-
     /// Resolve project path from workspace file reference
-    private func resolveProjectPath(from location: XCWorkspaceDataElementLocationType, workspaceURL: URL) -> URL? {
+    func resolveProjectPath(from location: XCWorkspaceDataElementLocationType, workspaceURL: URL) -> URL? {
         let workspaceDir = workspaceURL.deletingLastPathComponent()
 
         switch location {

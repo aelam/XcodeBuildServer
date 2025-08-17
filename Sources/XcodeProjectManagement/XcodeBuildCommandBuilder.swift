@@ -17,15 +17,15 @@ public enum XcodeProjectConfiguration: Sendable {
 }
 
 public enum XcodeSDK: String, Sendable {
-    case macOS
-    case iOS
+    case macOS = "macosx"
+    case iOS = "iphoneos"
     case iOSSimulator = "iphonesimulator"
-    case watchOS
-    case watchOSSimulator
-    case tvOS
-    case tvOSSimulator
-    case visionOS
-    case visionOSSimulator
+    case watchOS = "watchos"
+    case watchSimulator = "watchsimulator"
+    case tvOS = "appletvos"
+    case tvSimulator = "appletvsimulator"
+    case visionOS = "xros"
+    case visionSimulator = "xrsimulator"
 }
 
 public enum XcodeBuildDestination: Sendable {
@@ -33,9 +33,9 @@ public enum XcodeBuildDestination: Sendable {
     case iOS
     case iOSSimulator
     case watchOS
-    case watchOSSimulator
+    case watchSimulator
     case tvOS
-    case tvOSSimulator
+    case tvSimulator
     case custom(String)
 
     public var destinationString: String {
@@ -48,11 +48,11 @@ public enum XcodeBuildDestination: Sendable {
             "generic/platform=iOS Simulator"
         case .watchOS:
             "generic/platform=watchOS"
-        case .watchOSSimulator:
+        case .watchSimulator:
             "generic/platform=watchOS Simulator"
         case .tvOS:
             "generic/platform=tvOS"
-        case .tvOSSimulator:
+        case .tvSimulator:
             "generic/platform=tvOS Simulator"
         case let .custom(destination):
             destination
