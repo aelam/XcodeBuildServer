@@ -8,7 +8,7 @@ import Foundation
 import Logger
 import XcodeProj
 
-public struct XcodeProjectPrimaryBuildSetting: Sendable {
+public struct XcodeProjectPrimaryBuildSettings: Sendable {
     public let derivedDataPath: URL
     public let indexStoreURL: URL
     public let indexDatabaseURL: URL
@@ -159,18 +159,15 @@ public actor XcodeProjectManager {
         )
 
         // Get index URLs using the first available scheme (shared per workspace)
-        let primaryBuildSettings = try await loadPathsFromPrimayBuildSettings(
-            settingsLoader: settingsLoader,
-            projectLocation: projectLocation,
+        let primaryBuildSettings = try await settingsLoader.loadPathsFromPrimayBuildSettings(
             buildSettingsList: buildSettingsList
         )
 
-        let buildSettingsMap = try await settingsLoader.loadBuildSettingsMap(
+        _ = try await settingsLoader.loadBuildSettingsMap(
             rootURL: rootURL,
             targets: actualTargets,
             customFlags: [
-                "SYMROOT=/tmp/__A__",
-                "CONFIGURATION=Debug",
+                "SYMROOT=/tmp/__A__"
             ]
         )
 
@@ -192,30 +189,6 @@ public actor XcodeProjectManager {
             indexStoreURL: primaryBuildSettings.indexStoreURL,
             indexDatabaseURL: primaryBuildSettings.indexDatabaseURL,
             buildSettingsForIndex: buildSettingsForIndex
-        )
-    }
-
-    private func loadPathsFromPrimayBuildSettings(
-        settingsLoader: XcodeSettingsLoader,
-        projectLocation: XcodeProjectLocation,
-        scheme: String? = nil,
-        buildSettingsList: [XcodeBuildSettings]
-    ) async throws -> XcodeProjectPrimaryBuildSetting {
-        let (indexStoreURL, indexDatabaseURL, configuration) = try await settingsLoader.loadIndexingPaths(
-            buildSettingsList: buildSettingsList
-        )
-
-        // Extract derived data path from index store URL (go up 2 levels from Index.noIndex/DataStore)
-        // {Path/to/DerivedData}/{Project-hash}/Index.noIndex/DataStore
-        let derivedDataPath = indexStoreURL
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-
-        return XcodeProjectPrimaryBuildSetting(
-            derivedDataPath: derivedDataPath,
-            indexStoreURL: indexStoreURL,
-            indexDatabaseURL: indexDatabaseURL,
-            configuration: configuration
         )
     }
 
@@ -329,7 +302,7 @@ public actor XcodeProjectManager {
                 rootURL: rootURL,
                 project: .project(
                     projectURL: projectURL,
-                    buildMode: .scheme(scheme.name),
+                    buildMode: .scheme(scheme.name)
                 )
             )
         }
