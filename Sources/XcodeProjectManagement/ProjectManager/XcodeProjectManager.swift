@@ -162,7 +162,10 @@ public actor XcodeProjectManager {
             rootURL: rootURL,
             targets: actualTargets,
             customFlags: [
-                "SYMROOT=/tmp/__A__"
+                "SYMROOT=/tmp/__A__/Build/Products",
+                "OBJROOT=/tmp/__A__/Build/Intermediates.noindex",
+//                "BUILD_DIR=/tmp/__A__/Build/Products"
+//                "BUILD_ROOT=/tmp/__A__/Build/Products"
             ]
         )
 
