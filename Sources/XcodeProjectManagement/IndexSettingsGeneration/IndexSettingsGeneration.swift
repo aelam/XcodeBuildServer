@@ -73,10 +73,9 @@ enum IndexSettingsGeneration {
         // [ projectFilePath: ]
         // 分组 targetName 为 Set，自动去重
         let groupedTargetNames = Dictionary(
-            grouping: identifiers,
-            by: { $0.projectFilePath }
-        )
-        .mapValues { Set($0.map(\.targetName)) }
+            grouping: identifiers
+        ) { $0.projectFilePath }
+            .mapValues { Set($0.map(\.targetName)) }
 
         var sourceMap = SourceMap()
         for (projectFilePath, targetNames) in groupedTargetNames {
@@ -94,50 +93,69 @@ enum IndexSettingsGeneration {
         let sourceRoot = projectFileURL.parent()
         var sourceMap = SourceMap()
 
-        for target in xcodeProj.pbxproj.nativeTargets {
-            guard targets.contains(target.name) else { continue }
-            var filePaths: [String] = []
+        for target in xcodeProj.pbxproj.nativeTargets where targets.contains(target.name) {
+            var filePaths = [String]()
 
-            // Xcode15 Project file：通过 fileSystemSynchronizedGroups 获取本地文件夹
+            // Xcode15+：fileSystemSynchronizedGroups
             if let syncGroupIDs = target.fileSystemSynchronizedGroups {
-                for groupID in syncGroupIDs {
-                    guard let folderPath = groupID.path else {
-                        continue
-                    }
-                    let fullFolderPath = sourceRoot + Path(folderPath)
-                    // 遍历文件夹下所有源码文件（只遍历一层，如需递归可修改）
-                    if let fileList = try? FileManager.default.contentsOfDirectory(atPath: fullFolderPath.string) {
-                        let sourceFiles = fileList.filter {
-                            $0.hasSuffix(".swift") || $0.hasSuffix(".m") || $0.hasSuffix(".mm") ||
-                                $0.hasSuffix(".c") || $0.hasSuffix(".cpp") || $0.hasSuffix(".h")
-                        }.map { (fullFolderPath + Path($0)).string }
-                        filePaths.append(contentsOf: sourceFiles)
-                    }
-                }
+                filePaths += sourceFilesFromSynchronizedGroups(
+                    syncGroupIDs,
+                    xcodeProj: xcodeProj,
+                    sourceRoot: sourceRoot
+                )
             }
-            // 兼容旧结构：SourcesBuildPhase
-            let sourcesPhases = target.buildPhases.compactMap { $0 as? PBXSourcesBuildPhase }
-            for sourcesPhase in sourcesPhases {
-                for buildFile in sourcesPhase.files ?? [] {
-                    if let fileRef = buildFile.file {
-                        if let full = try? fileRef.fullPath(sourceRoot: sourceRoot)?.string {
-                            filePaths.append(full)
-                        } else if let rel = fileRef.path {
-                            let resolved = (sourceRoot + Path(rel)).string
-                            filePaths.append(resolved)
-                        } else {
-                            print("Cannot resolve path for \(fileRef)")
-                        }
-                    }
-                }
-            }
+
+            // 旧结构：SourcesBuildPhase
+            filePaths += sourceFilesFromBuildPhases(target, sourceRoot: sourceRoot)
 
             // 去重
             filePaths = Array(Set(filePaths))
-
             let targetIdentifier = TargetIdentifier(projectFilePath: projectFileURL.string, targetName: target.name)
             sourceMap[targetIdentifier.rawValue] = filePaths
         }
         return sourceMap
+    }
+
+    // 辅助方法：从同步 group 获取源码文件
+    private static func sourceFilesFromSynchronizedGroups(
+        _ syncGroupIDs: [PBXFileSystemSynchronizedRootGroup],
+        xcodeProj: XcodeProj,
+        sourceRoot: Path
+    ) -> [String] {
+        syncGroupIDs.flatMap { groupID in
+            guard
+                let folderPath = groupID.path
+            else {
+                return [String]()
+            }
+            let fullFolderPath = sourceRoot + Path(folderPath)
+            let fileList = (try? FileManager.default.contentsOfDirectory(atPath: fullFolderPath.string)) ?? []
+            return fileList.filter { isSourceFile($0) }
+                .map { (fullFolderPath + Path($0)).string }
+        }
+    }
+
+    // 辅助方法：从 build phase 获取源码文件
+    private static func sourceFilesFromBuildPhases(_ target: PBXNativeTarget, sourceRoot: Path) -> [String] {
+        target.buildPhases.compactMap { $0 as? PBXSourcesBuildPhase }
+            .flatMap { sourcesPhase in
+                (sourcesPhase.files ?? []).compactMap { buildFile in
+                    guard let fileRef = buildFile.file else { return nil }
+                    if let full = try? fileRef.fullPath(sourceRoot: sourceRoot)?.string {
+                        return full
+                    } else if let rel = fileRef.path {
+                        return (sourceRoot + Path(rel)).string
+                    } else {
+                        print("Cannot resolve path for \(fileRef)")
+                        return nil
+                    }
+                }
+            }
+    }
+
+    // 辅助方法：判断是否为源码文件
+    private static func isSourceFile(_ filename: String) -> Bool {
+        let exts = [".swift", ".m", ".mm", ".c", ".cpp", ".h"]
+        return exts.contains { filename.hasSuffix($0) }
     }
 }
