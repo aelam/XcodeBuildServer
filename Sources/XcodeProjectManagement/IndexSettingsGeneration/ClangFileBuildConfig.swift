@@ -1,5 +1,6 @@
 import Foundation
 
+// swiftlint:disable:next type_body_length
 struct ClangFileBuildConfig: SourceFileBuildConfigurable {
     let targetBuildConfig: TargetBuildConfig
     let sourceFile: String
@@ -135,6 +136,7 @@ struct ClangFileBuildConfig: SourceFileBuildConfigurable {
         return flags
     }
 
+    // swiftlint:disable:next function_body_length cyclomatic_complexity
     private func buildClangFlags() -> [String] {
         let settings = targetBuildConfig.buildSettings
         var flags: [String] = []

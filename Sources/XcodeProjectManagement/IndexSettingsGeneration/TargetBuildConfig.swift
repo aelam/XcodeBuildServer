@@ -1,5 +1,6 @@
 import Foundation
 
+// swiftlint:disable:next type_body_length
 struct TargetBuildConfig {
     // Raw build settings (kept for backward compatibility)
     private let buildSettingsPair: [String: String]

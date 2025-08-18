@@ -1,4 +1,3 @@
-
 protocol SourceFileBuildConfigurable {
     var targetBuildConfig: TargetBuildConfig { get }
     var sourceFile: String { get }
