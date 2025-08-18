@@ -152,15 +152,15 @@ public actor XcodeProjectManager {
         )
 
         let sortedSchemes = loadSchemsWithPriority(schemes: schemes, targets: actualTargets)
-        let firstScheme = sortedSchemes.first
-        guard let firstScheme else {
+        let importantScheme = sortedSchemes.first
+        guard let importantScheme else {
             throw XcodeProjectError.noSchemesFound("No schemes found in project at \(rootURL.path)")
         }
         // Load a build settings of any target to get DerivedData path
         let buildSettingsList = try await loadBuildSettings(
             rootURL: rootURL,
             projectLocation: projectLocation,
-            scheme: firstScheme,
+            scheme: importantScheme,
             settingsLoader: settingsLoader
         )
 
@@ -193,6 +193,7 @@ public actor XcodeProjectManager {
             projectLocation: projectLocation,
             buildSettingsList: buildSettingsList,
             primaryBuildSettings: primaryBuildSettings,
+            importantScheme: importantScheme,
             targets: actualTargets,
             schemes: [],
             derivedDataPath: primaryBuildSettings.derivedDataPath,
