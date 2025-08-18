@@ -18,6 +18,12 @@ A Build Server Protocol (BSP) implementation for Xcode projects, enabling better
 - 🛡️ **Thread-safe**: Robust concurrent operations with Swift actors
 - 📊 **Comprehensive Build Settings**: Full support for per-file, per-target compiler arguments via `buildSettingsForIndex`
 
+## Demo
+
+See XcodeBuildServer in action with seamless code navigation and jump-to-definition:
+
+![Navigation Demo](Docs/Navigation.gif)
+
 ## Installation
 
 ### Manual Installation
