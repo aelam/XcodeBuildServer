@@ -92,10 +92,9 @@ private extension IndexSettingsGeneration {
     }
 
     private static func buildAssetSymbolIndexPathComponents(from buildSettingsPair: [String: String]) -> [String] {
-        let objRoot = buildSettingsPair["OBJROOT"] ?? ""
+        let objRoot = buildSettingsPair["OBJROOT"] ?? "/tmp/OBJROOT"
         let projectName = buildSettingsPair["PROJECT"] ?? ""
         let configuration = buildSettingsPair["CONFIGURATION"] ?? "Debug"
-        // swiftlint:disable:next identifier_name
         let effectivePlatformName = buildSettingsPair["EFFECTIVE_PLATFORM_NAME"] ?? "-iphonesimulator"
         let moduleName = buildSettingsPair["PRODUCT_MODULE_NAME"] ?? ""
 
@@ -114,10 +113,9 @@ private extension IndexSettingsGeneration {
     // MARK: - swiftASTBuiltProductsDir
 
     static func buildSwiftASTBuiltProductsDir(buildSettings: XcodeBuildSettings) -> String {
-        // swiftlint:disable:next identifier_name
-        let CONFIGURATION_BUILD_DIR = buildSettings.buildSettings["CONFIGURATION_BUILD_DIR"] ?? ""
+        let configurationBuildDir = buildSettings.buildSettings["CONFIGURATION_BUILD_DIR"] ?? "/tmp/"
         let moduleName = buildSettings.buildSettings["PRODUCT_MODULE_NAME"] ?? buildSettings.target
-        return [CONFIGURATION_BUILD_DIR, moduleName].joined(separator: "/")
+        return [configurationBuildDir, moduleName].joined(separator: "/")
     }
 
     // MARK: - outputFilePath
@@ -127,15 +125,14 @@ private extension IndexSettingsGeneration {
         let projectName = buildSettingsPair["PROJECT"] ?? ""
         let moduleName = buildSettingsPair["PRODUCT_MODULE_NAME"] ?? ""
         let configuration = buildSettingsPair["CONFIGURATION"] ?? "Debug"
-        // swiftlint:disable:next identifier_name
-        let EFFECTIVE_PLATFORM_NAME = buildSettingsPair["EFFECTIVE_PLATFORM_NAME"] ?? "-iphonesimulator"
+        let effectivePlatformName = buildSettingsPair["EFFECTIVE_PLATFORM_NAME"] ?? "-iphonesimulator"
         let arch = buildSettingsPair["NATIVE_ARCH"] ?? "arm64"
         let outputName = URL(fileURLWithPath: filePath).deletingPathExtension().lastPathComponent
 
         let components: [String] =
             [
                 projectName + ".build", // Pods.build
-                configuration + EFFECTIVE_PLATFORM_NAME, // Debug-iphonesimulator
+                configuration + effectivePlatformName, // Debug-iphonesimulator
                 moduleName + ".build", // Crossroad.build
                 "Objects-normal",
                 arch,
