@@ -106,7 +106,7 @@ The `.XcodeBuildServer/project.json` file is required for:
 - Multiple workspaces
 - Multiple projects without a workspace
 - Custom build configurations
-- Projects/workspaces with multiple schemes
+- Projects/workspaces with multiple schemes for multi iOS apps that XcodeBuildServer can not guess which one is main 
 
 ## Quick Start
 
