@@ -8,7 +8,7 @@ import Foundation
 import Logger
 import XcodeProj
 
-public struct XcodeProjectPrimaryBuildSettings: Sendable {
+public struct XcodeProjectPrimaryBuildSettings: Sendable, Codable, Hashable {
     public let derivedDataPath: URL
     public let indexStoreURL: URL
     public let indexDatabaseURL: URL
@@ -108,8 +108,8 @@ public struct XcodeTargetInfo: Sendable {
 
 public actor XcodeProjectManager {
     public let rootURL: URL
-    private let locator: XcodeProjectLocator
-    private let toolchain: XcodeToolchain
+    let locator: XcodeProjectLocator
+    let toolchain: XcodeToolchain
     let settingsLoader: XcodeSettingsLoader
 
     private let xcodeProjectReference: XcodeProjectReference?
@@ -169,16 +169,6 @@ public actor XcodeProjectManager {
             buildSettingsList: buildSettingsList
         )
 
-        // Wrong
-        // "SDK_STAT_CACHE_DIR" :
-        // "/var/folders/br/14spnq5s6d5dp4t62rsyv8t40000gp/C/com.apple.DeveloperTools/16.4-16F6/Xcode",
-        // "SDK_STAT_CACHE_PATH" :
-        // "/var/folders/br/14spnq5s6d5dp4t62rsyv8t40000gp/C/com.apple.DeveloperTools/16.4-16F6/Xcode/SDKStatCaches.noindex/iphonesimulator18.5-22F76-d5fc8ad4295d2ef488fb7d0f804ce0c4.sdkstatcache",
-
-        //  Correct
-        // "SDK_STAT_CACHE_DIR" : "/Users/wang.lun/Library/Developer/Xcode/DerivedData",
-        // "SDK_STAT_CACHE_PATH" : "/Users/wang.lun/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphonesimulator18.5-22F76-d5fc8ad4295d2ef488fb7d0f804ce0c4.sdkstatcache",
-
         let buildSettingsMap = try await settingsLoader.loadBuildSettingsMap(
             rootURL: rootURL,
             targets: actualTargets,
@@ -202,6 +192,7 @@ public actor XcodeProjectManager {
             rootURL: rootURL,
             projectLocation: projectLocation,
             buildSettingsList: buildSettingsList,
+            primaryBuildSettings: primaryBuildSettings,
             targets: actualTargets,
             schemes: [],
             derivedDataPath: primaryBuildSettings.derivedDataPath,
@@ -209,10 +200,6 @@ public actor XcodeProjectManager {
             indexDatabaseURL: primaryBuildSettings.indexDatabaseURL,
             buildSettingsForIndex: buildSettingsForIndex
         )
-    }
-
-    public func getToolchain() -> XcodeToolchain {
-        toolchain
     }
 
     /// Load build settings with correct parameters based on project type
