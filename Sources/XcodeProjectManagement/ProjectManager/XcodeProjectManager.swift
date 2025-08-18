@@ -183,8 +183,9 @@ public actor XcodeProjectManager {
             rootURL: rootURL,
             targets: actualTargets,
             customFlags: [
-                "SYMROOT=" + primaryBuildSettings.derivedDataPath.path + "Build/Products",
-                "OBJROOT=" + primaryBuildSettings.derivedDataPath.path + "Build/Intermediates.noindex",
+                "SYMROOT=" + primaryBuildSettings.derivedDataPath.appendingPathComponent("Build/Products").path,
+                "OBJROOT=" + primaryBuildSettings.derivedDataPath.appendingPathComponent("Build/Intermediates.noindex")
+                    .path,
                 "SDK_STAT_CACHE_DIR=" + primaryBuildSettings.derivedDataPath.deletingLastPathComponent().path,
                 // "BUILD_DIR=/tmp/__A__/Build/Products"
                 // "BUILD_ROOT=/tmp/__A__/Build/Products"
@@ -196,14 +197,6 @@ public actor XcodeProjectManager {
             primaryBuildSettings: primaryBuildSettings,
             buildSettingsMap: buildSettingsMap
         )
-
-        // // Load buildSettingsForIndex for source file discovery
-        // let buildSettingsForIndex = try await settingsLoader.loadBuildSettingsForIndex(
-        //     rootURL: rootURL,
-        //     targets: actualTargets,
-        //     derivedDataPath: primaryBuildSettings.derivedDataPath
-        // )
-        // logger.debug("buildSettingsForIndex: \n\(buildSettingsForIndex)")
 
         return XcodeProjectInfo(
             rootURL: rootURL,

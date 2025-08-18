@@ -14,6 +14,8 @@ enum IndexSettingsGeneration {
 
         var indexSettings: XcodeBuildSettingsForIndex = [:]
         for (targetIdentifier, settings) in buildSettingsMap {
+            let targetProductType = XcodeProductType(rawValue: settings.buildSettings["PRODUCT_TYPE"] ?? "") ?? .none
+
             // 获取该 target 的所有 source file 路径
             let sourceFiles = sourceMap[targetIdentifier] ?? []
             var fileInfos: [String: XcodeFileBuildSettingInfo] = [:]
@@ -31,6 +33,7 @@ enum IndexSettingsGeneration {
                     swiftASTBuiltProductsDir: buildSwiftASTBuiltProductsDir(buildSettings: settings),
                     swiftASTCommandArguments: buildSwiftASTCommandArguments(
                         for: sourceFile,
+                        targetProductType: targetProductType,
                         primaryBuildSettings: primaryBuildSettings,
                         buildSettings: settings,
                         sourceFiles: sourceFiles
@@ -79,22 +82,30 @@ private extension IndexSettingsGeneration {
     // MARK: - assetSymbolIndexPath
 
     static func buildAssetSymbolIndexPath(buildSettings: XcodeBuildSettings) -> String {
-        let buildSettingsPair: [String: String] = buildSettings.buildSettings
-        let OBJROOT = buildSettingsPair["OBJROOT"] ?? ""
+        let buildSettingsPair = extractBuildSettingsPair(from: buildSettings)
+        let pathComponents = buildAssetSymbolIndexPathComponents(from: buildSettingsPair)
+        return pathComponents.joined(separator: "/")
+    }
+
+    private static func extractBuildSettingsPair(from buildSettings: XcodeBuildSettings) -> [String: String] {
+        buildSettings.buildSettings
+    }
+
+    private static func buildAssetSymbolIndexPathComponents(from buildSettingsPair: [String: String]) -> [String] {
+        let objRoot = buildSettingsPair["OBJROOT"] ?? "/tmp/OBJROOT"
         let projectName = buildSettingsPair["PROJECT"] ?? ""
         let configuration = buildSettingsPair["CONFIGURATION"] ?? "Debug"
-        // swiftlint:disable:next identifier_name
-        let EFFECTIVE_PLATFORM_NAME = buildSettingsPair["EFFECTIVE_PLATFORM_NAME"] ?? "-iphonesimulator"
+        let effectivePlatformName = buildSettingsPair["EFFECTIVE_PLATFORM_NAME"] ?? "-iphonesimulator"
         let moduleName = buildSettingsPair["PRODUCT_MODULE_NAME"] ?? ""
 
         return [
-            OBJROOT,
-            projectName + ".build", // Pods.build
-            configuration + EFFECTIVE_PLATFORM_NAME, // Debug-iphonesimulator
-            moduleName + ".build", // Crossroad.build
+            objRoot,
+            "\(projectName).build", // Pods.build
+            "\(configuration)\(effectivePlatformName)", // Debug-iphonesimulator
+            "\(moduleName).build", // Crossroad.build
             "DerivedSources",
             "GeneratedAssetSymbols-Index.plist"
-        ].joined(separator: "/")
+        ]
     }
 }
 
@@ -102,10 +113,9 @@ private extension IndexSettingsGeneration {
     // MARK: - swiftASTBuiltProductsDir
 
     static func buildSwiftASTBuiltProductsDir(buildSettings: XcodeBuildSettings) -> String {
-        // swiftlint:disable:next identifier_name
-        let CONFIGURATION_BUILD_DIR = buildSettings.buildSettings["CONFIGURATION_BUILD_DIR"] ?? ""
+        let configurationBuildDir = buildSettings.buildSettings["CONFIGURATION_BUILD_DIR"] ?? "/tmp/"
         let moduleName = buildSettings.buildSettings["PRODUCT_MODULE_NAME"] ?? buildSettings.target
-        return [CONFIGURATION_BUILD_DIR, moduleName].joined(separator: "/")
+        return [configurationBuildDir, moduleName].joined(separator: "/")
     }
 
     // MARK: - outputFilePath
@@ -115,15 +125,14 @@ private extension IndexSettingsGeneration {
         let projectName = buildSettingsPair["PROJECT"] ?? ""
         let moduleName = buildSettingsPair["PRODUCT_MODULE_NAME"] ?? ""
         let configuration = buildSettingsPair["CONFIGURATION"] ?? "Debug"
-        // swiftlint:disable:next identifier_name
-        let EFFECTIVE_PLATFORM_NAME = buildSettingsPair["EFFECTIVE_PLATFORM_NAME"] ?? "-iphonesimulator"
+        let effectivePlatformName = buildSettingsPair["EFFECTIVE_PLATFORM_NAME"] ?? "-iphonesimulator"
         let arch = buildSettingsPair["NATIVE_ARCH"] ?? "arm64"
         let outputName = URL(fileURLWithPath: filePath).deletingPathExtension().lastPathComponent
 
         let components: [String] =
             [
                 projectName + ".build", // Pods.build
-                configuration + EFFECTIVE_PLATFORM_NAME, // Debug-iphonesimulator
+                configuration + effectivePlatformName, // Debug-iphonesimulator
                 moduleName + ".build", // Crossroad.build
                 "Objects-normal",
                 arch,
@@ -138,99 +147,168 @@ private extension IndexSettingsGeneration {
 private extension IndexSettingsGeneration {
     // MARK: - buildSwiftASTCommandArguments
 
-    // swiftlint:disable:next function_body_length
     static func buildSwiftASTCommandArguments(
         for filePath: String,
+        targetProductType: XcodeProductType,
         primaryBuildSettings: XcodeProjectPrimaryBuildSettings,
         buildSettings: XcodeBuildSettings,
         sourceFiles: [String]
     ) -> [String] {
-        let derivedDataPath = primaryBuildSettings.derivedDataPath
-
-        let buildSettingsPair: [String: String] = buildSettings.buildSettings
-        let moduleName = buildSettingsPair["PRODUCT_MODULE_NAME"] ?? buildSettings.target
-        let otherSwiftFlagsString = buildSettingsPair["OTHER_SWIFT_FLAGS"] ?? ""
-        let otherSwiftFlags = StringUtils.splitFlags(otherSwiftFlagsString)
-        let SDKROOT = buildSettingsPair["SDKROOT"] ?? ""
-        // swiftlint:disable:next identifier_name
-        let NATIVE_ARCH = buildSettingsPair["NATIVE_ARCH"] ?? "arm64"
-        let vendor = buildSettingsPair["LLVM_TARGET_TRIPLE_VENDOR"] ?? "apple"
-        let osVersion = buildSettingsPair["LLVM_TARGET_TRIPLE_OS_VERSION"] ?? "ios16.0"
-        let suffix = (buildSettingsPair["LLVM_TARGET_TRIPLE_SUFFIX"] ?? "-simulator").replacingOccurrences(
-            of: "-",
-            with: ""
+        let buildConfig = SwiftBuildConfig(
+            buildSettings: buildSettings,
+            primaryBuildSettings: primaryBuildSettings
         )
-        let target = [NATIVE_ARCH, vendor, osVersion, suffix].joined(separator: "-")
-        let moduleCachePath = derivedDataPath.deletingLastPathComponent()
-            .appendingPathComponent("ModuleCache.noindex")
-            .path
-        let indexStorePath = primaryBuildSettings.indexStoreURL.path
-        let swiftVersion = buildSettingsPair["SWIFT_VERSION"] ?? "5"
 
-        let configurationBuildDir = buildSettingsPair["CONFIGURATION_BUILD_DIR"] ?? ""
-        let productPath = configurationBuildDir + moduleName
+        let basicFlags = buildBasicSwiftFlags(config: buildConfig)
+        let searchPathFlags = buildSearchPathFlags(config: buildConfig)
+        let testFlags = buildTestFlags(config: buildConfig, targetProductType: targetProductType)
+        let conditionFlags = buildCompilationConditionFlags(config: buildConfig)
+        let swiftFlags = buildSwiftSpecificFlags(config: buildConfig, sourceFiles: sourceFiles)
+        let cacheFlags = buildCacheAndProductFlags(config: buildConfig)
+        let advancedFlags = buildAdvancedCompilerFlags(config: buildConfig)
 
-        // swiftlint:disable:next identifier_name
-        let SDK_STAT_CACHE_PATH = buildSettingsPair["SDK_STAT_CACHE_PATH"] ?? ""
-        // swiftlint:disable:next identifier_name
-        let CONFIGURATION_TEMP_DIR = buildSettingsPair["CONFIGURATION_TEMP_DIR"] ?? ""
-        let hmapFolder = CONFIGURATION_TEMP_DIR + "\(moduleName).build" + "/"
-        let swiftOverridesHmapPath = hmapFolder + "swift-overrides.hmap"
+        return basicFlags
+            + searchPathFlags
+            + testFlags
+            + conditionFlags
+            + swiftFlags
+            + cacheFlags
+            + advancedFlags
+    }
 
-        let constExtractProtocols = URL(fileURLWithPath: buildSettingsPair["PER_ARCH_MODULE_FILE_DIR"] ?? "")
-            .deletingLastPathComponent()
-            .appendingPathComponent(NATIVE_ARCH)
-            .appendingPathComponent("\(moduleName)_const_extract_protocols.json")
-            .path
+    private struct SwiftBuildConfig {
+        let buildSettingsPair: [String: String]
+        let moduleName: String
+        let derivedDataPath: URL
+        let indexStorePath: String
+        let moduleCachePath: String
+        let configurationBuildDir: String
+        let productPath: String
+        let configurationTempDir: String
+        let hmapFolder: String
+        let swiftOverridesHmapPath: String
+        let constExtractProtocols: String
+        let vfsoverlayPath: String
+        let sdkRoot: String
+        let nativeArch: String
+        let target: String
+        let swiftVersion: String
+        let sdkStatCachePath: String
+        let gccPreprocessorDefinitions: String
 
-        let projectGUID = buildSettingsPair["PROJECT_GUID"] ?? ""
-        let platform = buildSettingsPair["PLATFORM_NAME"] ?? "iphonesimulator"
-        let vfsoverlayPath = CONFIGURATION_TEMP_DIR +
-            "\(moduleName)-\(projectGUID)-VFS-\(platform)/all-product-headers.yaml"
-        // swiftlint:disable:next identifier_name
-        let GCC_PREPROCESSOR_DEFINITIONS = buildSettingsPair["GCC_PREPROCESSOR_DEFINITIONS"] ?? ""
+        init(buildSettings: XcodeBuildSettings, primaryBuildSettings: XcodeProjectPrimaryBuildSettings) {
+            self.buildSettingsPair = buildSettings.buildSettings
+            self.moduleName = buildSettingsPair["PRODUCT_MODULE_NAME"] ?? buildSettings.target
+            self.derivedDataPath = primaryBuildSettings.derivedDataPath
+            self.indexStorePath = primaryBuildSettings.indexStoreURL.path
 
-        // 分块写每个参数段，最后汇总
-        let basicFlags: [String] = [
-            "-module-name", moduleName,
+            self.moduleCachePath = derivedDataPath.deletingLastPathComponent()
+                .appendingPathComponent("ModuleCache.noindex")
+                .path
+
+            self.configurationBuildDir = buildSettingsPair["CONFIGURATION_BUILD_DIR"] ?? ""
+            self.productPath = URL(filePath: configurationBuildDir).appendingPathComponent(moduleName).path
+
+            self.configurationTempDir = buildSettingsPair["CONFIGURATION_TEMP_DIR"] ?? ""
+            self.hmapFolder = URL(filePath: configurationTempDir).appendingPathComponent("\(moduleName).build").path
+            self.swiftOverridesHmapPath = URL(filePath: hmapFolder).appendingPathComponent("swift-overrides.hmap").path
+
+            self.constExtractProtocols = URL(fileURLWithPath: buildSettingsPair["PER_ARCH_MODULE_FILE_DIR"] ?? "")
+                .deletingLastPathComponent()
+                .appendingPathComponent(buildSettingsPair["NATIVE_ARCH"] ?? "arm64")
+                .appendingPathComponent("\(moduleName)_const_extract_protocols.json")
+                .path
+
+            let projectGUID = buildSettingsPair["PROJECT_GUID"] ?? ""
+            let platform = buildSettingsPair["PLATFORM_NAME"] ?? "iphonesimulator"
+            self.vfsoverlayPath = configurationTempDir +
+                "\(moduleName)-\(projectGUID)-VFS-\(platform)/all-product-headers.yaml"
+
+            self.sdkRoot = buildSettingsPair["SDKROOT"] ?? ""
+            self.nativeArch = buildSettingsPair["NATIVE_ARCH"] ?? "arm64"
+
+            let vendor = buildSettingsPair["LLVM_TARGET_TRIPLE_VENDOR"] ?? "apple"
+            let osVersion = buildSettingsPair["LLVM_TARGET_TRIPLE_OS_VERSION"] ?? "ios16.0"
+            let suffix = (buildSettingsPair["LLVM_TARGET_TRIPLE_SUFFIX"] ?? "-simulator").replacingOccurrences(
+                of: "-",
+                with: ""
+            )
+            self.target = [nativeArch, vendor, osVersion, suffix].joined(separator: "-")
+
+            self.swiftVersion = buildSettingsPair["SWIFT_VERSION"] ?? "5"
+            self.sdkStatCachePath = buildSettingsPair["SDK_STAT_CACHE_PATH"] ?? ""
+            self.gccPreprocessorDefinitions = buildSettingsPair["GCC_PREPROCESSOR_DEFINITIONS"] ?? ""
+        }
+    }
+
+    private static func buildBasicSwiftFlags(config: SwiftBuildConfig) -> [String] {
+        [
+            "-module-name", config.moduleName,
             "-Onone",
-            "-enforce-exclusivity=checked"
-        ]
-
-        let sourceFlags: [String] = sourceFiles
-
-        let swiftFlags: [String] = otherSwiftFlags
-
-        let configFlags: [String] = [
+            "-enforce-exclusivity=checked",
             "-enable-bare-slash-regex",
             "-enable-experimental-feature",
             "DebugDescriptionMacro",
-            "-sdk", SDKROOT,
-            "-target", target,
+            "-sdk", config.sdkRoot,
+            "-target", config.target,
             "-g",
-            "-module-cache-path", moduleCachePath,
-            // otherwise pcm cache would be created in project
-            "-Xcc", "-fmodules-cache-path=\(moduleCachePath)",
+            "-module-cache-path", config.moduleCachePath,
+            "-Xcc", "-fmodules-cache-path=\(config.moduleCachePath)",
             "-Xfrontend",
             "-serialize-debugging-options",
             "-profile-coverage-mapping",
             "-profile-generate",
             "-enable-testing",
-            "-index-store-path", indexStorePath,
-            "-swift-version", swiftVersion
+            "-index-store-path", config.indexStorePath,
+            "-swift-version", config.swiftVersion
         ]
+    }
 
+    private static func buildSearchPathFlags(config: SwiftBuildConfig) -> [String] {
+        let headerSearchFlags = extractHeaderSearchFlags(from: config.buildSettingsPair)
+        let frameworkSearchFlags = extractFrameworkSearchFlags(from: config.buildSettingsPair)
+        let librarySearchFlags = extractLibrarySearchFlags(from: config.buildSettingsPair)
+        let linkerFlags = extractLinkerFlags(from: config.buildSettingsPair)
+
+        return headerSearchFlags + frameworkSearchFlags + librarySearchFlags + linkerFlags
+    }
+
+    private static func buildTestFlags(config: SwiftBuildConfig, targetProductType: XcodeProductType) -> [String] {
+        guard targetProductType.isTestType else { return [] }
+
+        let testFrameworkFlags = extractTestFrameworkSearchFlags(from: config.buildSettingsPair)
+        let testLibraryFlags = extractTestLibrarySearchFlags(from: config.buildSettingsPair)
+        let testHostAppFlags = extractTestHostAppSwiftModuleFlags(from: config.buildSettingsPair)
+
+        return testFrameworkFlags + testLibraryFlags + testHostAppFlags
+    }
+
+    private static func buildCompilationConditionFlags(config: SwiftBuildConfig) -> [String] {
+        guard let conditions = config.buildSettingsPair["SWIFT_ACTIVE_COMPILATION_CONDITIONS"] else {
+            return []
+        }
+        return conditions.split(separator: " ").map { "-D\($0)" }
+    }
+
+    private static func buildSwiftSpecificFlags(config: SwiftBuildConfig, sourceFiles: [String]) -> [String] {
+        let otherSwiftFlagsString = config.buildSettingsPair["OTHER_SWIFT_FLAGS"] ?? ""
+        let otherSwiftFlags = StringUtils.splitFlags(otherSwiftFlagsString)
+
+        return sourceFiles + otherSwiftFlags
+    }
+
+    private static func buildCacheAndProductFlags(config: SwiftBuildConfig) -> [String] {
         let productFlags: [String] = [
-            "-Xcc", "-I", "-Xcc", productPath,
-            "-I", productPath,
-            "-Xcc", "-F", "-Xcc", productPath,
-            "-F", productPath
+            "-Xcc", "-I", "-Xcc", config.productPath,
+            "-I", config.productPath,
+            "-Xcc", "-F", "-Xcc", config.productPath,
+            "-F", config.productPath
         ]
 
         let batchFlags: [String] = [
             "-c", "-j14", "-enable-batch-mode",
-            "-Xcc", "-ivfsstatcache", "-Xcc", SDK_STAT_CACHE_PATH,
-            "-I\(swiftOverridesHmapPath)"
+            "-Xcc", "-ivfsstatcache", "-Xcc", config.sdkStatCachePath,
+            "-I\(config.swiftOverridesHmapPath)"
         ]
 
         let protocolFlags: [String] = [
@@ -238,44 +316,49 @@ private extension IndexSettingsGeneration {
             "-Xfrontend",
             "-const-gather-protocols-file",
             "-Xfrontend",
-            constExtractProtocols
+            config.constExtractProtocols
         ]
 
+        return productFlags + batchFlags + protocolFlags
+    }
+
+    private static func buildAdvancedCompilerFlags(config: SwiftBuildConfig) -> [String] {
         let hmapFlags: [String] = [
-            "-Xcc", "-iquote", "-Xcc", swiftOverridesHmapPath + "\(moduleName)-generated-files.hmap",
-            "-Xcc", "-I\(swiftOverridesHmapPath)" + "\(moduleName)-own-target-headers.hmap",
-            "-Xcc", "-I\(swiftOverridesHmapPath)" + "\(moduleName)-all-non-framework-target-headers.hmap"
+            "-Xcc", "-iquote", "-Xcc", config.swiftOverridesHmapPath + "\(config.moduleName)-generated-files.hmap",
+            "-Xcc", "-I\(config.swiftOverridesHmapPath)" + "\(config.moduleName)-own-target-headers.hmap",
+            "-Xcc", "-I\(config.swiftOverridesHmapPath)" + "\(config.moduleName)-all-non-framework-target-headers.hmap"
         ]
 
         let vfsoverlayFlags: [String] = [
-            "-Xcc", "-ivfsoverlay", "-Xcc", vfsoverlayPath
+            "-Xcc", "-ivfsoverlay", "-Xcc", config.vfsoverlayPath
         ]
 
         let projectHeadersFlags: [String] = [
-            "-Xcc", "-iquote", "-Xcc", swiftOverridesHmapPath + "\(moduleName)-project-headers.hmap"
+            "-Xcc", "-iquote", "-Xcc", config.swiftOverridesHmapPath + "\(config.moduleName)-project-headers.hmap"
         ]
 
         let includeFlags: [String] = [
-            "-Xcc", "-I\(configurationBuildDir)/\(moduleName)/include"
+            "-Xcc", "-I\(config.configurationBuildDir)/\(config.moduleName)/include"
         ]
 
         let derivedSourcesFlags: [String] = [
-            "-Xcc", "-I\(CONFIGURATION_TEMP_DIR)/\(moduleName).build/DerivedSources-normal/\(NATIVE_ARCH)",
-            "-Xcc", "-I\(CONFIGURATION_TEMP_DIR)/\(moduleName).build/DerivedSources/\(NATIVE_ARCH)",
-            "-Xcc", "-I\(CONFIGURATION_TEMP_DIR)/\(moduleName).build/DerivedSources/"
+            "-Xcc",
+            "-I\(config.configurationTempDir)/\(config.moduleName).build/DerivedSources-normal/\(config.nativeArch)",
+            "-Xcc", "-I\(config.configurationTempDir)/\(config.moduleName).build/DerivedSources/\(config.nativeArch)",
+            "-Xcc", "-I\(config.configurationTempDir)/\(config.moduleName).build/DerivedSources/"
         ]
 
-        let gccFlags: [String] = StringUtils.splitFlags(GCC_PREPROCESSOR_DEFINITIONS)
+        let gccFlags: [String] = StringUtils.splitFlags(config.gccPreprocessorDefinitions)
 
         let underlyingModuleFlags: [String] = [
             "-import-underlying-module",
             "-Xcc", "-ivfsoverlay", "-Xcc",
-            CONFIGURATION_TEMP_DIR + "\(moduleName).build/unextended-module-overlay.yaml"
+            config.configurationTempDir + "\(config.moduleName).build/unextended-module-overlay.yaml"
         ]
 
         let workingDirFlags: [String] = [
             "-working-directory",
-            buildSettingsPair["PROJECT_DIR"] ?? ""
+            config.buildSettingsPair["PROJECT_DIR"] ?? ""
         ]
 
         let extraFlags: [String] = [
@@ -291,23 +374,91 @@ private extension IndexSettingsGeneration {
             "-Xcc", "-fmodules-validate-system-headers"
         ]
 
-        // 汇总所有 flag
-        return basicFlags
-            + sourceFlags
-            + swiftFlags
-            + configFlags
-            + productFlags
-            + batchFlags
-            + protocolFlags
-            + hmapFlags
-            + vfsoverlayFlags
-            + projectHeadersFlags
-            + includeFlags
-            + derivedSourcesFlags
-            + gccFlags
-            + underlyingModuleFlags
-            + workingDirFlags
-            + extraFlags
+        return hmapFlags + vfsoverlayFlags + projectHeadersFlags + includeFlags
+            + derivedSourcesFlags + gccFlags + underlyingModuleFlags + workingDirFlags + extraFlags
+    }
+
+    private static func extractHeaderSearchFlags(from buildSettings: [String: String]) -> [String] {
+        guard let paths = buildSettings["HEADER_SEARCH_PATHS"] else { return [] }
+
+        let headerSearchPaths = paths.components(separatedBy: " ")
+            .map {
+                $0.trimmingCharacters(in: .whitespacesAndNewlines)
+                    .trimmingCharacters(in: CharacterSet(charactersIn: "\""))
+            }
+            .filter { !$0.isEmpty }
+
+        return headerSearchPaths.flatMap { ["-Xcc", "-I\($0)"] }
+    }
+
+    private static func extractFrameworkSearchFlags(from buildSettings: [String: String]) -> [String] {
+        guard let paths = buildSettings["FRAMEWORK_SEARCH_PATHS"] else { return [] }
+
+        return paths.components(separatedBy: " ")
+            .map {
+                $0.trimmingCharacters(in: .whitespacesAndNewlines)
+                    .trimmingCharacters(in: CharacterSet(charactersIn: "\""))
+            }
+            .filter { !$0.isEmpty }
+            .map { "-F\($0)" }
+    }
+
+    private static func extractLibrarySearchFlags(from buildSettings: [String: String]) -> [String] {
+        guard let paths = buildSettings["LIBRARY_SEARCH_PATHS"] else { return [] }
+
+        return paths.components(separatedBy: " ")
+            .map {
+                $0.trimmingCharacters(in: .whitespacesAndNewlines)
+                    .trimmingCharacters(in: CharacterSet(charactersIn: "\""))
+            }
+            .filter { !$0.isEmpty }
+            .map { "-L\($0)" }
+    }
+
+    private static func extractLinkerFlags(from buildSettings: [String: String]) -> [String] {
+        // "PRODUCT_SPECIFIC_LDFLAGS" : "-framework XCTest -lXCTestSwiftSupport",
+        guard let ldflags = buildSettings["PRODUCT_SPECIFIC_LDFLAGS"] else { return [] }
+
+        return ldflags.components(separatedBy: " ")
+            .map {
+                $0.trimmingCharacters(in: .whitespacesAndNewlines)
+                    .trimmingCharacters(in: CharacterSet(charactersIn: "\""))
+            }
+            .filter { !$0.isEmpty }
+    }
+
+    private static func extractTestFrameworkSearchFlags(from buildSettings: [String: String]) -> [String] {
+        guard let paths = buildSettings["TEST_FRAMEWORK_SEARCH_PATHS"] else { return [] }
+
+        return paths.components(separatedBy: " ")
+            .map {
+                $0.trimmingCharacters(in: .whitespacesAndNewlines)
+                    .trimmingCharacters(in: CharacterSet(charactersIn: "\""))
+            }
+            .filter { !$0.isEmpty }
+            .map { "-F\($0)" }
+    }
+
+    private static func extractTestLibrarySearchFlags(from buildSettings: [String: String]) -> [String] {
+        guard let paths = buildSettings["TEST_LIBRARY_SEARCH_PATHS"] else { return [] }
+
+        return paths.components(separatedBy: " ")
+            .map {
+                $0.trimmingCharacters(in: .whitespacesAndNewlines)
+                    .trimmingCharacters(in: CharacterSet(charactersIn: "\""))
+            }
+            .filter { !$0.isEmpty }
+            .map { "-L\($0)" }
+    }
+
+    private static func extractTestHostAppSwiftModuleFlags(from buildSettings: [String: String]) -> [String] {
+        guard let configurationBuildDir = buildSettings["CONFIGURATION_BUILD_DIR"] else {
+            return []
+        }
+        return [
+            "-I",
+            configurationBuildDir
+        ]
     }
 }
 
