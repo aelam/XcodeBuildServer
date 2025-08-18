@@ -147,26 +147,26 @@ public extension BuildServerContext {
             // Try to get the first available file's settings as fallback
             if let firstFileSettings = targetSettings.values.first {
                 logger.debug("Using fallback build settings from first available file")
-                return enhanceCompilerArgumentsForSourceKit(firstFileSettings.swiftASTCommandArguments ?? [])
+                return getCompilerArgumentsForSourceKit(firstFileSettings)
             }
             return []
         }
 
-        return enhanceCompilerArgumentsForSourceKit(fileBuildSettings.swiftASTCommandArguments ?? [])
+        return getCompilerArgumentsForSourceKit(fileBuildSettings)
     }
 
-    /// Enhance compiler arguments with SourceKit-LSP specific parameters for better system framework support.
-    private func enhanceCompilerArgumentsForSourceKit(_ baseArgs: [String]) -> [String] {
-        var enhancedArgs = baseArgs
-
-        // Only add flags that are universally supported and not likely to conflict
-        let additionalFlags = ["-enable-bare-slash-regex"]
-
-        for flag in additionalFlags where !enhancedArgs.contains(flag) {
-            enhancedArgs.append(flag)
+    private func getCompilerArgumentsForSourceKit(_ fileBuildSettings: XcodeFileBuildSettingInfo) -> [String] {
+        // Extract compiler arguments from file build settings
+        guard let language = fileBuildSettings.languageDialect else {
+            return []
+        }
+        if language.isSwift {
+            return fileBuildSettings.swiftASTCommandArguments ?? []
+        } else if language.isClang {
+            return fileBuildSettings.clangASTCommandArguments ?? []
         }
 
-        return enhancedArgs
+        return []
     }
 
     func getWorkingDirectory() throws -> String? {

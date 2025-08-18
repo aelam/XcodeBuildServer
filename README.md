@@ -18,6 +18,12 @@ A Build Server Protocol (BSP) implementation for Xcode projects, enabling better
 - 🛡️ **Thread-safe**: Robust concurrent operations with Swift actors
 - 📊 **Comprehensive Build Settings**: Full support for per-file, per-target compiler arguments via `buildSettingsForIndex`
 
+## Demo
+
+See XcodeBuildServer in action with seamless code navigation and jump-to-definition:
+
+![Navigation Demo](Docs/Navigation.gif)
+
 ## Installation
 
 ### Manual Installation
@@ -100,7 +106,7 @@ The `.XcodeBuildServer/project.json` file is required for:
 - Multiple workspaces
 - Multiple projects without a workspace
 - Custom build configurations
-- Projects/workspaces with multiple schemes
+- Projects/workspaces with multiple schemes for multi iOS apps that XcodeBuildServer can not guess which one is main 
 
 ## Quick Start
 
