@@ -48,38 +48,10 @@ public struct BuildTargetPrepareRequest: ContextualRequestType, Sendable {
 
             return BuildTargetPrepareResponse(
                 jsonrpc: jsonrpc,
-                id: id,
-                result: BuildTargetPrepareResult(
-                    statusCode: 0, // Success
-                    targets: targetURIs
-                )
+                id: id
             )
         }
     }
 }
 
-/// Response for buildTarget/prepare request
-public struct BuildTargetPrepareResponse: ResponseType, Sendable {
-    public let jsonrpc: String
-    public let id: JSONRPCID?
-    public let result: BuildTargetPrepareResult
-
-    public init(jsonrpc: String, id: JSONRPCID?, result: BuildTargetPrepareResult) {
-        self.jsonrpc = jsonrpc
-        self.id = id
-        self.result = result
-    }
-}
-
-/// Result of buildTarget/prepare request
-public struct BuildTargetPrepareResult: Codable, Sendable {
-    /// Status code indicating success (0) or failure (non-zero)
-    public let statusCode: Int
-    /// List of build target URIs that were successfully prepared
-    public let targets: [String]
-
-    public init(statusCode: Int, targets: [String]) {
-        self.statusCode = statusCode
-        self.targets = targets
-    }
-}
+typealias BuildTargetPrepareResponse = VoidResponse
