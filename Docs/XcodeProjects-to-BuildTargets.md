@@ -26,7 +26,7 @@
 ## 配置文件
 
 ### 配置路径
-`.XcodeBuildServer/xcode.json`
+`.XcodeBuildServer/project.json`
 
 ### 配置格式
 ```json
