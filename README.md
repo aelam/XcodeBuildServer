@@ -20,12 +20,6 @@ A Build Server Protocol (BSP) implementation for Xcode projects, enabling better
 
 ## Installation
 
-### Homebrew (Recommended)
-```bash
-# Coming soon
-brew install XcodeBuildServer
-```
-
 ### Manual Installation
 1. Download the latest release from [GitHub Releases](https://github.com/wang.lun/XcodeBuildServer/releases)
 2. Extract and move to your PATH:
@@ -36,58 +30,51 @@ brew install XcodeBuildServer
    ```
 
 ### Build from Source
-```bash
+```shell
 git clone https://github.com/wang.lun/XcodeBuildServer.git
 cd XcodeBuildServer
 swift build -c release
 cp .build/release/XcodeBuildServerCLI /usr/local/bin/XcodeBuildServerCLI
 ```
 
-## Quick Start
-
-1. **Configure your project**: 
-   1. Create a `.bsp/XcodeBuildServer.json` in your project root. The deprecated way is to create a `buildServer.json` file in your project root:
-   ```json
-   {
-      "name": "XcodeBuildServer",
-      "version": "0.2",
-      "bspVersion": "2.2.0",
-      "languages": [
-         "objective-c",
-         "objective-cpp",
-         "swift"
-      ],
-      "argv": [
-         "path/to/XcodeBuildServerCLI"
-      ],
-      "kind": "xcode"
-   }
-   ```
-   2. Create a `.bsp/xcode.json` configuration file in your project root:
-   ```json
-   {
-     "workspace": "YourProject.xcworkspace",
-     "scheme": "YourScheme",
-     "configuration": "Debug"
-   }
-   ```
-
-3. **Start the server**:
-   ```shell
-   XcodeBuildServerCLI
-   ```
-
-4. **Connect from your IDE**: Configure your IDE to connect to the BSP server (typically on stdio).
+### Homebrew (Coming Soon)
+```shell
+# Not yet available
+brew install XcodeBuildServer
+```
 
 ## Configuration
 
+### BSP Configuration
+
+Create a `.bsp/XcodeBuildServer.json` file in your project root:
+
+```json
+{
+   "name": "XcodeBuildServer",
+   "version": "0.2",
+   "bspVersion": "2.2.0",
+   "languages": [
+      "objective-c",
+      "objective-cpp",
+      "swift"
+   ],
+   "argv": [
+      "path/to/XcodeBuildServerCLI"
+   ]
+}
+```
+
 The build server looks for configuration in the following order:
 1. `.bsp/*.json` files (BSP standard)
-   1. `xcode.json` in `.bsp/` directory for your project/workspace
-   2. `xcode.json` in `.bsp/` directory is not necessary if you have only one project or one workspace
+   - `xcode.json` in `.bsp/` directory for your project/workspace
+   - `xcode.json` in `.bsp/` directory is not necessary if you have only one project or one workspace
 2. `buildServer.json` in project root (legacy support)
 
-### xcode.json Configuration Options
+### Project Configuration
+
+For complex projects, create a `.XcodeBuildServer/project.json` configuration file:
+
 ```json
 {
   "workspace": "YourProject.xcworkspace",
@@ -96,6 +83,8 @@ The build server looks for configuration in the following order:
   "configuration": "Debug"
 }
 ```
+
+#### Configuration Options
 
 | Option | Description | Required |
 |--------|-------------|----------|
@@ -106,9 +95,39 @@ The build server looks for configuration in the following order:
 
 *Either `workspace` or `project` is required.
 
+#### When Project Configuration is Required
+
+The `.XcodeBuildServer/project.json` file is required for:
+- Multiple workspaces
+- Multiple projects without a workspace
+- Custom build configurations
+- Projects/workspaces with multiple schemes
+
+## Quick Start
+
+1. **Install XcodeBuildServer** using one of the installation methods above
+
+2. **Configure your project** following the configuration section
+
+3. **Validate your project**:
+   ```shell
+   XcodeProjectCLI /path/to/projectFolder
+   ```
+   This will check your project settings and report any issues.
+
+4. **Start the server**:
+   ```shell
+   XcodeBuildServerCLI
+   ```
+
+5. **Connect from your IDE**: Configure your IDE to connect to the BSP server (typically on stdio).
+
 ## IDE Integration
 
 ### VS Code with SourceKit-LSP
+
+Install the VSCode-Swift extension. For Swift versions lower than 6.1, configure:
+
 ```json
 {
   "swift.sourcekit-lsp.serverPath": "/path/to/sourcekit-lsp",
@@ -117,6 +136,7 @@ The build server looks for configuration in the following order:
 ```
 
 ### Vim/Neovim
+
 Use with [vim-lsp](https://github.com/prabirshrestha/vim-lsp) or [coc.nvim](https://github.com/neoclide/coc.nvim).
 
 ## Development
@@ -136,28 +156,18 @@ swift build
 swift test
 ```
 
-### Contributing
-
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
-
 ## Architecture
 
 ```
-┌─────────────────┐    JSON-RPC    ┌──────────────────┐
+┌─────────────────┐    JSON-RPC     ┌──────────────────┐
 │       IDE       │ ◄─────────────► │ XcodeBuildServer │
-└─────────────────┘                └──────────────────┘
+└─────────────────┘                 └──────────────────┘
                                             │
                                             ▼
-                                   ┌─────────────────┐
-                                   │ Xcode Build     │
-                                   │ System          │
-                                   └─────────────────┘
+                                    ┌─────────────────┐
+                                    │ Xcode Build     │
+                                    │ System          │
+                                    └─────────────────┘
 ```
 
 ### Key Components
@@ -190,19 +200,26 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 
 ### Logging
 
-Enable debug logging:
-```bash
-export XCODE_BUILD_SERVER_LOG_LEVEL=debug
-xcode-build-server
-```
+Logs are written to `/tmp/xcode-build-server.log`
+
+## Contributing
+
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests
+5. Submit a pull request
 
 ## References
 
 - [Build Server Protocol Specification](https://build-server-protocol.github.io/)
 - [SourceKit-LSP](https://github.com/apple/sourcekit-lsp)
-- [Swift Package Manager BSP](https://github.com/apple/swift-package-manager/blob/main/Documentation/BuildServerProtocol.md)
+  - [Implementing a BSP server](https://github.com/swiftlang/sourcekit-lsp/blob/main/Contributor%20Documentation/Implementing%20a%20BSP%20server.md)
 
 Inspired by [sourcekit-bazel-bsp](https://github.com/spotify/sourcekit-bazel-bsp)
+and [xcode-build-server](https://github.com/SolaWing/xcode-build-server)
 
 ## License
 
