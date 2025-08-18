@@ -173,4 +173,24 @@ public extension BuildServerContext {
         let state = try loadedState
         return state.rootURL.path
     }
+
+    func buildTargetForIndex(targets: [BuildTargetIdentifier]) async throws -> XcodeBuildResult {
+        let state = try loadedState
+        let projectInfo = state.xcodeProjectInfo
+        let projectManager = try getProjectManager()
+        logger.debug("Building targets for index: \(targets)")
+        guard let firstTarget = targets.first else {
+            throw NSError(
+                domain: "BuildServerContext",
+                code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "No valid targets found"]
+            )
+        }
+        let result = try await projectManager.buildTargetForIndex(
+            firstTarget.uri.stringValue,
+            projectInfo: projectInfo
+        )
+        logger.debug("Build result for target \(firstTarget.uri.stringValue): \(result)")
+        return result
+    }
 }

@@ -37,15 +37,20 @@ public struct BuildTargetPrepareRequest: ContextualRequestType, Sendable {
         contextualHandler: Handler,
         id: RequestID
     ) async -> ResponseType? where Handler.Context == BuildServerContext {
-        await contextualHandler.withContext { _ in
+        await contextualHandler.withContext { context in
             // Prepare build targets for background indexing
             // This may include ensuring compiler outputs, index databases, etc. are up to date
             let targetURIs = params.targets.map(\.uri.stringValue)
             logger.debug("Preparing build targets for background indexing: \(targetURIs)")
-
-            // Currently returns success status, actual implementation may need to perform compilation or other
-            // preparation work
-
+            do {
+                // trigger xcodebuild to build the selected scheme
+                let result = try await context.buildTargetForIndex(
+                    targets: params.targets
+                )
+                logger.debug("Successfully prepared build targets: \(result)")
+            } catch {
+                logger.error("Failed to prepare build targets: \(error)")
+            }
             return BuildTargetPrepareResponse(
                 jsonrpc: jsonrpc,
                 id: id
