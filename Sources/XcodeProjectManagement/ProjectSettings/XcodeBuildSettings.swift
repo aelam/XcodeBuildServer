@@ -100,8 +100,8 @@ public enum XcodeLanguageDialect: Codable, Sendable, Equatable {
     }
 }
 
-extension XcodeLanguageDialect {
-    init(fileExtension: String) {
+public extension XcodeLanguageDialect {
+    internal init(fileExtension: String) {
         switch fileExtension {
         case "swift":
             self = .swift
