@@ -65,10 +65,9 @@ Create a `.bsp/XcodeBuildServer.json` file in your project root:
 }
 ```
 
-The build server looks for configuration in the following order:
+The lsp looks for configuration in the following order:
 1. `.bsp/*.json` files (BSP standard)
-   - `xcode.json` in `.bsp/` directory for your project/workspace
-   - `xcode.json` in `.bsp/` directory is not necessary if you have only one project or one workspace
+   - `*.json` in `.bsp/` directory for your project/workspace
 2. `buildServer.json` in project root (legacy support)
 
 ### Project Configuration
