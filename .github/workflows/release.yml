@@ -5,15 +5,14 @@ on:
     tags:
       - 'v*.*.*'
 
+env:
+  SWIFT_VERSION: '6.1'
+  XCODE_VERSION: '16.2'
+
 jobs:
   build-release:
     name: Build Release Binaries
     runs-on: macos-latest
-
-    strategy:
-      matrix:
-        swift-version: ['6.1']
-        xcode-version: ['16.3']
 
     steps:
     - name: Checkout
@@ -22,8 +21,13 @@ jobs:
     - name: Setup Xcode
       uses: maxim-lobanov/setup-xcode@v1
       with:
-        xcode-version: ${{ matrix.xcode-version }}
-        
+        xcode-version: ${{ env.XCODE_VERSION }}
+  
+    - name: Setup Swift
+      uses: swift-actions/setup-swift@v2
+      with:
+        swift-version: ${{ env.SWIFT_VERSION }}
+
     - name: Verify Swift Version
       run: |
         swift --version
