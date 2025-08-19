@@ -35,6 +35,10 @@ public protocol ContextualRequestType: RequestType {
     ) async -> ResponseType? where Handler.Context == RequiredContext
 }
 
+// Note: ContextualRequestType implementations need to provide their own
+// handle(handler: MessageHandler, id: RequestID) implementation that bridges
+// to their specific ContextualMessageHandler type
+
 public protocol ResponseType: MessageType {}
 
 /// A notification, which must have a unique `method` name.
@@ -60,6 +64,10 @@ public protocol ContextualNotificationType: NotificationType {
         contextualHandler: Handler
     ) async throws where Handler.Context == RequiredContext
 }
+
+// Note: ContextualNotificationType implementations need to provide their own
+// handle(handler: MessageHandler) implementation that bridges
+// to their specific ContextualMessageHandler type
 
 // MARK: - Response Types
 

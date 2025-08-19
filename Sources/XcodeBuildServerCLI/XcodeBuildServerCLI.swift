@@ -3,10 +3,11 @@
 //
 //  Copyright © 2024 Wang Lun.
 
+import BSPServer
 import Foundation
 import JSONRPCConnection
+import Logger
 import SwiftyBeaver
-import XcodeBuildServer
 
 @main
 struct XcodeBuildServerCLI {
@@ -16,7 +17,7 @@ struct XcodeBuildServerCLI {
         let environment = ProcessInfo.processInfo.environment["BSP_ENVIRONMENT"] ?? "development"
 
         // Log startup message
-        XcodeBuildServer.logger.info(
+        logger.info(
             "XcodeBuildServer started successfully - PID: \(processID) - Environment: \(environment)"
         )
 
@@ -50,8 +51,12 @@ struct XcodeBuildServerCLI {
             }
         }
 
+        // 获取当前工作目录作为项目路径
+        let projectURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        logger.info("Project directory: \(projectURL.path)")
+
         do {
-            try await bspService.start()
+            try await bspService.start(rootURL: projectURL)
         } catch {
             // Log error
             let errorMsg = "BSP Server failed to start: \(error)"
