@@ -1,3 +1,5 @@
+import JSONRPCConnection
+
 public struct SourcesItem: Codable, Hashable, Sendable {
     public var target: BuildTargetIdentifier
 

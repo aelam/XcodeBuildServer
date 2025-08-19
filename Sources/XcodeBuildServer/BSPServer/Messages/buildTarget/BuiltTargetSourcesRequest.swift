@@ -1,4 +1,6 @@
 //
+import JSONRPCConnection
+
 //  BuiltTargetSourcesRequest.swift
 //
 //  Copyright © 2024 Wang Lun.
@@ -25,7 +27,7 @@ import Foundation
 import XcodeProjectManagement
 
 struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
-    typealias RequiredContext = BuildServerContext
+    typealias RequiredContext = BSPServerService
 
     static func method() -> String {
         "buildTarget/sources"
@@ -37,12 +39,21 @@ struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
 
     let params: Params
 
+    // Base RequestType implementation
+    func handle(handler: MessageHandler, id: RequestID) async -> ResponseType? {
+        guard let contextualHandler = handler as? XcodeBSPMessageHandler else {
+            return nil
+        }
+        return await handle(contextualHandler: contextualHandler, id: id)
+    }
+
     func handle<Handler: ContextualMessageHandler>(
         contextualHandler: Handler,
         id: RequestID
-    ) async -> ResponseType? where Handler.Context == BuildServerContext {
+    ) async -> ResponseType? where Handler.Context == BSPServerService {
         await contextualHandler.withContext { context in
-            await handleBuildTargetSources(context: context, targetIds: params.targets, requestId: id)
+            let buildServerContext = context.getBuildServerContext()
+            return await handleBuildTargetSources(context: buildServerContext, targetIds: params.targets, requestId: id)
         }
     }
 

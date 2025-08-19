@@ -1,4 +1,6 @@
 //
+import JSONRPCConnection
+
 //  BuildTargetDidChangeNotification.swift
 //  XcodeBuildServer
 //
@@ -6,7 +8,7 @@
 //
 
 struct BuildTargetDidChangeNotification: ContextualNotificationType, Sendable {
-    typealias RequiredContext = BuildServerContext
+    typealias RequiredContext = BSPServerService
 
     static func method() -> String {
         "build/targetDidChange"
@@ -20,9 +22,20 @@ struct BuildTargetDidChangeNotification: ContextualNotificationType, Sendable {
     let jsonrpc: String
     let params: Params
 
+    // MARK: - NotificationType Implementation
+
+    func handle(handler: MessageHandler) async throws {
+        guard let contextualHandler = handler as? XcodeBSPMessageHandler else {
+            return
+        }
+        try await handle(contextualHandler: contextualHandler)
+    }
+
+    // MARK: - ContextualNotificationType Implementation
+
     func handle<Handler: ContextualMessageHandler>(
         contextualHandler: Handler
-    ) async throws where Handler.Context == BuildServerContext {
+    ) async throws where Handler.Context == BSPServerService {
         await contextualHandler.withContext { _ in
             guard let changes = params.changes else {
                 return

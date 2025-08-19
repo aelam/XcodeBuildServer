@@ -1,3 +1,5 @@
+import JSONRPCConnection
+
 public struct VoidParams: Codable, Sendable {
     // Empty struct for void parameters
 }

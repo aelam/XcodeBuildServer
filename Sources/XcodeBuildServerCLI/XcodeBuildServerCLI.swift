@@ -4,7 +4,7 @@
 //  Copyright © 2024 Wang Lun.
 
 import Foundation
-import JSONRPCServer
+import JSONRPCConnection
 import SwiftyBeaver
 import XcodeBuildServer
 
@@ -31,9 +31,6 @@ struct XcodeBuildServerCLI {
             }
         }
 
-        // Start BSP server - project discovery happens on build/initialize request
-        let messageHandler = XcodeBSPMessageHandler()
-
         // Check for debug mode from environment variable
         let isDebugMode = ProcessInfo.processInfo.environment["BSP_DEBUG"] != nil ||
             arguments.contains("--debug")
@@ -42,12 +39,8 @@ struct XcodeBuildServerCLI {
             logger.debug("🔧 BSP Debug Mode Enabled - PID: \(processID)")
         }
 
-        let transport = StdioJSONRPCServerTransport()
-        let server = JSONRPCServer(
-            transport: transport,
-            messageRegistry: bspRegistry,
-            messageHandler: messageHandler
-        )
+        // 使用清晰的分层架构 - BSPServerService 作为服务层
+        let bspService = BSPServerService.createStdioService()
 
         // Monitor parent process at a reasonable interval using Task
         Task {
@@ -58,10 +51,10 @@ struct XcodeBuildServerCLI {
         }
 
         do {
-            try await server.listen()
+            try await bspService.start()
         } catch {
             // Log error
-            let errorMsg = "Server failed to start: \(error)"
+            let errorMsg = "BSP Server failed to start: \(error)"
             logger.error(errorMsg)
             exit(1)
         }

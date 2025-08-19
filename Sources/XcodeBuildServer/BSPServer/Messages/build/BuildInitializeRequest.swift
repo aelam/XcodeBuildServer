@@ -4,11 +4,11 @@
 //
 
 import Foundation
-import JSONRPCServer
+import JSONRPCConnection
 import Logger
 
 public struct BuildInitializeRequest: ContextualRequestType, Sendable {
-    public typealias RequiredContext = BuildServerContext
+    public typealias RequiredContext = BSPServerService
 
     public static func method() -> String {
         "build/initialize"
@@ -32,10 +32,22 @@ public struct BuildInitializeRequest: ContextualRequestType, Sendable {
     // MARK: - ContextualRequestType conformance
 
     // swiftlint:disable:next function_body_length
+
+    // MARK: - RequestType Implementation
+
+    public func handle(handler: MessageHandler, id: RequestID) async -> ResponseType? {
+        guard let contextualHandler = handler as? XcodeBSPMessageHandler else {
+            return nil
+        }
+        return await handle(contextualHandler: contextualHandler, id: id)
+    }
+
+    // MARK: - ContextualRequestType Implementation
+
     public func handle<Handler: ContextualMessageHandler>(
         contextualHandler: Handler,
         id: RequestID
-    ) async -> ResponseType? where Handler.Context == BuildServerContext {
+    ) async -> ResponseType? where Handler.Context == BSPServerService {
         logger.debug("BuildInitializeRequest.handle(ContextualMessageHandler) started for request ID: \(id)")
         logger.debug("BuildInitializeRequest params - rootUri: \(params.rootUri)")
 

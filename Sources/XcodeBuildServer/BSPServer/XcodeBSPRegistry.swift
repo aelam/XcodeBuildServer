@@ -4,6 +4,8 @@
 //  Copyright © 2024 Wang Lun.
 //
 
+import JSONRPCConnection
+
 private let requestTypes: [any RequestType.Type] = [
     // build
     BuildInitializeRequest.self,

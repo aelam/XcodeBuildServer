@@ -1,4 +1,6 @@
 //
+import JSONRPCConnection
+
 //  WorkspaceWaitForBuildSystemUpdates.swift
 //
 //  Copyright © 2024 Wang Lun.
@@ -8,7 +10,7 @@
 ///
 
 public struct WorkspaceWaitForBuildSystemUpdatesRequest: ContextualRequestType, Sendable {
-    public typealias RequiredContext = BuildServerContext
+    public typealias RequiredContext = BSPServerService
 
     public static func method() -> String {
         "workspace/waitForBuildSystemUpdates"
@@ -20,10 +22,18 @@ public struct WorkspaceWaitForBuildSystemUpdatesRequest: ContextualRequestType, 
     public let jsonrpc: String
     public let params: VoidParams
 
+    // Base RequestType implementation
+    public func handle(handler: MessageHandler, id: RequestID) async -> ResponseType? {
+        guard let contextualHandler = handler as? XcodeBSPMessageHandler else {
+            return nil
+        }
+        return await handle(contextualHandler: contextualHandler, id: id)
+    }
+
     public func handle<Handler: ContextualMessageHandler>(
         contextualHandler: Handler,
         id: RequestID
-    ) async -> ResponseType? where Handler.Context == BuildServerContext {
+    ) async -> ResponseType? where Handler.Context == BSPServerService {
         await contextualHandler.withContext { _ in
             WorkspaceWaitForBuildSystemUpdatesResponse(
                 jsonrpc: "2.0",

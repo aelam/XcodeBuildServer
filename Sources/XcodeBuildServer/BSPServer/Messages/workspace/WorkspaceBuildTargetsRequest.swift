@@ -1,4 +1,6 @@
 //
+import JSONRPCConnection
+
 //  WorkspaceBuildTargetsRequest.swift
 //
 //  Copyright © 2024 Wang Lun.
@@ -11,7 +13,7 @@
 
 ///
 public struct WorkspaceBuildTargetsRequest: ContextualRequestType, Sendable {
-    public typealias RequiredContext = BuildServerContext
+    public typealias RequiredContext = BSPServerService
 
     public static func method() -> String {
         "workspace/buildTargets"
@@ -23,13 +25,24 @@ public struct WorkspaceBuildTargetsRequest: ContextualRequestType, Sendable {
     public let jsonrpc: String
     public let params: Params?
 
+    // MARK: - RequestType Implementation
+
+    public func handle(handler: MessageHandler, id: RequestID) async -> ResponseType? {
+        guard let contextualHandler = handler as? XcodeBSPMessageHandler else {
+            return nil
+        }
+        return await handle(contextualHandler: contextualHandler, id: id)
+    }
+
+    // MARK: - ContextualRequestType Implementation
+
     public func handle<Handler: ContextualMessageHandler>(
         contextualHandler: Handler,
         id: RequestID
-    ) async -> ResponseType? where Handler.Context == BuildServerContext {
-        await contextualHandler.withContext { context in
+    ) async -> ResponseType? where Handler.Context == BSPServerService {
+        await contextualHandler.withContext { service in
             do {
-                let allBuildTargets = try await context.createBuildTargets()
+                let allBuildTargets = try await service.getBuildServerContext().createBuildTargets()
                 return WorkspaceBuildTargetsResponse(
                     id: id,
                     jsonrpc: "2.0",

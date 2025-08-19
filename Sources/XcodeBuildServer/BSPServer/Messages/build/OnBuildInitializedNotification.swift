@@ -1,4 +1,6 @@
 //
+import JSONRPCConnection
+
 //  OnBuildInitializedNotification.swift
 //  XcodeBuildServer
 //
@@ -16,15 +18,26 @@
  */
 
 public struct OnBuildInitializedNotification: ContextualNotificationType, Sendable {
-    public typealias RequiredContext = BuildServerContext
+    public typealias RequiredContext = BSPServerService
 
     public static func method() -> String {
         "build/initialized"
     }
 
+    // MARK: - NotificationType Implementation
+
+    public func handle(handler: MessageHandler) async throws {
+        guard let contextualHandler = handler as? XcodeBSPMessageHandler else {
+            return
+        }
+        try await handle(contextualHandler: contextualHandler)
+    }
+
+    // MARK: - ContextualNotificationType Implementation
+
     public func handle<Handler: ContextualMessageHandler>(
         contextualHandler: Handler
-    ) async throws where Handler.Context == BuildServerContext {
+    ) async throws where Handler.Context == BSPServerService {
         await contextualHandler.withContext { _ in
             // build/initialized notification handler
             // This notification is sent after build/initialize request is processed

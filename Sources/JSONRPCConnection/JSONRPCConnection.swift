@@ -1,5 +1,5 @@
 //
-//  JSONRPCServer.swift
+//  JSONRPCConnection.swift
 //
 //  Copyright © 2024 Wang Lun.
 //
@@ -7,8 +7,8 @@
 import Foundation
 import Logger
 
-/// Stream-based JSON-RPC server that processes messages using async streams
-public final actor JSONRPCServer {
+/// Stream-based JSON-RPC connection that processes messages using async streams
+public final actor JSONRPCConnection {
     private let transport: JSONRPCServerTransport
     private let messageRegistry: MessageRegistry
     private let messageHandler: MessageHandler
@@ -29,7 +29,7 @@ public final actor JSONRPCServer {
         self.messageHandler = messageHandler
     }
 
-    /// Start the server and begin processing messages from streams
+    /// Start the connection and begin processing messages from streams
     public func listen() async throws {
         // Start the transport
         let transportTask = Task {
@@ -58,7 +58,7 @@ public final actor JSONRPCServer {
         try await transportTask.value
     }
 
-    /// Close the server and cleanup resources
+    /// Close the connection and cleanup resources
     public func close() async {
         // Cancel processing tasks
         messageProcessingTask?.cancel()
@@ -172,5 +172,10 @@ public final actor JSONRPCServer {
     /// Send a response using the transport
     private func send(response: ResponseType) async throws {
         try await transport.send(response: response)
+    }
+
+    /// Send a notification proactively to the client
+    public func send(notification: NotificationType) async throws {
+        try await transport.send(notification: notification)
     }
 }

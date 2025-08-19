@@ -1,4 +1,6 @@
 //
+import JSONRPCConnection
+
 //  BuildTargetPrepareRequest.swift
 //
 //  Copyright © 2024 Wang Lun.
@@ -14,7 +16,7 @@ import Foundation
 /// - Important: This method is used to support background indexing.
 ///   See https://forums.swift.org/t/extending-functionality-of-build-server-protocol-with-sourcekit-lsp/74400
 public struct BuildTargetPrepareRequest: ContextualRequestType, Sendable {
-    public typealias RequiredContext = BuildServerContext
+    public typealias RequiredContext = BSPServerService
 
     public static func method() -> String {
         "buildTarget/prepare"
@@ -33,10 +35,18 @@ public struct BuildTargetPrepareRequest: ContextualRequestType, Sendable {
     public let jsonrpc: String
     public let params: Params
 
+    // Base RequestType implementation
+    public func handle(handler: MessageHandler, id: RequestID) async -> ResponseType? {
+        guard let contextualHandler = handler as? XcodeBSPMessageHandler else {
+            return nil
+        }
+        return await handle(contextualHandler: contextualHandler, id: id)
+    }
+
     public func handle<Handler: ContextualMessageHandler>(
         contextualHandler: Handler,
         id: RequestID
-    ) async -> ResponseType? where Handler.Context == BuildServerContext {
+    ) async -> ResponseType? where Handler.Context == BSPServerService {
         await contextualHandler.withContext { context in
             // Prepare build targets for background indexing
             // This may include ensuring compiler outputs, index databases, etc. are up to date

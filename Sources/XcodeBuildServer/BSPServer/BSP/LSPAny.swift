@@ -10,6 +10,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
+import JSONRPCConnection
+
 /// Representation of 'any' in the Language Server Protocol, which is equivalent
 /// to an arbitrary JSON value.
 public enum LSPAny: Hashable, Sendable {

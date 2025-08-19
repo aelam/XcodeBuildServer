@@ -1,4 +1,6 @@
 //
+import JSONRPCConnection
+
 //  BuildSourceKitOptionsChangedNotification.swift
 //
 //  Copyright © 2024 Wang Lun.
@@ -134,7 +136,7 @@
 /// server --> client
 /// Deprecated
 public struct BuildSourceKitOptionsChangedNotification: ContextualNotificationType, Sendable {
-    public typealias RequiredContext = BuildServerContext
+    public typealias RequiredContext = BSPServerService
 
     public static func method() -> String {
         "build/sourceKitOptionsChanged"
@@ -163,6 +165,14 @@ public struct BuildSourceKitOptionsChangedNotification: ContextualNotificationTy
     public let id: JSONRPCID
     public let jsonrpc: String
     public let params: Params
+
+    // Base NotificationType implementation
+    public func handle(handler: MessageHandler) async throws {
+        guard let contextualHandler = handler as? any ContextualMessageHandler else {
+            return
+        }
+        return try await handle(contextualHandler: contextualHandler)
+    }
 
     public func handle(
         contextualHandler: some ContextualMessageHandler

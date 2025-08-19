@@ -5,6 +5,7 @@
 //
 
 import Foundation
+import JSONRPCConnection
 import Logger
 import XcodeProjectManagement
 
@@ -21,11 +22,22 @@ public enum BuildServerContextState: Sendable {
     }
 }
 
+/// 构建服务器上下文 - 专注于 BSP 协议相关的业务逻辑
 public actor BuildServerContext {
     private var state: BuildServerContextState = .uninitialized
     private let jsonDecoder = JSONDecoder()
     private var buildTasks: [String: Task<Void, Never>] = [:]
     private(set) var isIndexPrepared: Bool = false
+
+    /// 项目管理器创建回调（由 BSPServerService 注入）
+    private var onProjectManagerCreated: (@Sendable (XcodeProjectManager) async -> Void)?
+
+    public init() {}
+
+    /// 设置项目管理器创建回调（由服务层调用）
+    public func setProjectManagerCreatedCallback(_ callback: @escaping @Sendable (XcodeProjectManager) async -> Void) {
+        self.onProjectManagerCreated = callback
+    }
 
     // Computed property to check if the context is properly loaded
     var isLoaded: Bool {
@@ -57,6 +69,7 @@ public actor BuildServerContext {
         rootURL: URL
     ) async throws {
         logger.info("Loading project at \(rootURL)")
+
         guard case .uninitialized = state else {
             return
         }
@@ -101,6 +114,11 @@ public actor BuildServerContext {
                 bspAdapter: bspAdapter,
                 xcodeProjectInfo: xcodeProjectInfo
             ))
+
+            // 通知服务层项目管理器已创建，以便订阅状态变化
+            if let callback = onProjectManagerCreated {
+                await callback(projectManager)
+            }
 
         } catch {
             logger.error(">>> Failed to resolve project info: \(error)")

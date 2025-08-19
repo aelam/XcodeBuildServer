@@ -1,4 +1,6 @@
 //
+import JSONRPCConnection
+
 //  TextDocumentRegisterForChangeRequest.swift
 //
 //  Copyright © 2024 Wang Lun.
@@ -19,7 +21,7 @@ import Foundation
  */
 
 public struct TextDocumentRegisterForChangeRequest: ContextualRequestType, Sendable {
-    public typealias RequiredContext = BuildServerContext
+    public typealias RequiredContext = BSPServerService
 
     public static func method() -> String {
         "textDocument/registerForChanges"
@@ -39,10 +41,18 @@ public struct TextDocumentRegisterForChangeRequest: ContextualRequestType, Senda
     public let jsonrpc: String
     public let params: Params
 
+    // Base RequestType implementation
+    public func handle(handler: MessageHandler, id: RequestID) async -> ResponseType? {
+        guard let contextualHandler = handler as? XcodeBSPMessageHandler else {
+            return nil
+        }
+        return await handle(contextualHandler: contextualHandler, id: id)
+    }
+
     public func handle<Handler: ContextualMessageHandler>(
         contextualHandler: Handler,
         id: RequestID
-    ) async -> ResponseType? where Handler.Context == BuildServerContext {
+    ) async -> ResponseType? where Handler.Context == BSPServerService {
         await contextualHandler.withContext { _ in
             TextDocumentRegisterForChangeResponse(
                 jsonrpc: jsonrpc,

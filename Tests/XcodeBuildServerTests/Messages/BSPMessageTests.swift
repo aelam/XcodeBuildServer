@@ -5,7 +5,7 @@
 //
 
 import XCTest
-@testable import JSONRPCServer
+@testable import JSONRPCConnection
 @testable import XcodeBuildServer
 
 final class BSPMessageTests: XCTestCase {

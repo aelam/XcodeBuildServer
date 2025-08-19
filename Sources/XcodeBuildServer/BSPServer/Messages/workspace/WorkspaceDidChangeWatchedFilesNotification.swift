@@ -1,11 +1,13 @@
 //
+import JSONRPCConnection
+
 //  WorkspaceDidChangeWatchedFilesNotification.swift
 //
 //  Copyright © 2024 Wang Lun.
 //
 
 public struct WorkspaceDidChangeWatchedFilesNotification: ContextualNotificationType, Sendable {
-    public typealias RequiredContext = BuildServerContext
+    public typealias RequiredContext = BSPServerService
 
     public static func method() -> String {
         "workspace/didChangeWatchedFiles"
@@ -13,6 +15,14 @@ public struct WorkspaceDidChangeWatchedFilesNotification: ContextualNotification
 
     public struct Params: Codable, Sendable {
         public let targets: [String]
+    }
+
+    // Base NotificationType implementation
+    public func handle(handler: MessageHandler) async throws {
+        guard let contextualHandler = handler as? XcodeBSPMessageHandler else {
+            return
+        }
+        return try await handle(contextualHandler: contextualHandler)
     }
 
     public func handle(

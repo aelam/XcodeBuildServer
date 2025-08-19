@@ -1,4 +1,6 @@
 //
+import JSONRPCConnection
+
 //  ProcessNotification.swift
 //
 //  Copyright © 2024 Wang Lun.
@@ -8,7 +10,7 @@
 /// `window/workDoneProgress/create`.
 
 struct ProcessNotification: ContextualNotificationType, Sendable {
-    typealias RequiredContext = BuildServerContext
+    typealias RequiredContext = BSPServerService
 
     static func method() -> String {
         "$/progress"
@@ -17,6 +19,14 @@ struct ProcessNotification: ContextualNotificationType, Sendable {
     struct Params: Codable, Sendable {
         let token: ProgressToken
         let value: WorkDoneProgressKind
+    }
+
+    // Base NotificationType implementation
+    func handle(handler: MessageHandler) async throws {
+        guard let contextualHandler = handler as? XcodeBSPMessageHandler else {
+            return
+        }
+        return try await handle(contextualHandler: contextualHandler)
     }
 
     func handle(

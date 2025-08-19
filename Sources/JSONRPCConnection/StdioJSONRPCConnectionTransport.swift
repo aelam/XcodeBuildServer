@@ -1,5 +1,5 @@
 //
-//  StdioJSONRPCServerTransport.swift
+//  StdioJSONRPCConnectionTransport.swift
 //
 //  Copyright © 2024 Wang Lun.
 //
@@ -8,7 +8,7 @@ import Foundation
 import Logger
 
 /// Stream-based stdio transport for JSON-RPC communication
-public final class StdioJSONRPCServerTransport: JSONRPCServerTransport, @unchecked Sendable {
+public final class StdioJSONRPCConnectionTransport: JSONRPCServerTransport, @unchecked Sendable {
     private let input: FileHandle
     private let output: FileHandle
     private let jsonDecoder = JSONDecoder()
@@ -123,11 +123,19 @@ public final class StdioJSONRPCServerTransport: JSONRPCServerTransport, @uncheck
     }
 
     public func send(response: ResponseType) async throws {
+        try await sendMessage(response)
+    }
+
+    public func send(notification: NotificationType) async throws {
+        try await sendMessage(notification)
+    }
+
+    private func sendMessage(_ message: some Encodable) async throws {
         guard isListening else {
             throw JSONRPCTransportError.transportClosed
         }
 
-        let data = try jsonEncoder.encode(response)
+        let data = try jsonEncoder.encode(message)
         let header = "Content-Length:\(data.count)\r\n\r\n"
         let headerData = header.data(using: .utf8)!
 
