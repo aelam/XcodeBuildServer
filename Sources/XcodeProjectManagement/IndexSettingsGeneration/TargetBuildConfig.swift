@@ -18,7 +18,7 @@ struct TargetBuildConfig {
     let platformName: String // iphonesimulator
     let effectivePlatformName: String // -iphonesimulator
     let nativeArch: String // arm64
-    let targetTriple: String // arm64-apple-ios16.0-simulator
+    let targetTriple: String // arm64-apple-ios16.0-simulator, arm64-apple-macos14.0
 
     // Paths (computed once)
     let configurationBuildDir: URL
@@ -262,9 +262,11 @@ struct TargetBuildConfig {
     private static func buildTargetTriple(from buildSettingsPair: [String: String], nativeArch: String) -> String {
         let vendor = buildSettingsPair["LLVM_TARGET_TRIPLE_VENDOR"] ?? "apple"
         let osVersion = buildSettingsPair["LLVM_TARGET_TRIPLE_OS_VERSION"] ?? "ios16.0"
-        let suffix = (buildSettingsPair["LLVM_TARGET_TRIPLE_SUFFIX"] ?? "-simulator")
+        let suffix = buildSettingsPair["LLVM_TARGET_TRIPLE_SUFFIX"]?
             .replacingOccurrences(of: "-", with: "")
-        return [nativeArch, vendor, osVersion, suffix].joined(separator: "-")
+        return [nativeArch, vendor, osVersion, suffix]
+            .compactMap(\.self)
+            .joined(separator: "-")
     }
 
     private static func buildConstExtractProtocolsURL(

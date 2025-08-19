@@ -53,7 +53,7 @@ brew install XcodeBuildServer
 
 ### BSP Configuration
 
-Create a `.bsp/XcodeBuildServer.json` file in your project root:
+ Create a `buildServer.json` ~~`.bsp/XcodeBuildServer.json`~~ file in your project root:
 
 ```json
 {
@@ -71,10 +71,13 @@ Create a `.bsp/XcodeBuildServer.json` file in your project root:
 }
 ```
 
-The lsp looks for configuration in the following order:
+sourcekit-lsp looks for configuration in the following order:
 1. `.bsp/*.json` files (BSP standard)
    - `*.json` in `.bsp/` directory for your project/workspace
 2. `buildServer.json` in project root (legacy support)
+
+NOTE: `vscode-swift` requires the `buildServer.json` file to be located in the root of your non-SwiftPM project.
+
 
 ### Project Configuration
 
