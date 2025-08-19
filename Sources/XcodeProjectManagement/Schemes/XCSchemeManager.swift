@@ -3,6 +3,7 @@ import PathKit
 import XcodeProj
 
 struct XCSchemeManager {
+    // swiflint:disable:next function_body_length
     func listSchemes(
         projectLocation: XcodeProjectLocation,
         includeUserSchemes: Bool = true
@@ -92,6 +93,7 @@ struct XCSchemeManager {
         }
     }
 
+    // swiflint:disable:next cyclomatic_complexity
     private func loadSchemes(
         at containerDir: Path,
         containerName: String,
