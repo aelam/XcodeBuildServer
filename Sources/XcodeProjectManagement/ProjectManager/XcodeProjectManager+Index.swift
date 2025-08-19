@@ -1,13 +1,9 @@
 import Foundation
 
 public extension XcodeProjectManager {
-    func buildTargetForIndex(
-        _ target: String,
+    func buildProject(
         projectInfo: XcodeProjectInfo,
     ) async throws -> XcodeBuildResult {
-        let targetIdentifier = TargetIdentifier(rawValue: target)
-        let projectPath = targetIdentifier.projectFilePath
-        let targetName = targetIdentifier.targetName
         let importantScheme = projectInfo.importantScheme
 
         // Build Target

@@ -24,6 +24,8 @@ public enum BuildServerContextState: Sendable {
 public actor BuildServerContext {
     private var state: BuildServerContextState = .uninitialized
     private let jsonDecoder = JSONDecoder()
+    private var buildTasks: [String: Task<Void, Never>] = [:]
+    private(set) var isIndexPrepared: Bool = false
 
     // Computed property to check if the context is properly loaded
     var isLoaded: Bool {
@@ -174,23 +176,64 @@ public extension BuildServerContext {
         return state.rootURL.path
     }
 
-    func buildTargetForIndex(targets: [BuildTargetIdentifier]) async throws -> XcodeBuildResult {
+    func buildTargetForIndex(targets: [BuildTargetIdentifier]) throws {
+        guard isIndexPrepared else {
+            return //
+        }
         let state = try loadedState
         let projectInfo = state.xcodeProjectInfo
         let projectManager = try getProjectManager()
         logger.debug("Building targets for index: \(targets)")
-        guard let firstTarget = targets.first else {
-            throw NSError(
-                domain: "BuildServerContext",
-                code: 1,
-                userInfo: [NSLocalizedDescriptionKey: "No valid targets found"]
-            )
+        guard !targets.isEmpty else {
+            return
         }
-        let result = try await projectManager.buildTargetForIndex(
-            firstTarget.uri.stringValue,
-            projectInfo: projectInfo
-        )
-        logger.debug("Build result for target \(firstTarget.uri.stringValue): \(result)")
-        return result
+
+        let taskKey = projectInfo.importantScheme.name
+
+        // Cancel existing build task for this target if it exists
+        if let existingTask = buildTasks[taskKey] {
+            existingTask.cancel()
+            logger.debug("Cancelled existing build task for target: \(taskKey)")
+        }
+
+        // Start new build task
+        let buildTask = Task.detached { [weak self] in
+            do {
+                let result = try await projectManager.buildProject(
+                    projectInfo: projectInfo
+                )
+                if result.exitCode == 0 {
+                    await self?.markIndexPrepared()
+                    logger.debug("Background build completed successfully for target \(taskKey)")
+                } else {
+                    logger.error("Background build failed for target \(taskKey) with exit code \(result.exitCode)")
+                }
+
+                logger.debug("Build result for target \(taskKey): \(result)")
+            } catch {
+                logger.error("Background build failed for target \(taskKey): \(error)")
+            }
+
+            // Clean up completed task
+            await self?.removeBuildTask(for: taskKey)
+        }
+
+        buildTasks[taskKey] = buildTask
+    }
+
+    private func removeBuildTask(for taskKey: String) {
+        buildTasks.removeValue(forKey: taskKey)
+    }
+
+    private func markIndexPrepared() {
+        isIndexPrepared = true
+    }
+
+    func cancelAllBuildTasks() {
+        for (taskKey, task) in buildTasks {
+            task.cancel()
+            logger.debug("Cancelled build task for target: \(taskKey)")
+        }
+        buildTasks.removeAll()
     }
 }
