@@ -9,6 +9,7 @@ public struct XcodeScheme: Sendable, Codable {
     public let primaryBuildTargetProjectURL: URL?
     public let primaryTarget: String?
     public var primaryProductName: String?
+    public var orderHint: Int?
 }
 
 extension XcodeScheme: Comparable {
@@ -64,5 +65,6 @@ public extension XcodeScheme {
         }
         self.primaryTarget = runnableReference?.blueprintName
         self.primaryProductName = runnableReference?.buildableName
+        self.orderHint = nil
     }
 }
