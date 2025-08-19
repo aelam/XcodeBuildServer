@@ -44,27 +44,25 @@ struct XcodeProjectCLI {
 
             logger.info("✓ Project loaded successfully")
             logger.info("  - Root URL: \(project.rootURL.path)")
-            logger.info("  - Workspace: \(project.workspaceURL.path)")
+            // logger.info("  - Project Type: \(project.projectType.rawValue)")
+            logger.info("  - Project Name: \(project.name)")
             // logger.info("  - Schemes: \(project.schemeInfoList.map(\.name).joined(separator: ", "))")
             // logger.info("  - Targets: \(project.targetInfoList.map(\.name).joined(separator: ", "))")
-
-            logger.info("\n🗂️ Scheme Information:")
-            for scheme in project.schemes {
-                logger.info("  - Scheme Name: \(scheme.name)")
-            }
 
             // Targets
             logger.info("\n🗂️ Target Information:")
             for target in project.targets {
                 logger.info("  - Target Name: \(target.name)")
-                logger.info("\(target.debugDescription)")
+                logger.info("  - Is Test: \(target.productType.isTestType)")
+                logger.info("  - Is Runnable: \(target.productType.isRunnableType)")
             }
 
             // Show indexing paths
             logger.info("\n🗂️ Indexing Information:")
-            logger.info("  - Index Store URL: \(project.indexStoreURL.path)")
-            logger.info("  - Index Database URL: \(project.indexDatabaseURL.path)")
-            logger.info("  - Derived Data Path: \(project.derivedDataPath.path)")
+            logger.info("  - Index Store URL: \(project.primaryBuildSettings.indexStoreURL.path)")
+            logger.info("  - Index Database URL: \(project.primaryBuildSettings.indexDatabaseURL.path)")
+            logger.info("  - Derived Data Path: \(project.primaryBuildSettings.derivedDataPath.path)")
+            logger.info("  - Configuration: \(project.primaryBuildSettings.configuration)")
 
             let endTimestamp = Date()
             logger.info("Loading time: \(endTimestamp.timeIntervalSince(timestamp)) seconds")

@@ -1,27 +1,39 @@
 import Foundation
 
+public enum BuildError: Error, Sendable {
+    case buildFailed(exitCode: Int32, output: String)
+}
+
 public extension XcodeProjectManager {
     func buildProject(
         projectInfo: XcodeProjectInfo,
     ) async throws -> XcodeBuildResult {
         let importantScheme = projectInfo.importantScheme
+        let targetName = importantScheme.name
+
+        // 使用状态管理开始构建
+        await startBuild(target: targetName)
+
+        // Notify build started (保持向后兼容)
+        await notifyObservers(ProjectStatusEvent.buildStarted(target: targetName))
+        let startTime = Date()
 
         // Build Target
-        switch projectInfo.projectLocation {
+        let result: XcodeBuildResult = switch projectInfo.projectLocation {
         case let .explicitWorkspace(workspaceURL):
-            return try await buildWorkspace(
+            try await buildWorkspace(
                 workspaceURL: workspaceURL,
                 scheme: importantScheme,
                 configuration: projectInfo.primaryBuildSettings.configuration
             )
         case let .implicitWorkspace(projectURL, workspaceURL):
-            return try await buildWorkspace(
+            try await buildWorkspace(
                 workspaceURL: workspaceURL,
                 scheme: importantScheme,
                 configuration: projectInfo.primaryBuildSettings.configuration
             )
         case let .standaloneProject(projectURL):
-            return try await buildProject(
+            try await buildProject(
                 projectURL: projectURL,
                 scheme: importantScheme,
                 configuration: projectInfo.primaryBuildSettings.configuration,
@@ -29,6 +41,26 @@ public extension XcodeProjectManager {
                 rootURL: projectInfo.rootURL
             )
         }
+
+        // 使用状态管理更新构建结果
+        let duration = Date().timeIntervalSince(startTime)
+        let success = result.exitCode == 0
+        if success {
+            await completeBuild(target: targetName, success: true)
+            // 保持向后兼容
+            await notifyObservers(ProjectStatusEvent.buildCompleted(
+                target: targetName,
+                success: true,
+                duration: duration
+            ))
+        } else {
+            let error = BuildError.buildFailed(exitCode: result.exitCode, output: result.output)
+            await failBuild(target: targetName, error: error)
+            // 保持向后兼容
+            await notifyObservers(ProjectStatusEvent.buildFailed(target: targetName, error: error))
+        }
+
+        return result
     }
 
     private func buildWorkspace(

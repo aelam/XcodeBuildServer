@@ -348,7 +348,7 @@ let toolchainURI = URI(string: "file://\(toolchainPath)")
 logger.logLevel = .debug
 
 // 关键日志点
-logger.debug("JSONRPCServer received message: \(message)")
+logger.debug("JSONRPCConnection received message: \(message)")
 logger.debug("Successfully sent response for request ID: \(requestID)")
 logger.info("Generated toolchain URI: \(toolchainURI)")
 ```
