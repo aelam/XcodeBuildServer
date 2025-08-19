@@ -26,15 +26,21 @@ public final class BSPServerService: ProjectStateObserver {
 
     // MARK: - State
 
-    private let isRunningState = OSAllocatedUnfairLock(initialState: false)
+    public enum ServiceState: Sendable {
+        case stopped
+        case starting
+        case running
+        case stopping
+    }
+
+    private let serviceState = OSAllocatedUnfairLock(initialState: ServiceState.stopped)
+
+    public var currentState: ServiceState {
+        serviceState.withLock { $0 }
+    }
 
     private var isRunning: Bool {
-        get {
-            isRunningState.withLock { $0 }
-        }
-        set {
-            isRunningState.withLock { $0 = newValue }
-        }
+        serviceState.withLock { $0 == .running }
     }
 
     // MARK: - Initialization
@@ -66,23 +72,46 @@ public final class BSPServerService: ProjectStateObserver {
     // MARK: - Service Lifecycle
 
     /// 启动 BSP 服务
+    /// 注意：这只启动网络监听，项目初始化通过客户端的 build/initialize 请求完成
     public func start() async throws {
-        guard !isRunning else { return }
+        serviceState.withLock { state in
+            guard state == .stopped else {
+                logger.warning("Service already started or starting, current state: \(state)")
+                return
+            }
+            state = .starting
+        }
 
         logger.info("Starting BSP Server Service...")
-        isRunning = true
 
-        try await jsonrpcConnection.listen()
+        do {
+            try await jsonrpcConnection.listen()
+
+            serviceState.withLock { $0 = .running }
+            logger.info("BSP Server Service started successfully")
+        } catch {
+            serviceState.withLock { $0 = .stopped }
+            logger.error("Failed to start BSP Server Service: \(error)")
+            throw error
+        }
     }
 
     /// 停止 BSP 服务
     public func stop() async {
-        guard isRunning else { return }
+        serviceState.withLock { state in
+            guard state == .running else {
+                logger.warning("Service not running, current state: \(state)")
+                return
+            }
+            state = .stopping
+        }
 
         logger.info("Stopping BSP Server Service...")
-        isRunning = false
 
         await jsonrpcConnection.close()
+
+        serviceState.withLock { $0 = .stopped }
+        logger.info("BSP Server Service stopped")
     }
 
     // MARK: - Private Setup
@@ -295,8 +324,34 @@ public extension BSPServerService {
     }
 
     /// 加载项目（供消息处理器使用）
+    /// 这个方法通过客户端的 build/initialize 请求调用
     func loadProject(rootURL: URL) async throws {
+        // 确保服务正在运行
+        guard currentState == .running else {
+            throw BuildServerError.invalidConfiguration("Service not running, current state: \(currentState)")
+        }
+
+        logger.info("Loading project at: \(rootURL.path)")
+
+        do {
+            let context = getBuildServerContext()
+            try await context.loadProject(rootURL: rootURL)
+            logger.info("Project loaded successfully")
+        } catch {
+            logger.error("Failed to load project: \(error)")
+            throw error
+        }
+    }
+
+    /// 检查项目是否已初始化
+    func isProjectInitialized() async -> Bool {
         let context = getBuildServerContext()
-        try await context.loadProject(rootURL: rootURL)
+        return await context.isLoaded
+    }
+
+    /// 获取项目根路径（如果已初始化）
+    func getProjectRootURL() async -> URL? {
+        let context = getBuildServerContext()
+        return await context.rootURL
     }
 }
