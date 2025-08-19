@@ -27,6 +27,11 @@ public enum ProcessExecutorError: Error, LocalizedError, Equatable {
     case processStartFailed(String) // System error message
     case invalidWorkingDirectory(String)
     case timeout(TimeInterval)
+
+    public var isTimeout: Bool {
+        if case .timeout = self { return true }
+        return false
+    }
 }
 
 public actor ProcessExecutor {
