@@ -25,6 +25,7 @@ public actor BuildServerContext {
     private var state: BuildServerContextState = .uninitialized
     private let jsonDecoder = JSONDecoder()
     private var buildTasks: [String: Task<Void, Never>] = [:]
+    private(set) var isIndexPrepared: Bool = false
 
     // Computed property to check if the context is properly loaded
     var isLoaded: Bool {
@@ -176,6 +177,9 @@ public extension BuildServerContext {
     }
 
     func buildTargetForIndex(targets: [BuildTargetIdentifier]) throws {
+        guard isIndexPrepared else {
+            return //
+        }
         let state = try loadedState
         let projectInfo = state.xcodeProjectInfo
         let projectManager = try getProjectManager()
@@ -198,6 +202,13 @@ public extension BuildServerContext {
                 let result = try await projectManager.buildProject(
                     projectInfo: projectInfo
                 )
+                if result.exitCode == 0 {
+                    await self?.markIndexPrepared()
+                    logger.debug("Background build completed successfully for target \(taskKey)")
+                } else {
+                    logger.error("Background build failed for target \(taskKey) with exit code \(result.exitCode)")
+                }
+
                 logger.debug("Build result for target \(taskKey): \(result)")
             } catch {
                 logger.error("Background build failed for target \(taskKey): \(error)")
@@ -212,6 +223,10 @@ public extension BuildServerContext {
 
     private func removeBuildTask(for taskKey: String) {
         buildTasks.removeValue(forKey: taskKey)
+    }
+
+    private func markIndexPrepared() {
+        isIndexPrepared = true
     }
 
     func cancelAllBuildTasks() {
