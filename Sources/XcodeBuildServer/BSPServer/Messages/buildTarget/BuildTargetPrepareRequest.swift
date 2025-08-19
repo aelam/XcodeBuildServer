@@ -43,13 +43,11 @@ public struct BuildTargetPrepareRequest: ContextualRequestType, Sendable {
             let targetURIs = params.targets.map(\.uri.stringValue)
             logger.debug("Preparing build targets for background indexing: \(targetURIs)")
             do {
-                // trigger xcodebuild to build the selected scheme
-                let result = try await context.buildTargetForIndex(
-                    targets: params.targets
-                )
-                logger.debug("Successfully prepared build targets: \(result)")
+                // trigger xcodebuild to build the selected scheme in background
+                try await context.buildTargetForIndex(targets: params.targets)
+                logger.debug("Successfully started build preparation for targets")
             } catch {
-                logger.error("Failed to prepare build targets: \(error)")
+                logger.error("Failed to start build targets preparation: \(error)")
             }
             return BuildTargetPrepareResponse(
                 jsonrpc: jsonrpc,

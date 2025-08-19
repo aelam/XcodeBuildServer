@@ -174,7 +174,7 @@ public extension BuildServerContext {
         return state.rootURL.path
     }
 
-    func buildTargetForIndex(targets: [BuildTargetIdentifier]) async throws -> XcodeBuildResult {
+    func buildTargetForIndex(targets: [BuildTargetIdentifier]) throws {
         let state = try loadedState
         let projectInfo = state.xcodeProjectInfo
         let projectManager = try getProjectManager()
@@ -186,11 +186,17 @@ public extension BuildServerContext {
                 userInfo: [NSLocalizedDescriptionKey: "No valid targets found"]
             )
         }
-        let result = try await projectManager.buildTargetForIndex(
-            firstTarget.uri.stringValue,
-            projectInfo: projectInfo
-        )
-        logger.debug("Build result for target \(firstTarget.uri.stringValue): \(result)")
-        return result
+
+        Task.detached {
+            do {
+                let result = try await projectManager.buildTargetForIndex(
+                    firstTarget.uri.stringValue,
+                    projectInfo: projectInfo
+                )
+                logger.debug("Build result for target \(firstTarget.uri.stringValue): \(result)")
+            } catch {
+                logger.error("Background build failed for target \(firstTarget.uri.stringValue): \(error)")
+            }
+        }
     }
 }
