@@ -54,13 +54,13 @@ public protocol ProjectInfo: Sendable {
     var projectType: BSPProjectType { get }
 
     /// 构建目标列表
-    var targets: [any ProjectTarget] { get }
+    var targets: [any ProjectTarget] { get async }
 
     /// 用于索引的构建设置
-    var buildSettingsForIndex: [String: [String: any FileBuildSettingInfo]] { get }
+    var buildSettingsForIndex: [String: [String: any FileBuildSettingInfo]] { get async }
 
     /// 主要构建设置
-    var primaryBuildSettings: any PrimaryBuildSettings { get }
+    var projectBuildSettings: any ProjectBuildSettings { get async }
 }
 
 /// 抽象项目目标协议
@@ -91,7 +91,7 @@ public protocol FileBuildSettingInfo: Sendable {
 }
 
 /// 抽象主要构建设置协议
-public protocol PrimaryBuildSettings: Sendable {
+public protocol ProjectBuildSettings: Sendable {
     /// DerivedData 路径
     var derivedDataPath: URL { get }
 

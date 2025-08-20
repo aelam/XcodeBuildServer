@@ -24,20 +24,20 @@ public extension XcodeProjectManager {
             try await buildWorkspace(
                 workspaceURL: workspaceURL,
                 scheme: importantScheme,
-                configuration: projectInfo.primaryBuildSettings.configuration
+                configuration: projectInfo.projectBuildSettings.configuration
             )
         case let .implicitWorkspace(projectURL, workspaceURL):
             try await buildWorkspace(
                 workspaceURL: workspaceURL,
                 scheme: importantScheme,
-                configuration: projectInfo.primaryBuildSettings.configuration
+                configuration: projectInfo.projectBuildSettings.configuration
             )
         case let .standaloneProject(projectURL):
             try await buildProject(
                 projectURL: projectURL,
                 scheme: importantScheme,
-                configuration: projectInfo.primaryBuildSettings.configuration,
-                derivedDataPath: projectInfo.primaryBuildSettings.derivedDataPath,
+                configuration: projectInfo.projectBuildSettings.configuration,
+                derivedDataPath: projectInfo.projectBuildSettings.derivedDataPath,
                 rootURL: projectInfo.rootURL
             )
         }

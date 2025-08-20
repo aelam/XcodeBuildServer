@@ -126,8 +126,8 @@ let package = Package(
             dependencies: ["SwiftPMProjectProvider"]
         ),
         .testTarget(
-            name: "XcodeProjectProviderTests",
-            dependencies: ["XcodeProjectProvider"],
+            name: "XcodeProjectManagementTests",
+            dependencies: [],
             resources: [
                 .copy("README.md"),
                 .copy("Resources")

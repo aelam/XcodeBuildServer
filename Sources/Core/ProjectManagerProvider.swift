@@ -7,6 +7,16 @@
 
 import Foundation
 
+public enum Platform: String, Codable, CaseIterable, Sendable {
+    case macOS
+    case linux
+    case windows
+    case iOS
+    case watchOS
+    case tvOS
+    case visionOS
+}
+
 /// 项目管理器提供者协议
 /// 用于创建特定类型的项目管理器
 public protocol ProjectManagerProvider: Sendable {
@@ -60,25 +70,13 @@ public actor ProjectManagerFactory {
         config: ProjectConfiguration? = nil
     ) async throws -> any ProjectManager {
         // 检查所有Provider，找到第一个能处理此项目的
-        for provider in providers {
-            if await provider.canHandle(projectURL: rootURL) {
-                return try await provider.createProjectManager(rootURL: rootURL, config: config)
-            }
+        for provider in providers where await provider.canHandle(projectURL: rootURL) {
+            return try await provider.createProjectManager(rootURL: rootURL, config: config)
         }
 
         throw ProjectManagerFactoryError.noSuitableProvider(
             "No provider found for project at: \(rootURL.path)"
         )
-    }
-
-    /// 检测项目类型
-    public func detectProjectType(rootURL: URL) async -> BSPProjectType {
-        for provider in providers {
-            if await provider.canHandle(projectURL: rootURL) {
-                return provider.supportedProjectTypes.first ?? .unknown
-            }
-        }
-        return .unknown
     }
 }
 

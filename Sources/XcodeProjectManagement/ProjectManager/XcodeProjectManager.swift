@@ -9,7 +9,7 @@ import Foundation
 import Logger
 import XcodeProj
 
-public struct XcodeProjectPrimaryBuildSettings: Sendable, Codable, Hashable {
+public struct XcodeProjectProjectBuildSettings: Sendable, Codable, Hashable {
     public let derivedDataPath: URL
     public let indexStoreURL: URL
     public let indexDatabaseURL: URL
@@ -191,7 +191,7 @@ public actor XcodeProjectManager: ProjectStatusPublisher {
         // 清理完成的构建任务
         Task {
             try? await Task.sleep(nanoseconds: 10_000_000_000) // 10 seconds
-            await self.cleanupBuildTask(target: target)
+            self.cleanupBuildTask(target: target)
         }
     }
 
@@ -268,7 +268,7 @@ public actor XcodeProjectManager: ProjectStatusPublisher {
         )
 
         // Get index URLs using the first available scheme (shared per workspace)
-        let primaryBuildSettings = try await settingsLoader.loadPathsFromPrimayBuildSettings(
+        let projectBuildSettings = try await settingsLoader.loadPathsFromPrimayBuildSettings(
             buildSettingsList: buildSettingsList
         )
 
@@ -276,10 +276,10 @@ public actor XcodeProjectManager: ProjectStatusPublisher {
             rootURL: rootURL,
             targets: actualTargets,
             customFlags: [
-                "SYMROOT=" + primaryBuildSettings.derivedDataPath.appendingPathComponent("Build/Products").path,
-                "OBJROOT=" + primaryBuildSettings.derivedDataPath.appendingPathComponent("Build/Intermediates.noindex")
+                "SYMROOT=" + projectBuildSettings.derivedDataPath.appendingPathComponent("Build/Products").path,
+                "OBJROOT=" + projectBuildSettings.derivedDataPath.appendingPathComponent("Build/Intermediates.noindex")
                     .path,
-                "SDK_STAT_CACHE_DIR=" + primaryBuildSettings.derivedDataPath.deletingLastPathComponent().path,
+                "SDK_STAT_CACHE_DIR=" + projectBuildSettings.derivedDataPath.deletingLastPathComponent().path,
                 // "BUILD_DIR=/tmp/__A__/Build/Products"
                 // "BUILD_ROOT=/tmp/__A__/Build/Products"
             ]
@@ -287,23 +287,25 @@ public actor XcodeProjectManager: ProjectStatusPublisher {
 
         let buildSettingsForIndex = IndexSettingsGeneration.generate(
             rootURL: rootURL,
-            primaryBuildSettings: primaryBuildSettings,
+            projectBuildSettings: projectBuildSettings,
             buildSettingsMap: buildSettingsMap
         )
 
-        return XcodeProjectInfo(
+        let projectInfo = XcodeProjectInfo(
             rootURL: rootURL,
             projectLocation: projectLocation,
             buildSettingsList: buildSettingsList,
-            primaryBuildSettings: primaryBuildSettings,
+            projectBuildSettings: projectBuildSettings,
             importantScheme: importantScheme,
             targets: actualTargets,
             schemes: [],
-            derivedDataPath: primaryBuildSettings.derivedDataPath,
-            indexStoreURL: primaryBuildSettings.indexStoreURL,
-            indexDatabaseURL: primaryBuildSettings.indexDatabaseURL,
+            derivedDataPath: projectBuildSettings.derivedDataPath,
+            indexStoreURL: projectBuildSettings.indexStoreURL,
+            indexDatabaseURL: projectBuildSettings.indexDatabaseURL,
             buildSettingsForIndex: buildSettingsForIndex
         )
+        self.currentProject = projectInfo
+        return projectInfo
     }
 
     /// Load build settings with correct parameters based on project type

@@ -4,7 +4,7 @@ public struct XcodeProjectInfo: Sendable, Codable {
     public let rootURL: URL
     public let projectLocation: XcodeProjectLocation
     public let buildSettingsList: [XcodeBuildSettings]
-    public let primaryBuildSettings: XcodeProjectPrimaryBuildSettings
+    public let projectBuildSettings: XcodeProjectProjectBuildSettings
     public let importantScheme: XcodeScheme
     public let targets: [XcodeTarget]
     public let schemes: [XcodeScheme]
@@ -17,7 +17,7 @@ public struct XcodeProjectInfo: Sendable, Codable {
         rootURL: URL,
         projectLocation: XcodeProjectLocation,
         buildSettingsList: [XcodeBuildSettings],
-        primaryBuildSettings: XcodeProjectPrimaryBuildSettings,
+        projectBuildSettings: XcodeProjectProjectBuildSettings,
         importantScheme: XcodeScheme,
         targets: [XcodeTarget] = [],
         schemes: [XcodeScheme] = [],
@@ -29,7 +29,7 @@ public struct XcodeProjectInfo: Sendable, Codable {
         self.rootURL = rootURL
         self.projectLocation = projectLocation
         self.buildSettingsList = buildSettingsList
-        self.primaryBuildSettings = primaryBuildSettings
+        self.projectBuildSettings = projectBuildSettings
         self.importantScheme = importantScheme
         self.targets = targets
         self.schemes = schemes

@@ -8,10 +8,10 @@ struct ProjectConfig {
     let indexStorePath: String
     let moduleCachePath: String
 
-    init(primaryBuildSettings: XcodeProjectPrimaryBuildSettings, rootURL: URL) {
+    init(projectBuildSettings: XcodeProjectProjectBuildSettings, rootURL: URL) {
         self.rootURL = rootURL.path
-        self.derivedDataPath = primaryBuildSettings.derivedDataPath
-        self.indexStorePath = primaryBuildSettings.indexStoreURL.path
+        self.derivedDataPath = projectBuildSettings.derivedDataPath
+        self.indexStorePath = projectBuildSettings.indexStoreURL.path
         self.moduleCachePath = derivedDataPath.deletingLastPathComponent()
             .appendingPathComponent("ModuleCache.noindex")
             .path

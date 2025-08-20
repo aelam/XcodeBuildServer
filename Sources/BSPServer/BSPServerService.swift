@@ -433,7 +433,7 @@ extension BSPServerService {
         }
 
         // 转换项目 targets 到 BSP BuildTarget
-        return projectInfo.targets.compactMap { target in
+        return await projectInfo.targets.compactMap { target in
             do {
                 let targetId: BuildTargetIdentifier
                 if projectInfo.projectType == .xcode {

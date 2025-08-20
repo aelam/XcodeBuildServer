@@ -14,7 +14,6 @@ public enum BSPProjectType: String, Codable, CaseIterable, Sendable {
     case unknown
 }
 
-/// 产品类型枚举
 public enum ProductType: String, Codable, CaseIterable, Sendable {
     case application
     case framework
@@ -23,15 +22,4 @@ public enum ProductType: String, Codable, CaseIterable, Sendable {
     case unitTestBundle = "unit_test_bundle"
     case uiTestBundle = "ui_test_bundle"
     case unknown
-}
-
-/// 平台类型枚举
-public enum Platform: String, Codable, CaseIterable, Sendable {
-    case macOS
-    case linux
-    case windows
-    case iOS
-    case watchOS
-    case tvOS
-    case visionOS
 }

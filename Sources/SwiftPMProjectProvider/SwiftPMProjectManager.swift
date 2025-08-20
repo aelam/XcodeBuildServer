@@ -69,7 +69,7 @@ public actor SwiftPMProjectManager: ProjectManager, ProjectStatusPublisher {
             rootURL: rootURL,
             name: rootURL.lastPathComponent,
             targets: loadTargets(),
-            primaryBuildSettings: SwiftPMPrimaryBuildSettings(rootURL: rootURL)
+            projectBuildSettings: SwiftPMProjectBuildSettings(rootURL: rootURL)
         )
 
         self.currentProject = projectInfo

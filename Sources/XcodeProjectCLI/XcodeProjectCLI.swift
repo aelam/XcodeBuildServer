@@ -44,13 +44,12 @@ struct XcodeProjectCLI {
 
             logger.info("✓ Project loaded successfully")
             logger.info("  - Root URL: \(project.rootURL.path)")
-            // logger.info("  - Project Type: \(project.projectType.rawValue)")
             logger.info("  - Project Name: \(project.name)")
-            // logger.info("  - Schemes: \(project.schemeInfoList.map(\.name).joined(separator: ", "))")
-            // logger.info("  - Targets: \(project.targetInfoList.map(\.name).joined(separator: ", "))")
+            logger.info("  - Scheme Name: \(project.importantScheme.name)")
+            logger.info(" - Project Targets: \(project.targets.map(\.name).joined(separator: ", "))")
 
             // Targets
-            logger.info("\n🗂️ Target Information:")
+            logger.info("\n✅🗂️ Target Information:")
             for target in project.targets {
                 logger.info("  - Target Name: \(target.name)")
                 logger.info("  - Is Test: \(target.productType.isTestType)")
@@ -58,11 +57,11 @@ struct XcodeProjectCLI {
             }
 
             // Show indexing paths
-            logger.info("\n🗂️ Indexing Information:")
-            logger.info("  - Index Store URL: \(project.primaryBuildSettings.indexStoreURL.path)")
-            logger.info("  - Index Database URL: \(project.primaryBuildSettings.indexDatabaseURL.path)")
-            logger.info("  - Derived Data Path: \(project.primaryBuildSettings.derivedDataPath.path)")
-            logger.info("  - Configuration: \(project.primaryBuildSettings.configuration)")
+            logger.info("\n✅🗂️ Indexing Information:")
+            logger.info("  - Index Store URL: \(project.projectBuildSettings.indexStoreURL.path)")
+            logger.info("  - Index Database URL: \(project.projectBuildSettings.indexDatabaseURL.path)")
+            logger.info("  - Derived Data Path: \(project.projectBuildSettings.derivedDataPath.path)")
+            logger.info("  - Configuration: \(project.projectBuildSettings.configuration)")
 
             let endTimestamp = Date()
             logger.info("Loading time: \(endTimestamp.timeIntervalSince(timestamp)) seconds")

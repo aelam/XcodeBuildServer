@@ -15,7 +15,7 @@ public struct SwiftPMProjectInfo: ProjectInfo {
     public let rootURL: URL
     public let name: String
     public let targets: [any ProjectTarget]
-    public let primaryBuildSettings: any PrimaryBuildSettings
+    public let projectBuildSettings: any ProjectBuildSettings
 
     public let projectType: BSPProjectType = .swiftpm
 
@@ -28,19 +28,19 @@ public struct SwiftPMProjectInfo: ProjectInfo {
         rootURL: URL,
         name: String,
         targets: [any ProjectTarget],
-        primaryBuildSettings: any PrimaryBuildSettings
+        projectBuildSettings: any ProjectBuildSettings
     ) {
         self.rootURL = rootURL
         self.name = name
         self.targets = targets
-        self.primaryBuildSettings = primaryBuildSettings
+        self.projectBuildSettings = projectBuildSettings
     }
 }
 
 // MARK: - SwiftPM 主要构建设置
 
 /// SwiftPM主要构建设置实现
-public struct SwiftPMPrimaryBuildSettings: PrimaryBuildSettings {
+public struct SwiftPMProjectBuildSettings: ProjectBuildSettings {
     public let derivedDataPath: URL
     public let indexStoreURL: URL
     public let indexDatabaseURL: URL

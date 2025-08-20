@@ -19,7 +19,7 @@ public actor XcodeSettingsLoader {
 
     public func loadPathsFromPrimayBuildSettings(
         buildSettingsList: [XcodeBuildSettings]
-    ) throws -> XcodeProjectPrimaryBuildSettings {
+    ) throws -> XcodeProjectProjectBuildSettings {
         guard let settings = buildSettingsList.first?.buildSettings else {
             throw XcodeProjectError.invalidConfig("No build settings found")
         }
@@ -47,7 +47,7 @@ public actor XcodeSettingsLoader {
             throw XcodeProjectError.invalidConfig("Failed to create index database directory: \(error)")
         }
 
-        return XcodeProjectPrimaryBuildSettings(
+        return XcodeProjectProjectBuildSettings(
             derivedDataPath: derivedDataPath,
             indexStoreURL: indexStoreURL,
             indexDatabaseURL: indexDatabaseURL,

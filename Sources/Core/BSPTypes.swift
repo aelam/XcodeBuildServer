@@ -1,5 +1,5 @@
 //
-//  Types.swift
+//  BSPTypes.swift
 //
 //  Copyright © 2024 Wang Lun.
 //
