@@ -139,36 +139,26 @@ public final class BSPServerService: ProjectStateObserver, @unchecked Sendable {
         logger.info("Loading project at \(rootURL)")
 
         // 加载 BSP 配置
-        let configLoader = BSPServerConfigurationLoader(rootURL: rootURL)
-        let config = try configLoader.loadConfiguration()
-        if config == nil {
-            logger.debug("No BSP config found, using project manager auto-discovery")
-        }
+//        let configLoader = BSPServerConfigurationLoader(rootURL: rootURL)
+//        let config = try configLoader.loadConfiguration()
+//        if config == nil {
+//            logger.debug("No BSP config found, using project manager auto-discovery")
+//        }
 
-        projectManager = try await ProjectProviderRegistry.createFactory().createProjectManager(
-            rootURL: rootURL,
-            config: config
+        let projectManager = try await ProjectProviderRegistry.createFactory().createProjectManager(
+            rootURL: rootURL
         )
         // 检测项目类型
-        logger.info("Detected project type: \(String(describing: projectManager?.projectType.rawValue))")
-
-        // 根据项目类型创建项目管理器
-        let newProjectManager = try createProjectManager(
-            rootURL: rootURL,
-            projectType: detectedType,
-            config: config
-        )
+        logger.info("Detected project type: \(String(describing: projectManager.projectType.rawValue))")
 
         // 初始化项目管理器
-        try await newProjectManager.initialize()
-        let projectInfo = try await newProjectManager.resolveProjectInfo()
-
-        // 设置项目管理器
-        projectManager.withLock { $0 = newProjectManager }
+        try await projectManager.initialize()
+        let projectInfo = try await projectManager.resolveProjectInfo()
 
         // 订阅状态变化
-        await subscribeToProjectManager(newProjectManager)
+        await subscribeToProjectManager(projectManager)
 
+        self.projectManager = projectManager
         logger.info("Project loaded successfully: \(projectInfo.rootURL.lastPathComponent)")
     }
 
@@ -378,26 +368,22 @@ public extension BSPServerService {
 
     /// 获取当前项目管理器（供消息处理器使用）
     func getCurrentProjectManager() async -> (any ProjectManager)? {
-        projectManager.withLock { $0 }
+        projectManager
     }
 
     /// 获取项目状态（供消息处理器使用）
     func getProjectState() async -> ProjectState? {
-        guard let pm = projectManager.withLock({ $0 }) else {
-            return nil
-        }
-        return await pm.getProjectState()
+        await projectManager?.getProjectState()
     }
 
     /// 检查项目是否已初始化
-    func isProjectInitialized() async -> Bool {
-        projectManager.withLock { $0 != nil }
+    func isProjectInitialized() -> Bool {
+        projectManager != nil
     }
 
     /// 获取项目根路径（如果已初始化）
     func getProjectRootURL() async -> URL? {
-        guard let pm = projectManager.withLock({ $0 }) else { return nil }
-        return await pm.rootURL
+        await projectManager?.rootURL
     }
 }
 
@@ -406,13 +392,13 @@ public extension BSPServerService {
 extension BSPServerService {
     /// 获取编译参数（BSP 协议适配）
     func getCompileArguments(targetIdentifier: BuildTargetIdentifier, fileURI: String) async throws -> [String] {
-        guard let pm = projectManager.withLock({ $0 }) else {
+        guard let projectManager else {
             throw BuildServerError.invalidConfiguration("Project not initialized")
         }
 
         logger.debug("Getting compile arguments for target: \(targetIdentifier.uri.stringValue), file: \(fileURI)")
 
-        return try await pm.getCompileArguments(
+        return try await projectManager.getCompileArguments(
             targetIdentifier: targetIdentifier.uri.stringValue,
             fileURI: fileURI
         )
@@ -420,22 +406,21 @@ extension BSPServerService {
 
     /// 获取工作目录（BSP 协议适配）
     func getWorkingDirectory() async throws -> String? {
-        guard let pm = projectManager.withLock({ $0 }) else { return nil }
-        return await pm.rootURL.path
+        await projectManager?.rootURL.path
     }
 
     /// 创建构建目标列表（BSP 协议适配）
     func createBuildTargets() async throws -> [BuildTarget] {
-        guard let pm = projectManager.withLock({ $0 }) else {
+        guard let projectManager else {
             throw BuildServerError.invalidConfiguration("Project manager not initialized")
         }
 
         // 如果项目信息不存在，尝试解析它
-        var projectInfo = await pm.currentProject
+        var projectInfo = await projectManager.currentProject
         if projectInfo == nil {
             logger.debug("Project info not available, attempting to resolve...")
             do {
-                projectInfo = try await pm.resolveProjectInfo()
+                projectInfo = try await projectManager.resolveProjectInfo()
             } catch {
                 logger.error("Failed to resolve project info: \(error)")
                 throw BuildServerError
@@ -497,14 +482,14 @@ extension BSPServerService {
 
     /// 为索引构建目标（BSP 协议适配）
     func buildTargetForIndex(targets: [BuildTargetIdentifier]) async throws {
-        guard let pm = projectManager.withLock({ $0 }) else {
+        guard let projectManager else {
             throw BuildServerError.invalidConfiguration("Project not initialized")
         }
 
         // 触发后台构建以支持索引
         for target in targets {
             let targetName = target.uri.stringValue.replacingOccurrences(of: "xcode://", with: "")
-            await pm.startBuild(target: targetName)
+            await projectManager.startBuild(target: targetName)
         }
     }
 }

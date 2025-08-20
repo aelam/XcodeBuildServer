@@ -56,7 +56,7 @@ struct XcodeBuildServerCLI {
         logger.info("Project directory: \(projectURL.path)")
 
         do {
-            try await bspService.start(rootURL: projectURL)
+            try await bspService.start()
         } catch {
             // Log error
             let errorMsg = "BSP Server failed to start: \(error)"
