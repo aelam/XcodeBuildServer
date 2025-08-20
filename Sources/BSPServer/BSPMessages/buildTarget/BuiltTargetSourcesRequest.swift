@@ -94,7 +94,7 @@ struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
 //                return createEmptySourcesItem(for: targetIdentifier)
 //            }
             // TODO: fix here
-            fatalError()
+            // fatalError()
 //            return await buildSourcesItemFromIndex(
 //                targetIdentifier: targetIdentifier,
 //                targetName: targetInfo.targetName,

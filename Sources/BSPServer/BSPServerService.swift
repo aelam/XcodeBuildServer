@@ -181,7 +181,7 @@ public extension BSPServerService {
         await notifyClientProjectStateChange(event)
     }
 
-    /// Notify client about projectState change
+    // swiftlint:disable:next cyclomatic_complexity
     private func notifyClientProjectStateChange(_ event: ProjectStateEvent) async {
         do {
             switch event {

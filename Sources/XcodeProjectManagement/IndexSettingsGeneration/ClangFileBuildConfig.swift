@@ -136,7 +136,7 @@ struct ClangFileBuildConfig: SourceFileBuildConfigurable {
         return flags
     }
 
-    // swiftlint:disable:next function_body_length cyclomatic_complexity
+    // swiftlint:disable:next cyclomatic_complexity
     private func buildClangFlags() -> [String] {
         let settings = targetBuildConfig.buildSettings
         var flags: [String] = []
