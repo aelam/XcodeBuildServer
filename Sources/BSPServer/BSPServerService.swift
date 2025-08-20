@@ -29,8 +29,8 @@ public final class BSPServerService: ProjectStateObserver, @unchecked Sendable {
     /// 项目类型
     private let detectedProjectType = OSAllocatedUnfairLock(initialState: BSPProjectType.unknown)
 
-    /// 项目根路径（CLI 启动时传入）
-    private let projectRootURL = OSAllocatedUnfairLock<URL?>(initialState: nil)
+    // /// 项目根路径（CLI 启动时传入）
+    // private let projectRootURL = OSAllocatedUnfairLock<URL?>(initialState: nil)
 
     // MARK: - State
 
@@ -122,28 +122,12 @@ public final class BSPServerService: ProjectStateObserver, @unchecked Sendable {
 
     /// 初始化项目（供 BuildInitializeRequest 调用）
     public func initializeProject(rootURL: URL) async throws {
-        projectRootURL.withLock { $0 = rootURL }
-
         // 如果项目已经初始化，直接返回
         if projectManager != nil {
             return
         }
 
         logger.info("Initializing project...")
-        try await loadProject(rootURL: rootURL)
-        logger.info("Project initialized successfully")
-    }
-
-    /// 加载项目
-    private func loadProject(rootURL: URL) async throws {
-        logger.info("Loading project at \(rootURL)")
-
-        // 加载 BSP 配置
-//        let configLoader = BSPServerConfigurationLoader(rootURL: rootURL)
-//        let config = try configLoader.loadConfiguration()
-//        if config == nil {
-//            logger.debug("No BSP config found, using project manager auto-discovery")
-//        }
 
         let projectManager = try await ProjectProviderRegistry.createFactory().createProjectManager(
             rootURL: rootURL
@@ -151,7 +135,6 @@ public final class BSPServerService: ProjectStateObserver, @unchecked Sendable {
         // 检测项目类型
         logger.info("Detected project type: \(String(describing: projectManager.projectType.rawValue))")
 
-        // 初始化项目管理器
         try await projectManager.initialize()
         let projectInfo = try await projectManager.resolveProjectInfo()
 
@@ -162,82 +145,8 @@ public final class BSPServerService: ProjectStateObserver, @unchecked Sendable {
         logger.info("Project loaded successfully: \(projectInfo.rootURL.lastPathComponent)")
     }
 
-    /// 检测项目类型
-    private func detectProjectType(rootURL: URL) -> BSPProjectType {
-        let fileManager = FileManager.default
-
-        // 检查是否有 Package.swift (SwiftPM 项目)
-        if fileManager.fileExists(atPath: rootURL.appendingPathComponent("Package.swift").path) {
-            return .swiftpm
-        }
-
-        // 检查是否有 .xcodeproj 或 .xcworkspace (Xcode 项目)
-        do {
-            let contents = try fileManager.contentsOfDirectory(atPath: rootURL.path)
-            if contents.contains(where: { $0.hasSuffix(".xcodeproj") || $0.hasSuffix(".xcworkspace") }) {
-                #if os(macOS)
-                return .xcode
-                #else
-                logger.warning("Xcode projects are only supported on macOS, falling back to SwiftPM")
-                return .swiftpm
-                #endif
-            }
-        } catch {
-            logger.warning("Failed to detect project type: \(error)")
-        }
-
-        // 默认使用 SwiftPM（跨平台）
-        return .swiftpm
-    }
-
-    /// 创建合适的项目管理器
-    private func createProjectManager(
-        rootURL: URL,
-        projectType: BSPProjectType,
-        config: XcodeBSPConfiguration?
-    ) throws -> any ProjectManager {
-        switch projectType {
-        case .xcode:
-            #if os(macOS)
-            return createXcodeProjectManager(rootURL: rootURL, config: config)
-            #else
-            throw BuildServerError.unsupportedPlatform("Xcode projects are only supported on macOS")
-            #endif
-        case .swiftpm:
-            return SwiftPMProjectManager(rootURL: rootURL)
-        case .unknown:
-            #if os(macOS)
-            return createXcodeProjectManager(rootURL: rootURL, config: config)
-            #else
-            return SwiftPMProjectManager(rootURL: rootURL)
-            #endif
-        }
-    }
-
-    #if os(macOS)
-    /// 创建 Xcode 项目管理器
-    private func createXcodeProjectManager(
-        rootURL: URL,
-        config: XcodeBSPConfiguration?
-    ) -> any ProjectManager {
-        let xcodeToolchain = XcodeToolchain()
-        let xcodeManager = XcodeProjectManager(
-            rootURL: rootURL,
-            xcodeProjectReference: config?.projectReference,
-            toolchain: xcodeToolchain,
-            locator: XcodeProjectLocator(),
-            settingsLoader: XcodeSettingsLoader(
-                commandBuilder: XcodeBuildCommandBuilder(),
-                toolchain: xcodeToolchain
-            )
-        )
-        return xcodeManager as! ProjectManager
-    }
-    #endif
-
     // MARK: - Notification Sending
 
-    /// 发送通知到客户端
     public func sendNotification(_ notification: NotificationType) async throws {
         try await jsonrpcConnection.send(notification: notification)
     }

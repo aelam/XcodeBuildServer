@@ -229,7 +229,6 @@ public actor XcodeProjectManager: ProjectStatusPublisher {
     }
 
     public func resolveProjectInfo() async throws -> XcodeProjectInfo {
-        // 设置项目状态为加载中
         let oldState = projectState.projectLoadState
         projectState.projectLoadState = .loading(projectPath: rootURL.path)
         await notifyStateObservers(.projectLoadStateChanged(from: oldState, to: projectState.projectLoadState))
