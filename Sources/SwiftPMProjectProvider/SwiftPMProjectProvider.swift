@@ -13,8 +13,6 @@ import Foundation
 public struct SwiftPMProjectProvider: ProjectManagerProvider {
     public let name = "SwiftPM Project Provider"
 
-    public let supportedProjectTypes: [BSPProjectType] = [.swiftpm]
-
     public let supportedPlatforms: [Platform] = [.macOS, .linux, .windows]
 
     public init() {}

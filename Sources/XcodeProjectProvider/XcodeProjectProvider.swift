@@ -14,7 +14,6 @@ import XcodeProj
 /// Xcode 项目提供者 - 完整实现
 public struct XcodeProjectProvider: ProjectManagerProvider {
     public let name = "Xcode Project Provider"
-    public let supportedProjectTypes: [BSPProjectType] = [.xcode]
     public let supportedPlatforms: [Platform] = [.macOS]
 
     public init() {}

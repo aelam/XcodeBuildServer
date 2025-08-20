@@ -17,7 +17,7 @@ public actor XcodeSettingsLoader {
         self.toolchain = toolchain
     }
 
-    public func loadPathsFromPrimayBuildSettings(
+    public func loadProjectBuildSettings(
         buildSettingsList: [XcodeBuildSettings]
     ) throws -> XcodeProjectProjectBuildSettings {
         guard let settings = buildSettingsList.first?.buildSettings else {

@@ -16,9 +16,9 @@ public actor SwiftPMProjectManager: ProjectManager, ProjectStatusPublisher {
 
     public let rootURL: URL
     private let config: ProjectConfiguration?
-    public private(set) var currentProject: (any ProjectInfo)?
+    public private(set) var projectInfo: (any ProjectInfo)?
 
-    public nonisolated let projectType: BSPProjectType = .swiftpm
+    public let projectType: String = "SwiftPM"
 
     // MARK: - State Management
 
@@ -72,7 +72,7 @@ public actor SwiftPMProjectManager: ProjectManager, ProjectStatusPublisher {
             projectBuildSettings: SwiftPMProjectBuildSettings(rootURL: rootURL)
         )
 
-        self.currentProject = projectInfo
+        self.projectInfo = projectInfo
 
         // 更新项目状态
         let oldState = projectState.projectLoadState

@@ -76,6 +76,9 @@ let package = Package(
                     condition: .when(platforms: [.macOS])
                 ),
             ],
+            resources: [
+                .copy("README.md"),
+            ],
             swiftSettings: [
                 .define("MACOS_ONLY", .when(platforms: [.macOS]))
             ]

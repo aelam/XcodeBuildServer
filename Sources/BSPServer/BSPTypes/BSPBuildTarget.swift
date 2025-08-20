@@ -72,18 +72,8 @@ public struct BuildTarget: Codable, Hashable, Sendable {
 /// A unique identifier for a target, can use any URI-compatible encoding as long as it is unique within the workspace.
 /// Clients should not infer metadata out of the URI structure such as the path or query parameters, use `BuildTarget`
 /// instead.
-public struct BuildTargetIdentifier: Codable, Hashable, Sendable {
-    /// The target's Uri
-    public var uri: URI
-
-    public init(uri: URI) {
-        self.uri = uri
-    }
-
-    var xcodeTargetName: String {
-        uri.arbitrarySchemeURL.lastPathComponent
-    }
-}
+///
+public typealias BSPBuildTargetIdentifier = Core.BuildTargetIdentifier
 
 /// A list of predefined tags that can be used to categorize build targets.
 public struct BuildTargetTag: Codable, Hashable, RawRepresentable, Sendable {

@@ -23,9 +23,6 @@ public protocol ProjectManagerProvider: Sendable {
     /// 提供者名称
     var name: String { get }
 
-    /// 支持的项目类型
-    var supportedProjectTypes: [BSPProjectType] { get }
-
     /// 支持的平台
     var supportedPlatforms: [Platform] { get }
 

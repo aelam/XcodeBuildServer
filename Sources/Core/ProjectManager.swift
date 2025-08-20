@@ -13,10 +13,10 @@ public protocol ProjectManager: AnyObject, Sendable {
     var rootURL: URL { get async }
 
     /// 当前项目信息
-    var currentProject: (any ProjectInfo)? { get async }
+    var projectInfo: (any ProjectInfo)? { get async }
 
     /// 项目类型
-    nonisolated var projectType: BSPProjectType { get }
+    var projectType: String { get }
 
     /// 初始化项目管理器
     func initialize() async throws
@@ -49,9 +49,6 @@ public protocol ProjectInfo: Sendable {
 
     /// 项目名称
     var name: String { get }
-
-    /// 项目类型
-    var projectType: BSPProjectType { get }
 
     /// 构建目标列表
     var targets: [any ProjectTarget] { get async }

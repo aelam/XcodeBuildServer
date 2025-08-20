@@ -26,12 +26,6 @@ public final class BSPServerService: ProjectStateObserver, @unchecked Sendable {
     /// 项目管理器
     var projectManager: (any ProjectManager)?
 
-    /// 项目类型
-    private let detectedProjectType = OSAllocatedUnfairLock(initialState: BSPProjectType.unknown)
-
-    // /// 项目根路径（CLI 启动时传入）
-    // private let projectRootURL = OSAllocatedUnfairLock<URL?>(initialState: nil)
-
     // MARK: - State
 
     public enum ServiceState: Sendable {
@@ -133,7 +127,7 @@ public final class BSPServerService: ProjectStateObserver, @unchecked Sendable {
             rootURL: rootURL
         )
         // 检测项目类型
-        logger.info("Detected project type: \(String(describing: projectManager.projectType.rawValue))")
+        logger.info("Detected project type: " + projectManager.projectType)
 
         try await projectManager.initialize()
         let projectInfo = try await projectManager.resolveProjectInfo()
@@ -183,13 +177,12 @@ public extension BSPServerService {
 // MARK: - ProjectStateObserver
 
 public extension BSPServerService {
-    /// 响应项目状态管理器的状态变化
     func onProjectStateChanged(_ event: ProjectStateEvent) async {
-        await convertProjectStateToNotification(event)
+        await notifyClientProjectStateChange(event)
     }
 
-    /// 将项目状态事件转换为 BSP 通知
-    private func convertProjectStateToNotification(_ event: ProjectStateEvent) async {
+    /// Notify client about projectState change
+    private func notifyClientProjectStateChange(_ event: ProjectStateEvent) async {
         do {
             switch event {
             case let .projectLoadStateChanged(_, to):
@@ -257,7 +250,7 @@ public extension BSPServerService {
                 }
             }
         } catch {
-            logger.error("Failed to send notification for project state event \(event): \(error)")
+            logger.warning("Failed to send notification for project state event \(event): \(error)")
         }
     }
 
@@ -325,7 +318,7 @@ extension BSPServerService {
         }
 
         // 如果项目信息不存在，尝试解析它
-        var projectInfo = await projectManager.currentProject
+        var projectInfo = await projectManager.projectInfo
         if projectInfo == nil {
             logger.debug("Project info not available, attempting to resolve...")
             do {
@@ -341,13 +334,14 @@ extension BSPServerService {
             throw BuildServerError.invalidConfiguration("Project info is nil after resolution attempt")
         }
 
+        return []
         // 转换项目 targets 到 BSP BuildTarget
-        return await projectInfo.targets.compactMap { target in
-            do {
-                let targetId: BuildTargetIdentifier
-                if projectInfo.projectType == .xcode {
-                    fatalError("fix me")
-                    // 为 Xcode 项目使用与 buildSettingsForIndex 一致的格式: xcode://path/to/project.xcodeproj/TargetName
+        // return await projectInfo.targets.compactMap { target in
+        //     do {
+        //         let targetId: BuildTargetIdentifier
+        //         if projectInfo.projectType == .xcode {
+        //             fatalError("fix me")
+        // 为 Xcode 项目使用与 buildSettingsForIndex 一致的格式: xcode://path/to/project.xcodeproj/TargetName
 //                    if let xcodeTargetAdapter = target as? XcodeTargetAdapter {
 //                        let projectPath = xcodeTargetAdapter.projectURL.path
 //                        let targetName = target.name
@@ -357,37 +351,38 @@ extension BSPServerService {
 //                        // fallback
 //                        targetId = try BuildTargetIdentifier(uri: URI(string: "xcode://\(target.name)"))
 //                    }
-                    targetId = try BuildTargetIdentifier(uri: URI(string: "xcode://\(target.name)"))
+        //         targetId = try BuildTargetIdentifier(uri: URI(string: "xcode://\(target.name)"))
 
-                } else {
-                    // 为 SwiftPM 项目使用简单格式
-                    targetId = try BuildTargetIdentifier(uri: URI(string: "swiftpm:///\(target.name)"))
-                }
-                let baseDirectory = try URI(string: projectInfo.rootURL.absoluteString)
+        //     } else {
+        //         // 为 SwiftPM 项目使用简单格式
+        //         targetId = try BuildTargetIdentifier(uri: URI(string: "swiftpm:///\(target.name)"))
+        //     }
+        //     let baseDirectory = try URI(string: projectInfo.rootURL.absoluteString)
 
-                return BuildTarget(
-                    id: targetId,
-                    displayName: target.name,
-                    baseDirectory: baseDirectory,
-                    tags: [BuildTargetTag(rawValue: target.protocolProductType.rawValue)],
-                    languageIds: [Language.swift, Language.objective_c],
-                    dependencies: [],
-                    capabilities: BuildTargetCapabilities(
-                        canCompile: true,
-                        canTest: target.protocolProductType == .unitTestBundle || target
-                            .protocolProductType == .uiTestBundle,
-                        canRun: target.protocolProductType == .application,
-                        canDebug: target.protocolProductType == .application
-                    ),
-                    dataKind: BuildTargetDataKind(rawValue: projectInfo.projectType.rawValue),
-                    data: nil
-                )
-            } catch {
-                logger.error("Failed to create BuildTarget for '\(target.name)': \(error)")
-                return nil
-            }
-        }
+        //     return BuildTarget(
+        //         id: targetId,
+        //         displayName: target.name,
+        //         baseDirectory: baseDirectory,
+        //         tags: [BuildTargetTag(rawValue: target.protocolProductType.rawValue)],
+        //         languageIds: [Language.swift, Language.objective_c],
+        //         dependencies: [],
+        //         capabilities: BuildTargetCapabilities(
+        //             canCompile: true,
+        //             canTest: target.protocolProductType == .unitTestBundle || target
+        //                 .protocolProductType == .uiTestBundle,
+        //             canRun: target.protocolProductType == .application,
+        //             canDebug: target.protocolProductType == .application
+        //         ),
+        //         dataKind: BuildTargetDataKind(rawValue: projectInfo.projectType.rawValue),
+        //         data: nil
+        //     )
+        // } catch {
+        //     logger.error("Failed to create BuildTarget for '\(target.name)': \(error)")
+        //     return nil
+        // }
     }
+
+    // }
 
     /// 为索引构建目标（BSP 协议适配）
     func buildTargetForIndex(targets: [BuildTargetIdentifier]) async throws {

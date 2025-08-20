@@ -72,8 +72,10 @@ struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
         do {
             // 异步并行处理目标解析和项目信息获取
             let targetInfo = try self.parseTargetIdentifier(targetIdentifier.uri.stringValue)
-            guard let projectManager = await service.getCurrentProjectManager(),
-                  let projectInfo = await projectManager.currentProject else {
+            guard
+                let projectManager = await service.getCurrentProjectManager(),
+                let projectInfo = await projectManager.projectInfo
+            else {
                 logger.error("Project not initialized")
                 return SourcesItem(target: targetIdentifier, sources: [])
             }

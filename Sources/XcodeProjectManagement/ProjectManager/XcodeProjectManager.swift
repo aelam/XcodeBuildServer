@@ -208,7 +208,7 @@ public actor XcodeProjectManager: ProjectStatusPublisher {
     }
 
     private let xcodeProjectReference: XcodeProjectReference?
-    private(set) var currentProject: XcodeProjectInfo?
+    private(set) var projectInfo: XcodeProjectInfo?
 
     public init(
         rootURL: URL,
@@ -237,7 +237,6 @@ public actor XcodeProjectManager: ProjectStatusPublisher {
             rootURL: rootURL,
             xcodeProjectReference: xcodeProjectReference
         )
-        _ = await toolchain.getSelectedInstallation()
 
         // Notify observers that project loading started (保持向后兼容)
         await notifyObservers(ProjectStatusEvent.projectLoaded(projectPath: rootURL.path))
@@ -267,7 +266,7 @@ public actor XcodeProjectManager: ProjectStatusPublisher {
         )
 
         // Get index URLs using the first available scheme (shared per workspace)
-        let projectBuildSettings = try await settingsLoader.loadPathsFromPrimayBuildSettings(
+        let projectBuildSettings = try await settingsLoader.loadProjectBuildSettings(
             buildSettingsList: buildSettingsList
         )
 
@@ -303,7 +302,7 @@ public actor XcodeProjectManager: ProjectStatusPublisher {
             indexDatabaseURL: projectBuildSettings.indexDatabaseURL,
             buildSettingsForIndex: buildSettingsForIndex
         )
-        self.currentProject = projectInfo
+        self.projectInfo = projectInfo
         return projectInfo
     }
 

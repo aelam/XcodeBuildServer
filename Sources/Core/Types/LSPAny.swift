@@ -10,8 +10,6 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import JSONRPCConnection
-
 /// Representation of 'any' in the Language Server Protocol, which is equivalent
 /// to an arbitrary JSON value.
 public enum LSPAny: Hashable, Sendable {
@@ -70,7 +68,7 @@ extension LSPAny: Encodable {
     }
 }
 
-extension LSPAny: ResponseType {}
+// extension LSPAny: ResponseType {}
 
 extension LSPAny: ExpressibleByNilLiteral {
     public init(nilLiteral _: ()) {
@@ -168,13 +166,13 @@ extension Array: LSPAnyCodable where Element: LSPAnyCodable {
     private static func convertElement(_ element: LSPAny) -> [Element]? {
         switch element {
         case let .dictionary(dict):
-            return Element(fromLSPDictionary: dict).map { [$0] }
+            Element(fromLSPDictionary: dict).map { [$0] }
         case let .array(value):
-            return value as? [Element]
+            value as? [Element]
         case .string, .int, .double, .bool:
-            return convertPrimitiveValue(element)
+            convertPrimitiveValue(element)
         case .null:
-            return nil
+            nil
         }
     }
 

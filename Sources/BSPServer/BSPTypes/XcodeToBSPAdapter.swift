@@ -4,6 +4,7 @@
 //  Copyright © 2024 Wang Lun.
 //
 
+import Core
 import Foundation
 import XcodeProj
 import XcodeProjectManagement

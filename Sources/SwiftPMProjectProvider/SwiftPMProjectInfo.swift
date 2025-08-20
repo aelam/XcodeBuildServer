@@ -17,7 +17,7 @@ public struct SwiftPMProjectInfo: ProjectInfo {
     public let targets: [any ProjectTarget]
     public let projectBuildSettings: any ProjectBuildSettings
 
-    public let projectType: BSPProjectType = .swiftpm
+    // public let projectType: BSPProjectType = .swiftpm
 
     public var buildSettingsForIndex: [String: [String: any FileBuildSettingInfo]] {
         // TODO: 实现 SwiftPM 的构建设置
