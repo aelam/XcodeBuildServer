@@ -25,7 +25,7 @@
 ///
 /// The general idea is that the BuildTarget data structure should contain only information that is fast or cheap to
 /// compute
-public struct BuildTarget: Codable, Hashable, Sendable {
+public struct BSPBuildTarget: Codable, Hashable, Sendable {
     /// The target’s unique identifier
     public var id: BuildTargetIdentifier
 

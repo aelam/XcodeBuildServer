@@ -6,6 +6,11 @@
 //
 
 import Foundation
+import Logger
+
+public enum ProjectManagerProviderError: Error, Sendable {
+    case notImplemented
+}
 
 public enum Platform: String, Codable, CaseIterable, Sendable {
     case macOS
@@ -17,23 +22,16 @@ public enum Platform: String, Codable, CaseIterable, Sendable {
     case visionOS
 }
 
-/// 项目管理器提供者协议
-/// 用于创建特定类型的项目管理器
 public protocol ProjectManagerProvider: Sendable {
-    /// 提供者名称
     var name: String { get }
 
-    /// 支持的平台
     var supportedPlatforms: [Platform] { get }
 
-    /// 检查是否可以处理指定的项目
     func canHandle(projectURL: URL) async -> Bool
 
-    /// 创建项目管理器
     func createProjectManager(rootURL: URL, config: ProjectConfiguration?) async throws -> any ProjectManager
 }
 
-/// 项目配置
 public struct ProjectConfiguration: Sendable {
     public let customSettings: [String: String]
     public let workingDirectory: URL?
@@ -44,36 +42,35 @@ public struct ProjectConfiguration: Sendable {
     }
 }
 
-/// 项目管理器工厂
-/// 管理所有可用的Provider并选择合适的Provider
 public actor ProjectManagerFactory {
     private var providers: [any ProjectManagerProvider] = []
 
     public init() {}
 
-    /// 注册Provider
     public func registerProvider(_ provider: any ProjectManagerProvider) {
         providers.append(provider)
     }
 
-    /// 获取所有已注册的Provider
     public func getRegisteredProviders() -> [any ProjectManagerProvider] {
         providers
     }
 
-    /// 为指定项目创建合适的ProjectManager
     public func createProjectManager(
         rootURL: URL,
         config: ProjectConfiguration? = nil
     ) async throws -> any ProjectManager {
-        // 检查所有Provider，找到第一个能处理此项目的
-        for provider in providers where await provider.canHandle(projectURL: rootURL) {
-            return try await provider.createProjectManager(rootURL: rootURL, config: config)
-        }
+        try await Task.detached {
+            let providers = await self.providers
+            logger.debug("Creating project manager for \(rootURL.path)")
+            // 检查所有Provider，找到第一个能处理此项目的
+            for provider in providers where await provider.canHandle(projectURL: rootURL) {
+                return try await provider.createProjectManager(rootURL: rootURL, config: config)
+            }
 
-        throw ProjectManagerFactoryError.noSuitableProvider(
-            "No provider found for project at: \(rootURL.path)"
-        )
+            throw ProjectManagerFactoryError.noSuitableProvider(
+                "No provider found for project at: \(rootURL.path)"
+            )
+        }.value
     }
 }
 

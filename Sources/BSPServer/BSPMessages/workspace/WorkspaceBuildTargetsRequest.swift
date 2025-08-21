@@ -42,7 +42,6 @@ public struct WorkspaceBuildTargetsRequest: ContextualRequestType, Sendable {
             } catch {
                 logger.error("Failed to get build targets: \(error)")
 
-                // 提供更友好的错误信息，特别是对于未初始化的情况
                 let errorMessage = if error.localizedDescription.contains("BuildServerContext not loaded") {
                     "Build server not initialized. Please send 'build/initialize' request first."
                 } else {
@@ -66,7 +65,7 @@ public struct WorkspaceBuildTargetsResponse: ResponseType, Sendable {
     public let jsonrpc: String
     public let result: WorkspaceBuildTargetsResult
 
-    public init(id: JSONRPCID?, jsonrpc: String = "2.0", targets: [BuildTarget]) {
+    public init(id: JSONRPCID?, jsonrpc: String = "2.0", targets: [BSPBuildTarget]) {
         self.id = id
         self.jsonrpc = jsonrpc
         self.result = WorkspaceBuildTargetsResult(targets: targets)
@@ -74,9 +73,9 @@ public struct WorkspaceBuildTargetsResponse: ResponseType, Sendable {
 }
 
 public struct WorkspaceBuildTargetsResult: Codable, Sendable {
-    public let targets: [BuildTarget]
+    public let targets: [BSPBuildTarget]
 
-    public init(targets: [BuildTarget]) {
+    public init(targets: [BSPBuildTarget]) {
         self.targets = targets
     }
 }

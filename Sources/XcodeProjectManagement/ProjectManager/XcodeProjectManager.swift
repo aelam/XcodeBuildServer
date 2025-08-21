@@ -47,17 +47,13 @@ public struct XcodeProjectProjectBuildSettings: Sendable, Codable, Hashable {
 }
 
 public struct XcodeTargetInfo: Sendable {
+    public let targetIdentifier: String
     public let name: String
-    public let productType: String?
+    public let xcodeProductType: XcodeProductType
     public let buildSettings: [String: String]
 
-    public var xcodeProductType: XcodeProductType? {
-        guard let productType else { return nil }
-        return XcodeProductType(rawValue: productType)
-    }
-
     public var isTestTarget: Bool {
-        xcodeProductType?.isTestType == true || name.contains("Test")
+        xcodeProductType.isTestType == true || name.contains("Test")
     }
 
     public var isUITestTarget: Bool {
@@ -65,44 +61,27 @@ public struct XcodeTargetInfo: Sendable {
     }
 
     public var isRunnableTarget: Bool {
-        xcodeProductType?.isRunnableType == true
+        xcodeProductType.isRunnableType == true
     }
 
     public var isApplicationTarget: Bool {
-        xcodeProductType?.isApplicationType == true
+        xcodeProductType.isApplicationType == true
     }
 
     public var isLibraryTarget: Bool {
-        xcodeProductType?.isLibraryType == true
+        xcodeProductType.isLibraryType == true
     }
 
-    public var supportedLanguages: Set<String> {
-        var languages: Set<String> = []
-
-        if buildSettings["SWIFT_VERSION"] != nil {
-            languages.insert("swift")
-        }
-        if buildSettings["CLANG_ENABLE_OBJC_ARC"] == "YES" {
-            languages.insert("objective-c")
-        }
-        if buildSettings["GCC_VERSION"] != nil {
-            languages.insert("c")
-        }
-        if buildSettings["CLANG_CXX_LANGUAGE_STANDARD"] != nil {
-            languages.insert("cpp")
-        }
-
-        // Default for Xcode projects
-        if languages.isEmpty {
-            languages = ["swift", "objective-c"]
-        }
-
-        return languages
-    }
-
-    public init(name: String, productType: String?, buildSettings: [String: String]) {
+    public init(
+        targetIdentifier: String,
+        name: String,
+        xcodeProductType:
+        XcodeProductType,
+        buildSettings: [String: String]
+    ) {
+        self.targetIdentifier = targetIdentifier
         self.name = name
-        self.productType = productType
+        self.xcodeProductType = xcodeProductType
         self.buildSettings = buildSettings
     }
 }
@@ -180,7 +159,7 @@ public actor XcodeProjectManager: ProjectStatusPublisher {
         await notifyStateObservers(.buildStarted(target: target))
     }
 
-    public func completeBuild(target: String, success: Bool) async {
+    func completeBuild(target: String, success: Bool) async {
         guard var buildTask = projectState.activeBuildTasks[target] else { return }
         let duration = Date().timeIntervalSince(buildTask.startTime)
         buildTask.status = .completed(success: success, duration: duration)
@@ -208,7 +187,7 @@ public actor XcodeProjectManager: ProjectStatusPublisher {
     }
 
     private let xcodeProjectReference: XcodeProjectReference?
-    private(set) var projectInfo: XcodeProjectInfo?
+    public private(set) var xcodeProjectInfo: XcodeProjectInfo?
 
     public init(
         rootURL: URL,
@@ -228,7 +207,7 @@ public actor XcodeProjectManager: ProjectStatusPublisher {
         try await toolchain.initialize()
     }
 
-    public func resolveProjectInfo() async throws -> XcodeProjectInfo {
+    public func resolveXcodeProjectInfo() async throws -> XcodeProjectInfo {
         let oldState = projectState.projectLoadState
         projectState.projectLoadState = .loading(projectPath: rootURL.path)
         await notifyStateObservers(.projectLoadStateChanged(from: oldState, to: projectState.projectLoadState))
@@ -289,21 +268,21 @@ public actor XcodeProjectManager: ProjectStatusPublisher {
             buildSettingsMap: buildSettingsMap
         )
 
-        let projectInfo = XcodeProjectInfo(
+        let xcodeProjectInfo = XcodeProjectInfo(
             rootURL: rootURL,
             projectLocation: projectLocation,
             buildSettingsList: buildSettingsList,
             projectBuildSettings: projectBuildSettings,
             importantScheme: importantScheme,
-            targets: actualTargets,
+            xcodeTargets: actualTargets,
             schemes: [],
             derivedDataPath: projectBuildSettings.derivedDataPath,
             indexStoreURL: projectBuildSettings.indexStoreURL,
             indexDatabaseURL: projectBuildSettings.indexDatabaseURL,
-            buildSettingsForIndex: buildSettingsForIndex
+            xcodeBuildSettingsForIndex: buildSettingsForIndex
         )
-        self.projectInfo = projectInfo
-        return projectInfo
+        self.xcodeProjectInfo = xcodeProjectInfo
+        return xcodeProjectInfo
     }
 
     /// Load build settings with correct parameters based on project type
@@ -324,7 +303,7 @@ public actor XcodeProjectManager: ProjectStatusPublisher {
                 ),
             )
         case let .implicitWorkspace(projectURL: projectURL, _), let .standaloneProject(projectURL):
-            // For project, we can use target directly
+            // For project, use target directly
             try await settingsLoader.loadBuildSettings(
                 rootURL: rootURL,
                 project: .project(

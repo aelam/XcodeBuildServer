@@ -4,14 +4,14 @@ public struct XcodeProjectInfo: Sendable, Codable {
     public let rootURL: URL
     public let projectLocation: XcodeProjectLocation
     public let buildSettingsList: [XcodeBuildSettings]
-    public let projectBuildSettings: XcodeProjectProjectBuildSettings
+    public let xcodeProjectBuildSettings: XcodeProjectProjectBuildSettings
     public let importantScheme: XcodeScheme
-    public let targets: [XcodeTarget]
+    public let xcodeTargets: [XcodeTarget]
     public let schemes: [XcodeScheme]
     public let derivedDataPath: URL
     public let indexStoreURL: URL
     public let indexDatabaseURL: URL
-    public let buildSettingsForIndex: XcodeBuildSettingsForIndex
+    public let xcodeBuildSettingsForIndex: XcodeBuildSettingsForIndex
 
     public init(
         rootURL: URL,
@@ -19,24 +19,24 @@ public struct XcodeProjectInfo: Sendable, Codable {
         buildSettingsList: [XcodeBuildSettings],
         projectBuildSettings: XcodeProjectProjectBuildSettings,
         importantScheme: XcodeScheme,
-        targets: [XcodeTarget] = [],
+        xcodeTargets: [XcodeTarget] = [],
         schemes: [XcodeScheme] = [],
         derivedDataPath: URL,
         indexStoreURL: URL,
         indexDatabaseURL: URL,
-        buildSettingsForIndex: XcodeBuildSettingsForIndex
+        xcodeBuildSettingsForIndex: XcodeBuildSettingsForIndex
     ) {
         self.rootURL = rootURL
         self.projectLocation = projectLocation
         self.buildSettingsList = buildSettingsList
-        self.projectBuildSettings = projectBuildSettings
+        self.xcodeProjectBuildSettings = projectBuildSettings
         self.importantScheme = importantScheme
-        self.targets = targets
+        self.xcodeTargets = xcodeTargets
         self.schemes = schemes
         self.derivedDataPath = derivedDataPath
         self.indexStoreURL = indexStoreURL
         self.indexDatabaseURL = indexDatabaseURL
-        self.buildSettingsForIndex = buildSettingsForIndex
+        self.xcodeBuildSettingsForIndex = xcodeBuildSettingsForIndex
     }
 
     public var workspaceURL: URL {

@@ -40,28 +40,29 @@ struct XcodeProjectCLI {
             let timestamp = Date()
             logger.info("Loading Xcode project at: \(timestamp)")
             logger.info("Loading Xcode project from: \(projectPath)")
-            let project = try await projectManager.resolveProjectInfo()
+            let project = try await projectManager.resolveXcodeProjectInfo()
 
             logger.info("✓ Project loaded successfully")
             logger.info("  - Root URL: \(project.rootURL.path)")
             logger.info("  - Project Name: \(project.name)")
             logger.info("  - Scheme Name: \(project.importantScheme.name)")
-            logger.info(" - Project Targets: \(project.targets.map(\.name).joined(separator: ", "))")
+            logger.info(" - Project Targets: \(project.xcodeTargets.map(\.name).joined(separator: ", "))")
 
             // Targets
             logger.info("\n✅🗂️ Target Information:")
-            for target in project.targets {
+            for target in project.xcodeTargets {
                 logger.info("  - Target Name: \(target.name)")
-                logger.info("  - Is Test: \(target.productType.isTestType)")
-                logger.info("  - Is Runnable: \(target.productType.isRunnableType)")
+                logger.info("  - Is Test: \(target.xcodeProductType.isTestType)")
+                logger.info("  - Is Runnable: \(target.xcodeProductType.isRunnableType)")
             }
 
             // Show indexing paths
+            let xcodeProjectBuildSettings = project.xcodeProjectBuildSettings
             logger.info("\n✅🗂️ Indexing Information:")
-            logger.info("  - Index Store URL: \(project.projectBuildSettings.indexStoreURL.path)")
-            logger.info("  - Index Database URL: \(project.projectBuildSettings.indexDatabaseURL.path)")
-            logger.info("  - Derived Data Path: \(project.projectBuildSettings.derivedDataPath.path)")
-            logger.info("  - Configuration: \(project.projectBuildSettings.configuration)")
+            logger.info("  - Index Store URL: \(xcodeProjectBuildSettings.indexStoreURL.path)")
+            logger.info("  - Index Database URL: \(xcodeProjectBuildSettings.indexDatabaseURL.path)")
+            logger.info("  - Derived Data Path: \(xcodeProjectBuildSettings.derivedDataPath.path)")
+            logger.info("  - Configuration: \(xcodeProjectBuildSettings.configuration)")
 
             let endTimestamp = Date()
             logger.info("Loading time: \(endTimestamp.timeIntervalSince(timestamp)) seconds")

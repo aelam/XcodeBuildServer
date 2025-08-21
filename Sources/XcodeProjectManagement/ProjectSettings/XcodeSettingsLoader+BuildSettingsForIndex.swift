@@ -14,7 +14,7 @@ extension XcodeSettingsLoader {
             // group targets under same project
             let groupedTargets = Dictionary(grouping: targets) { GroupedTargetsKey(
                 projectURL: $0.projectURL,
-                platform: $0.platform
+                platform: $0.xcodeTargetPlatform
             ) }
 
             for (groupedTargetsKey, targets) in groupedTargets {

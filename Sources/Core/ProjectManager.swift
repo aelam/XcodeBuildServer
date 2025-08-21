@@ -13,7 +13,7 @@ public protocol ProjectManager: AnyObject, Sendable {
     var rootURL: URL { get async }
 
     /// 当前项目信息
-    var projectInfo: (any ProjectInfo)? { get async }
+    var projectInfo: ProjectInfo? { get async }
 
     /// 项目类型
     var projectType: String { get }
@@ -22,15 +22,23 @@ public protocol ProjectManager: AnyObject, Sendable {
     func initialize() async throws
 
     /// 解析项目信息
-    func resolveProjectInfo() async throws -> any ProjectInfo
+    func resolveProjectInfo() async throws -> ProjectInfo
 
     /// 获取当前项目状态
     func getProjectState() async -> ProjectState
 
-    func getSourceFileList() async -> [URI]
+    func getTargetList(
+        resolveSourceFiles: Bool,
+        resolveDependencies: Bool
+    ) async -> [ProjectTarget]
 
-    /// 开始构建指定目标
-    func startBuild(target: String) async
+    func getSourceFileList(targetIdentifier: String) async -> [URL]
+
+    func buildGraph() async
+
+    func buildIndex(for targets: [String]) async
+
+    func startBuild(targets: [String]) async
 
     /// 添加项目状态观察者
     func addStateObserver(_ observer: ProjectStateObserver) async
@@ -39,65 +47,91 @@ public protocol ProjectManager: AnyObject, Sendable {
     func removeStateObserver(_ observer: ProjectStateObserver) async
 
     /// 获取指定文件的编译参数
-    func getCompileArguments(targetIdentifier: String, fileURI: String) async throws -> [String]
+    func getCompileArguments(targetIdentifier: String, sourceFileURL: String) async throws -> [String]
 }
 
-/// 抽象项目信息协议
-public protocol ProjectInfo: Sendable {
-    /// 项目根目录
-    var rootURL: URL { get }
+public struct ProjectInfo: Sendable {
+    public let rootURL: URL
+    public let name: String?
+    public let targets: [ProjectTarget]
+    public let buildSettingsForIndex: [String: [String: FileBuildSettingInfo]]
+    public let projectBuildSettings: ProjectBuildSettings
 
-    /// 项目名称
-    var name: String { get }
-
-    /// 构建目标列表
-    var targets: [any ProjectTarget] { get async }
-
-    /// 用于索引的构建设置
-    var buildSettingsForIndex: [String: [String: any FileBuildSettingInfo]] { get async }
-
-    /// 主要构建设置
-    var projectBuildSettings: any ProjectBuildSettings { get async }
+    public init(
+        rootURL: URL,
+        name: String?,
+        targets: [ProjectTarget],
+        buildSettingsForIndex: [String: [String: FileBuildSettingInfo]],
+        projectBuildSettings: ProjectBuildSettings
+    ) {
+        self.rootURL = rootURL
+        self.name = name
+        self.targets = targets
+        self.buildSettingsForIndex = buildSettingsForIndex
+        self.projectBuildSettings = projectBuildSettings
+    }
 }
 
-/// 抽象项目目标协议
-public protocol ProjectTarget: Sendable {
-    /// 目标名称
-    var name: String { get }
+public struct ProjectTarget: Sendable {
+    public let targetIndentifier: String
+    public let name: String
 
-    /// 产品类型
-    var protocolProductType: ProductType { get }
+    public let isSourcesResolved: Bool
+    public let isDependenciesResolved: Bool
 
-    /// 支持的编程语言
-    var supportedLanguages: Set<String> { get }
+    public let sourceFiles: [URL]
+    public let dependencies: [ProjectTarget]
 
-    /// 是否为测试目标
-    var isTestTarget: Bool { get }
+    public let productType: ProductType
 
-    /// 是否为可运行目标
-    var isRunnableTarget: Bool { get }
+    public init(
+        targetIndentifier: String,
+        name: String,
+        isSourcesResolved: Bool,
+        isDependenciesResolved: Bool,
+        sourceFiles: [URL],
+        dependencies: [ProjectTarget],
+        productType: ProductType
+    ) {
+        self.targetIndentifier = targetIndentifier
+        self.name = name
+        self.isSourcesResolved = isSourcesResolved
+        self.isDependenciesResolved = isDependenciesResolved
+        self.sourceFiles = sourceFiles
+        self.dependencies = dependencies
+        self.productType = productType
+    }
 }
 
 /// 抽象文件构建设置协议
-public protocol FileBuildSettingInfo: Sendable {
-    /// 编程语言方言
-    var languageDialectString: String? { get }
-
-    /// 输出文件路径
-    var outputFilePath: String? { get }
+public struct FileBuildSettingInfo: Sendable {
+    public let languageDialectString: String?
+    public let outputFilePath: String?
 }
 
 /// 抽象主要构建设置协议
-public protocol ProjectBuildSettings: Sendable {
+public struct ProjectBuildSettings: Sendable {
     /// DerivedData 路径
-    var derivedDataPath: URL { get }
+    public let derivedDataPath: URL
 
     /// 索引存储路径
-    var indexStoreURL: URL { get }
+    public let indexStoreURL: URL
 
     /// 索引数据库路径
-    var indexDatabaseURL: URL { get }
+    public let indexDatabaseURL: URL
 
     /// 配置名称
-    var configuration: String { get }
+    public let configuration: String
+
+    public init(
+        derivedDataPath: URL,
+        indexStoreURL: URL,
+        indexDatabaseURL: URL,
+        configuration: String
+    ) {
+        self.derivedDataPath = derivedDataPath
+        self.indexStoreURL = indexStoreURL
+        self.indexDatabaseURL = indexDatabaseURL
+        self.configuration = configuration
+    }
 }

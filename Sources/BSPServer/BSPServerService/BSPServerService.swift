@@ -9,8 +9,6 @@ import Foundation
 import JSONRPCConnection
 import Logger
 import os
-import SwiftPMProjectProvider
-import XcodeProjectManagement
 
 /// BSP 服务层 - 连接 BSP 协议和项目管理
 /// 这是整个系统的核心服务，负责协调各个层次
@@ -110,33 +108,6 @@ public final class BSPServerService: ProjectStateObserver, @unchecked Sendable {
 
         serviceState.withLock { $0 = .stopped }
         logger.info("BSP Server Service stopped")
-    }
-
-    // MARK: - Project Management
-
-    /// 初始化项目（供 BuildInitializeRequest 调用）
-    public func initializeProject(rootURL: URL) async throws {
-        // 如果项目已经初始化，直接返回
-        if projectManager != nil {
-            return
-        }
-
-        logger.info("Initializing project...")
-
-        let projectManager = try await ProjectProviderRegistry.createFactory().createProjectManager(
-            rootURL: rootURL
-        )
-        // 检测项目类型
-        logger.info("Detected project type: " + projectManager.projectType)
-
-        try await projectManager.initialize()
-        let projectInfo = try await projectManager.resolveProjectInfo()
-
-        // 订阅状态变化
-        await subscribeToProjectManager(projectManager)
-
-        self.projectManager = projectManager
-        logger.info("Project loaded successfully: \(projectInfo.rootURL.lastPathComponent)")
     }
 
     // MARK: - Notification Sending
@@ -286,114 +257,5 @@ public extension BSPServerService {
     /// 获取项目根路径（如果已初始化）
     func getProjectRootURL() async -> URL? {
         await projectManager?.rootURL
-    }
-}
-
-// MARK: - BSP Protocol Adapters
-
-extension BSPServerService {
-    /// 获取编译参数（BSP 协议适配）
-    func getCompileArguments(targetIdentifier: BuildTargetIdentifier, fileURI: String) async throws -> [String] {
-        guard let projectManager else {
-            throw BuildServerError.invalidConfiguration("Project not initialized")
-        }
-
-        logger.debug("Getting compile arguments for target: \(targetIdentifier.uri.stringValue), file: \(fileURI)")
-
-        return try await projectManager.getCompileArguments(
-            targetIdentifier: targetIdentifier.uri.stringValue,
-            fileURI: fileURI
-        )
-    }
-
-    /// 获取工作目录（BSP 协议适配）
-    func getWorkingDirectory() async throws -> String? {
-        await projectManager?.rootURL.path
-    }
-
-    /// 创建构建目标列表（BSP 协议适配）
-    func createBuildTargets() async throws -> [BuildTarget] {
-        guard let projectManager else {
-            throw BuildServerError.invalidConfiguration("Project manager not initialized")
-        }
-
-        // 如果项目信息不存在，尝试解析它
-        var projectInfo = await projectManager.projectInfo
-        if projectInfo == nil {
-            logger.debug("Project info not available, attempting to resolve...")
-            do {
-                projectInfo = try await projectManager.resolveProjectInfo()
-            } catch {
-                logger.error("Failed to resolve project info: \(error)")
-                throw BuildServerError
-                    .invalidConfiguration("Failed to resolve project info: \(error.localizedDescription)")
-            }
-        }
-
-        guard let projectInfo else {
-            throw BuildServerError.invalidConfiguration("Project info is nil after resolution attempt")
-        }
-
-        return []
-        // 转换项目 targets 到 BSP BuildTarget
-        // return await projectInfo.targets.compactMap { target in
-        //     do {
-        //         let targetId: BuildTargetIdentifier
-        //         if projectInfo.projectType == .xcode {
-        //             fatalError("fix me")
-        // 为 Xcode 项目使用与 buildSettingsForIndex 一致的格式: xcode://path/to/project.xcodeproj/TargetName
-//                    if let xcodeTargetAdapter = target as? XcodeTargetAdapter {
-//                        let projectPath = xcodeTargetAdapter.projectURL.path
-//                        let targetName = target.name
-//                        let uri = "xcode://\(projectPath)/\(targetName)"
-//                        targetId = try BuildTargetIdentifier(uri: URI(string: uri))
-//                    } else {
-//                        // fallback
-//                        targetId = try BuildTargetIdentifier(uri: URI(string: "xcode://\(target.name)"))
-//                    }
-        //         targetId = try BuildTargetIdentifier(uri: URI(string: "xcode://\(target.name)"))
-
-        //     } else {
-        //         // 为 SwiftPM 项目使用简单格式
-        //         targetId = try BuildTargetIdentifier(uri: URI(string: "swiftpm:///\(target.name)"))
-        //     }
-        //     let baseDirectory = try URI(string: projectInfo.rootURL.absoluteString)
-
-        //     return BuildTarget(
-        //         id: targetId,
-        //         displayName: target.name,
-        //         baseDirectory: baseDirectory,
-        //         tags: [BuildTargetTag(rawValue: target.protocolProductType.rawValue)],
-        //         languageIds: [Language.swift, Language.objective_c],
-        //         dependencies: [],
-        //         capabilities: BuildTargetCapabilities(
-        //             canCompile: true,
-        //             canTest: target.protocolProductType == .unitTestBundle || target
-        //                 .protocolProductType == .uiTestBundle,
-        //             canRun: target.protocolProductType == .application,
-        //             canDebug: target.protocolProductType == .application
-        //         ),
-        //         dataKind: BuildTargetDataKind(rawValue: projectInfo.projectType.rawValue),
-        //         data: nil
-        //     )
-        // } catch {
-        //     logger.error("Failed to create BuildTarget for '\(target.name)': \(error)")
-        //     return nil
-        // }
-    }
-
-    // }
-
-    /// 为索引构建目标（BSP 协议适配）
-    func buildTargetForIndex(targets: [BuildTargetIdentifier]) async throws {
-        guard let projectManager else {
-            throw BuildServerError.invalidConfiguration("Project not initialized")
-        }
-
-        // 触发后台构建以支持索引
-        for target in targets {
-            let targetName = target.uri.stringValue.replacingOccurrences(of: "xcode://", with: "")
-            await projectManager.startBuild(target: targetName)
-        }
     }
 }

@@ -80,8 +80,8 @@ extension XcodeProjectManager {
                     projectURL: projectPath,
                     productName: target.productName,
                     isFromWorkspace: false,
-                    platform: platform,
-                    productType: productType
+                    xcodeTargetPlatform: platform,
+                    xcodeProductType: productType
                 )
             )
         }

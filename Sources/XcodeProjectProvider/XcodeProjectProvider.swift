@@ -9,7 +9,9 @@ import Core
 import Foundation
 
 #if os(macOS)
+import Logger
 import XcodeProj
+import XcodeProjectManagement
 
 /// Xcode 项目提供者 - 完整实现
 public struct XcodeProjectProvider: ProjectManagerProvider {
@@ -32,9 +34,28 @@ public struct XcodeProjectProvider: ProjectManagerProvider {
         rootURL: URL,
         config: ProjectConfiguration?
     ) async throws -> any ProjectManager {
-        // TODO: 实现完整的XcodeProjectManager创建逻辑
-        // 现在有XcodeProj依赖，可以实现完整功能
-        throw XcodeProjectProviderError.notImplemented("XcodeProjectManager implementation needed")
+        let toolchain: XcodeToolchain = try await Task.detached {
+            let toolchain = XcodeToolchain()
+            logger.debug("toolchain is initializing")
+            try await toolchain.initialize()
+            logger.debug("toolchain is initialized successfully")
+            return toolchain
+        }.value
+
+        // Initialize the project manager
+        let projectManager = XcodeProjectManager(
+            rootURL: rootURL,
+            xcodeProjectReference: nil,
+            toolchain: toolchain,
+            locator: XcodeProjectLocator(),
+            settingsLoader: XcodeSettingsLoader(
+                commandBuilder: XcodeBuildCommandBuilder(),
+                toolchain: toolchain
+            )
+        )
+        logger.debug("Creating project manager successfully \(projectManager)")
+
+        return projectManager
     }
 }
 

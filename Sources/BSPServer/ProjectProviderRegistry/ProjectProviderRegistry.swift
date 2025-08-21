@@ -7,6 +7,7 @@
 
 import Core
 import Foundation
+import Logger
 import SwiftPMProjectProvider
 
 #if os(macOS)
@@ -21,7 +22,7 @@ public enum ProjectProviderRegistry {
         var providers: [any ProjectManagerProvider] = []
 
         // 总是注册SwiftPM支持
-        providers.append(SwiftPMProjectProvider())
+        // providers.append(SwiftPMProjectProvider())
 
         #if os(macOS)
         // 只在macOS上注册Xcode支持
@@ -33,6 +34,7 @@ public enum ProjectProviderRegistry {
 
     /// 创建配置好的ProjectManagerFactory
     public static func createFactory() async -> ProjectManagerFactory {
+        logger.debug("create factory")
         let factory = ProjectManagerFactory()
 
         for provider in getAllProviders() {
