@@ -103,9 +103,8 @@ public struct ProjectTarget: Sendable {
     }
 }
 
-/// 抽象文件构建设置协议
 public struct FileBuildSettingInfo: Sendable {
-    public let languageDialectString: String?
+    public let language: Language?
     public let outputFilePath: String?
 }
 

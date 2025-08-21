@@ -11,7 +11,11 @@ extension XcodeProjectManager: @preconcurrency ProjectManager {
     }
 
     public func getSourceFileList(targetIdentifier: String) async -> [URL] {
-        []
+        guard let projectInfo else {
+            return []
+        }
+        projectInfo.buildSettingsForIndex
+        return []
     }
 
     public var projectType: String {
