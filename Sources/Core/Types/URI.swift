@@ -16,15 +16,15 @@ public import Foundation
 import Foundation
 #endif
 
-struct FailedToConstructDocumentURIFromStringError: Error, CustomStringConvertible {
+struct FailedToConstructURIFromStringError: Error, CustomStringConvertible {
     let string: String
 
     var description: String {
-        "Failed to construct DocumentURI from '\(string)'"
+        "Failed to construct URI from '\(string)'"
     }
 }
 
-public struct DocumentURI: Codable, Hashable, Sendable {
+public struct URI: Codable, Hashable, Sendable {
     /// The URL that store the URIs value
     private let storage: URL
 
@@ -69,11 +69,11 @@ public struct DocumentURI: Codable, Hashable, Sendable {
         storage.absoluteString
     }
 
-    /// Construct a DocumentURI from the given URI string, automatically parsing
+    /// Construct a URI from the given URI string, automatically parsing
     ///  it either as a URL or an opaque URI.
     public init(string: String) throws {
         guard let url = URL(string: string) else {
-            throw FailedToConstructDocumentURIFromStringError(string: string)
+            throw FailedToConstructURIFromStringError(string: string)
         }
         self.init(url)
     }
@@ -92,7 +92,7 @@ public struct DocumentURI: Codable, Hashable, Sendable {
     }
 
     /// Equality check to handle escape sequences in file URLs.
-    public static func == (lhs: DocumentURI, rhs: DocumentURI) -> Bool {
+    public static func == (lhs: URI, rhs: URI) -> Bool {
         lhs.storage.scheme == rhs.storage.scheme && lhs.pseudoPath == rhs.pseudoPath
     }
 

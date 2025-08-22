@@ -164,8 +164,8 @@ struct TextDocumentSourceKitOptionsRequestTests {
 
     @Test
     func paramsCreation() throws {
-        let textDocument = try TextDocumentIdentifier(DocumentURI(string: "file:///test.swift"))
-        let target = try BuildTargetIdentifier(uri: DocumentURI(string: "xcode:///Project/Scheme/Target"))
+        let textDocument = try TextDocumentIdentifier(URI(string: "file:///test.swift"))
+        let target = try BuildTargetIdentifier(uri: URI(string: "xcode:///Project/Scheme/Target"))
 
         let params = TextDocumentSourceKitOptionsRequest.Params(
             textDocument: textDocument,
@@ -180,8 +180,8 @@ struct TextDocumentSourceKitOptionsRequestTests {
 
     @Test
     func paramsJSONRoundTrip() throws {
-        let textDocument = try TextDocumentIdentifier(DocumentURI(string: "file:///MyApp/ViewController.swift"))
-        let target = try BuildTargetIdentifier(uri: DocumentURI(string: "xcode:///MyApp/MyScheme/MyTarget"))
+        let textDocument = try TextDocumentIdentifier(FileURL(string: "file:///MyApp/ViewController.swift"))
+        let target = try BuildTargetIdentifier(uri: FileURL(string: "xcode:///MyApp/MyScheme/MyTarget"))
 
         let originalParams = TextDocumentSourceKitOptionsRequest.Params(
             textDocument: textDocument,
@@ -218,10 +218,10 @@ struct TextDocumentSourceKitOptionsRequestTests {
 
     private func createMockRequest() throws -> TextDocumentSourceKitOptionsRequest {
         let textDocument = TextDocumentIdentifier(
-            DocumentURI(URL(fileURLWithPath: "/Users/test/project/MyApp/ViewController.swift"))
+            URI(URL(fileURLWithPath: "/Users/test/project/MyApp/ViewController.swift"))
         )
         let target = try BuildTargetIdentifier(
-            uri: DocumentURI(string: "xcode:///MyApp/MyScheme/MyTarget")
+            uri: URI(string: "xcode:///MyApp/MyScheme/MyTarget")
         )
 
         let params = TextDocumentSourceKitOptionsRequest.Params(

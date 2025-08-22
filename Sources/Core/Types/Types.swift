@@ -5,5 +5,3 @@
 //
 
 public typealias LanguageId = String
-public typealias OriginId = String
-public typealias URI = DocumentURI

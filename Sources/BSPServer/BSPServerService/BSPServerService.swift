@@ -19,7 +19,7 @@ public final class BSPServerService: ProjectStateObserver, @unchecked Sendable {
     private let jsonrpcConnection: JSONRPCConnection
 
     /// BSP 消息处理器
-    private let messageHandler: XcodeBSPMessageHandler
+    private let messageHandler: BSPMessageHandler
 
     /// 项目管理器
     var projectManager: (any ProjectManager)?
@@ -49,8 +49,7 @@ public final class BSPServerService: ProjectStateObserver, @unchecked Sendable {
         transport: JSONRPCServerTransport,
         messageRegistry: MessageRegistry
     ) {
-        // 创建消息处理器（BSP 层）
-        self.messageHandler = XcodeBSPMessageHandler()
+        self.messageHandler = BSPMessageHandler()
 
         // 创建 JSON-RPC 连接（协议层）
         self.jsonrpcConnection = JSONRPCConnection(

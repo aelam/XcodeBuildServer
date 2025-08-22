@@ -11,9 +11,9 @@ import JSONRPCConnection
 
 /// Provides default implementations for ContextualRequestType in the XcodeBuildServer context
 public extension ContextualRequestType where RequiredContext == BSPServerService {
-    /// Default implementation that bridges from MessageHandler to XcodeBSPMessageHandler
+    /// Default implementation that bridges from MessageHandler to BSPMessageHandler
     func handle(handler: MessageHandler, id: RequestID) async -> ResponseType? {
-        guard let contextualHandler = handler as? XcodeBSPMessageHandler else {
+        guard let contextualHandler = handler as? BSPMessageHandler else {
             return nil
         }
         return await handle(contextualHandler: contextualHandler, id: id)
@@ -22,9 +22,9 @@ public extension ContextualRequestType where RequiredContext == BSPServerService
 
 /// Provides default implementations for ContextualNotificationType in the XcodeBuildServer context
 public extension ContextualNotificationType where RequiredContext == BSPServerService {
-    /// Default implementation that bridges from MessageHandler to XcodeBSPMessageHandler
+    /// Default implementation that bridges from MessageHandler to BSPMessageHandler
     func handle(handler: MessageHandler) async throws {
-        guard let contextualHandler = handler as? XcodeBSPMessageHandler else {
+        guard let contextualHandler = handler as? BSPMessageHandler else {
             return
         }
         try await handle(contextualHandler: contextualHandler)
