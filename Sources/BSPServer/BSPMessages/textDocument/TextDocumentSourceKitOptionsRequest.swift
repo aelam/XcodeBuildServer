@@ -120,11 +120,23 @@ public struct TextDocumentSourceKitOptionsRequest: ContextualRequestType, Sendab
         id: RequestID
     ) async -> ResponseType? where Handler.Context == BSPServerService {
         await contextualHandler.withContext { context in
+            guard let fileURL = params.textDocument.uri.fileURL else {
+                let errorMessage =
+                    "Failed to get fileURL: \(params.textDocument.uri)"
+
+                return JSONRPCErrorResponse(
+                    id: id,
+                    error: JSONRPCError(
+                        code: -32002, // FIXME: LSP ServerNotInitialized error code
+                        message: errorMessage
+                    )
+                )
+            }
             do {
                 // Get compile arguments for the specific file
                 let compilerArguments = try await context.getCompileArguments(
                     targetIdentifier: params.target,
-                    fileURI: params.textDocument.uri.stringValue
+                    fileURL: fileURL
                 )
 
                 // Get working directory from context

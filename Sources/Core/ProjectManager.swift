@@ -47,7 +47,7 @@ public protocol ProjectManager: AnyObject, Sendable {
     func removeStateObserver(_ observer: ProjectStateObserver) async
 
     /// 获取指定文件的编译参数
-    func getCompileArguments(targetIdentifier: String, sourceFileURL: String) async throws -> [String]
+    func getCompileArguments(targetIdentifier: String, sourceFileURL: URL) async throws -> [String]
 }
 
 public struct ProjectInfo: Sendable {

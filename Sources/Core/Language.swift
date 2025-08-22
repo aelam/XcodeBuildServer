@@ -31,6 +31,14 @@ public struct Language: RawRepresentable, Codable, Equatable, Hashable, Sendable
     public var xflagHeader: String? {
         xflag.map { "\($0)-header" }
     }
+
+    public var isSwift: Bool {
+        self == .swift
+    }
+
+    public var isClang: Bool {
+        self == .c || self == .cpp || self == .objective_c || self == .objective_cpp
+    }
 }
 
 extension Language: CustomStringConvertible, CustomDebugStringConvertible {
