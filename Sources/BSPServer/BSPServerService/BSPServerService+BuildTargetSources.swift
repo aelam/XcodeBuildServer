@@ -17,33 +17,38 @@ extension BSPServerService {
             throw BuildServerError.invalidConfiguration("projectInfo is not loaded")
         }
 
-        let targetWithIdMap: [String: ProjectTarget] = Dictionary(
-            uniqueKeysWithValues: projectInfo.targets.map {
-                ($0.targetIndentifier, $0)
+        return await withTaskGroup(of: SourcesItem.self, returning: [SourcesItem].self) { taskGroup in
+            for targetIdentifier in targetIds {
+                taskGroup.addTask {
+                    await self.createSourcesItem(
+                        targetIdentifier: targetIdentifier,
+                        projectManager: projectManager,
+                        projectInfo: projectInfo
+                    )
+                }
             }
-        )
 
-        return targetIds.map { targetIdentifier in
-            guard let target = targetWithIdMap[targetIdentifier.uri.stringValue] else {
-                return nil
+            var sourcesItemList = [SourcesItem]()
+            for await result in taskGroup {
+                sourcesItemList.append(result)
             }
-            return createSourcesItem(
-                targetIdentifier: targetIdentifier,
-                projectInfo: projectInfo,
-                target: target
-            )
-        }.compactMap(\.self)
+
+            return sourcesItemList
+        }
     }
 
     // MARK: - Create [SourcesItem]
 
     private func createSourcesItem(
         targetIdentifier: BSPBuildTargetIdentifier,
+        projectManager: any ProjectManager,
         projectInfo: ProjectInfo,
-        target: ProjectTarget
-    ) -> SourcesItem {
+    ) async -> SourcesItem {
+        let soureceFileURLs = await projectManager.getSourceFileList(targetIdentifier: targetIdentifier.uri.stringValue)
+
         var sourceItemList: [SourceItem] = []
-        for fileURL in target.sourceFiles {
+
+        for fileURL in soureceFileURLs {
             let item = self.createSourceItem(
                 fileURL: fileURL,
                 fileInfo: nil,
@@ -63,16 +68,13 @@ extension BSPServerService {
 
     // MARK: - Create [SourceItem]
 
-    func createSourceItem(
+    private func createSourceItem(
         fileURL: URL,
         fileInfo: FileBuildSettingInfo?,
         projectRoot: URL
     ) -> SourceItem? {
         let filePath = fileURL.absoluteString
-        guard let uri = try? URI(string: filePath) else {
-            logger.warning("Failed to create URI for file: \(filePath)")
-            return nil
-        }
+        let uri = URI(fileURL)
 
         // Determine if the file is generated
         let generated = filePath.contains("DerivedData") ||

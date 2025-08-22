@@ -1,5 +1,6 @@
 import Core
 import Foundation
+import Logger
 import XcodeProjectManagement
 
 extension XcodeProjectManager: @preconcurrency ProjectManager {
@@ -11,11 +12,18 @@ extension XcodeProjectManager: @preconcurrency ProjectManager {
     }
 
     public func getSourceFileList(targetIdentifier: String) async -> [URL] {
-        guard let projectInfo else {
+        guard let xcodeProjectInfo else {
             return []
         }
-        projectInfo.buildSettingsForIndex
-        return []
+
+        logger.debug("\(targetIdentifier)")
+        guard let buildSettingsForIndex = xcodeProjectInfo.xcodeBuildSettingsForIndex[targetIdentifier] else {
+            return []
+        }
+
+        logger.debug("\(buildSettingsForIndex.keys.map { URL(fileURLWithPath: $0) }.compactMap(\.self))")
+
+        return buildSettingsForIndex.keys.map { URL(fileURLWithPath: $0) }.compactMap(\.self)
     }
 
     public var projectType: String {
