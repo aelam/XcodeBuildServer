@@ -13,10 +13,8 @@ import Logger
 import XcodeProj
 import XcodeProjectManagement
 
-/// Xcode 项目提供者 - 完整实现
 public struct XcodeProjectProvider: ProjectManagerProvider {
     public let name = "Xcode Project Provider"
-    public let supportedPlatforms: [Platform] = [.macOS]
 
     public init() {}
 
@@ -60,12 +58,8 @@ public struct XcodeProjectProvider: ProjectManagerProvider {
 }
 
 #else
-// 空实现 - 用于非macOS平台
-/// Xcode 项目提供者 - 空实现
 public struct XcodeProjectProvider: ProjectManagerProvider {
     public let name = "Xcode Project Provider (Disabled)"
-    public let supportedProjectTypes: [BSPProjectType] = []
-    public let supportedPlatforms: [Platform] = []
 
     public init() {}
 

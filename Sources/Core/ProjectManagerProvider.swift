@@ -25,7 +25,7 @@ public enum Platform: String, Codable, CaseIterable, Sendable {
 public protocol ProjectManagerProvider: Sendable {
     var name: String { get }
 
-    var supportedPlatforms: [Platform] { get }
+    // var supportedPlatforms: [Platform] { get }
 
     func canHandle(projectURL: URL) async -> Bool
 

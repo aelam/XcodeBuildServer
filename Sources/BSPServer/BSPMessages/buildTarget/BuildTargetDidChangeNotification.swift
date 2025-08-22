@@ -28,8 +28,6 @@ struct BuildTargetDidChangeNotification: ContextualNotificationType, Sendable {
         self.params = params
     }
 
-    // Note: handle(handler: MessageHandler) is provided by ContextualNotificationType extension
-
     // MARK: - ContextualNotificationType Implementation
 
     func handle<Handler: ContextualMessageHandler>(

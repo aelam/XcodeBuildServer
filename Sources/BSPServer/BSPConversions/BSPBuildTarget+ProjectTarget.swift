@@ -40,7 +40,8 @@ extension BSPBuildTarget {
         if projectTarget.isSourcesResolved {
             let languages = projectTarget.sourceFiles.map {
                 Language(inferredFromFileExtension: $0)
-            }.compactMap(\.self)
+            }
+            .compactMap(\.self)
             self.languageIds = Array(Set(languages))
         } else {
             self.languageIds = [.swift]
