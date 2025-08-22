@@ -4,6 +4,20 @@ import Logger
 import XcodeProjectManagement
 
 extension XcodeProjectManager: @preconcurrency ProjectManager {
+    public var projectType: String {
+        "xcodeproj"
+    }
+
+    public func buildGraph() async {}
+
+    public func buildIndex(for targets: [String]) async {}
+
+    public func startBuild(targets: [String]) async {}
+
+    public var projectInfo: ProjectInfo? {
+        xcodeProjectInfo?.asProjectInfo()
+    }
+
     public func getTargetList(
         resolveSourceFiles: Bool,
         resolveDependencies: Bool
@@ -24,20 +38,6 @@ extension XcodeProjectManager: @preconcurrency ProjectManager {
         logger.debug("\(buildSettingsForIndex.keys.map { URL(fileURLWithPath: $0) }.compactMap(\.self))")
 
         return buildSettingsForIndex.keys.map { URL(fileURLWithPath: $0) }.compactMap(\.self)
-    }
-
-    public var projectType: String {
-        "xcodeproj"
-    }
-
-    public func buildGraph() async {}
-
-    public func buildIndex(for targets: [String]) async {}
-
-    public func startBuild(targets: [String]) async {}
-
-    public var projectInfo: ProjectInfo? {
-        xcodeProjectInfo?.asProjectInfo()
     }
 
     public func resolveProjectInfo() async throws -> ProjectInfo {

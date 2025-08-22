@@ -7,8 +7,10 @@
 import Foundation
 
 public extension BSPServerService {
-    /// 获取编译参数（BSP 协议适配）
-    func getCompileArguments(targetIdentifier: BuildTargetIdentifier, fileURL: URL) async throws -> [String] {
+    func getCompileArguments(
+        targetIdentifier: BuildTargetIdentifier,
+        fileURL: URL
+    ) async throws -> [String] {
         guard let projectManager else {
             throw BuildServerError.invalidConfiguration("Project not initialized")
         }

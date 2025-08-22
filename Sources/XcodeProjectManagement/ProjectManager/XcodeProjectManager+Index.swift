@@ -27,7 +27,7 @@ public extension XcodeProjectManager {
                 scheme: importantScheme,
                 configuration: projectInfo.xcodeProjectBuildSettings.configuration
             )
-        case let .implicitWorkspace(projectURL, workspaceURL):
+        case let .implicitWorkspace(_, workspaceURL):
             try await buildWorkspace(
                 workspaceURL: workspaceURL,
                 scheme: importantScheme,

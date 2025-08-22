@@ -13,7 +13,7 @@ public struct SwiftPMProjectManagerProvider: ProjectManagerProvider {
         case notImplemented
     }
 
-    public let name = "SwiftPM Project Provider"
+    public let name = "SwiftPMProjectManagerProvider"
 
     public init() {}
 

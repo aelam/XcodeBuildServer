@@ -14,7 +14,7 @@ import XcodeProj
 import XcodeProjectManagement
 
 public struct XcodeProjectManagerProvider: ProjectManagerProvider {
-    public let name = "Xcode Project Provider"
+    public let name = "XcodeProjectManagerProvider"
 
     public init() {}
 

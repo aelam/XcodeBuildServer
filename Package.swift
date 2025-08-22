@@ -28,7 +28,7 @@ let package = Package(
     targets: [
         .target(
             name: "Core",
-            dependencies: []
+            dependencies: ["Logger"]
         ),
         .target(
             name: "JSONRPCConnection",
@@ -44,19 +44,7 @@ let package = Package(
             ]
         ),
 
-        // BSP 服务器模块
-        .target(
-            name: "BSPServer",
-            dependencies: [
-                "Core",
-                "JSONRPCConnection",
-                "Logger",
-                "SwiftPMProjectManagerProvider",
-                "XcodeProjectManagerProvider"
-            ]
-        ),
-
-        // SwiftPM 项目提供者 (跨平台)
+        // SwiftPMProjectManagerProvider for all platforms
         .target(
             name: "SwiftPMProjectManagerProvider",
             dependencies: ["Core", "Logger"]
@@ -93,7 +81,18 @@ let package = Package(
             ]
         ),
 
-        // CLI 工具
+        .target(
+            name: "BSPServer",
+            dependencies: [
+                "Core",
+                "JSONRPCConnection",
+                "Logger",
+                "SwiftPMProjectManagerProvider",
+                "XcodeProjectManagerProvider"
+            ]
+        ),
+
+        // CLI
         .executableTarget(
             name: "XcodeBuildServerCLI",
             dependencies: [

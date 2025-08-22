@@ -15,6 +15,9 @@ public protocol ProjectManager: AnyObject, Sendable {
     /// 当前项目信息
     var projectInfo: ProjectInfo? { get async }
 
+    /// 获取当前项目状态
+    func getProjectState() async -> ProjectState
+
     /// 项目类型
     var projectType: String { get }
 
@@ -24,15 +27,15 @@ public protocol ProjectManager: AnyObject, Sendable {
     /// 解析项目信息
     func resolveProjectInfo() async throws -> ProjectInfo
 
-    /// 获取当前项目状态
-    func getProjectState() async -> ProjectState
-
     func getTargetList(
         resolveSourceFiles: Bool,
         resolveDependencies: Bool
     ) async -> [ProjectTarget]
 
     func getSourceFileList(targetIdentifier: String) async -> [URL]
+
+    /// 获取指定文件的编译参数
+    func getCompileArguments(targetIdentifier: String, sourceFileURL: URL) async throws -> [String]
 
     func buildGraph() async
 
@@ -45,9 +48,6 @@ public protocol ProjectManager: AnyObject, Sendable {
 
     /// 移除项目状态观察者
     func removeStateObserver(_ observer: ProjectStateObserver) async
-
-    /// 获取指定文件的编译参数
-    func getCompileArguments(targetIdentifier: String, sourceFileURL: URL) async throws -> [String]
 }
 
 public struct ProjectInfo: Sendable {
