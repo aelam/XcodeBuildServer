@@ -1,6 +1,6 @@
 //
-//  XcodeProjectProvider.swift
-//  XcodeProjectProvider Module
+//  XcodeProjectManagerProvider.swift
+//  XcodeProjectManagerProvider Module
 //
 //  Copyright © 2024 Wang Lun.
 //
@@ -13,7 +13,7 @@ import Logger
 import XcodeProj
 import XcodeProjectManagement
 
-public struct XcodeProjectProvider: ProjectManagerProvider {
+public struct XcodeProjectManagerProvider: ProjectManagerProvider {
     public let name = "Xcode Project Provider"
 
     public init() {}
@@ -58,7 +58,7 @@ public struct XcodeProjectProvider: ProjectManagerProvider {
 }
 
 #else
-public struct XcodeProjectProvider: ProjectManagerProvider {
+public struct XcodeProjectManagerProvider: ProjectManagerProvider {
     public let name = "Xcode Project Provider (Disabled)"
 
     public init() {}
@@ -71,14 +71,15 @@ public struct XcodeProjectProvider: ProjectManagerProvider {
         rootURL: URL,
         config: ProjectConfiguration?
     ) async throws -> any ProjectManager {
-        throw XcodeProjectProviderError.notAvailable("XcodeProjectProvider not available on this platform")
+        throw XcodeProjectManagerProviderError
+            .notAvailable("XcodeProjectManagerProvider not available on this platform")
     }
 }
 #endif
 
 // MARK: - 错误类型
 
-public enum XcodeProjectProviderError: Error, LocalizedError {
+public enum XcodeProjectManagerProviderError: Error, LocalizedError {
     case notAvailable(String)
     case notImplemented(String)
 

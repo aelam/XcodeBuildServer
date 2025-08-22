@@ -12,20 +12,8 @@ public enum ProjectManagerProviderError: Error, Sendable {
     case notImplemented
 }
 
-public enum Platform: String, Codable, CaseIterable, Sendable {
-    case macOS
-    case linux
-    case windows
-    case iOS
-    case watchOS
-    case tvOS
-    case visionOS
-}
-
 public protocol ProjectManagerProvider: Sendable {
     var name: String { get }
-
-    // var supportedPlatforms: [Platform] { get }
 
     func canHandle(projectURL: URL) async -> Bool
 

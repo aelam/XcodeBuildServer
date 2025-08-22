@@ -16,7 +16,7 @@ public extension BSPServerService {
         logger.info("Initializing project...")
 
         let projectManager = try await Task.detached {
-            let projectManager = try await ProjectProviderRegistry.createFactory().createProjectManager(
+            let projectManager = try await ProjectManagerProviderRegistry.createFactory().createProjectManager(
                 rootURL: rootURL
             )
 

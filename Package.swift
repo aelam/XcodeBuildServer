@@ -7,17 +7,17 @@ let package = Package(
     name: "XcodeBuildServer",
     platforms: [.macOS(.v13)],
     products: [
-        // 核心库
+        // Base
         .library(name: "Core", targets: ["Core"]),
         .library(name: "JSONRPCConnection", targets: ["JSONRPCConnection"]),
         .library(name: "Logger", targets: ["Logger"]),
         .library(name: "BSPServer", targets: ["BSPServer"]),
 
-        // 项目提供者库
-        .library(name: "SwiftPMProjectProvider", targets: ["SwiftPMProjectProvider"]),
-        .library(name: "XcodeProjectProvider", targets: ["XcodeProjectProvider"]),
+        // ProjectManagerProviders
+        .library(name: "SwiftPMProjectManagerProvider", targets: ["SwiftPMProjectManagerProvider"]),
+        .library(name: "XcodeProjectManagerProvider", targets: ["XcodeProjectManagerProvider"]),
 
-        // CLI工具
+        // CLI Tools
         .executable(name: "XcodeBuildServerCLI", targets: ["XcodeBuildServerCLI"]),
         .executable(name: "XcodeProjectCLI", targets: ["XcodeProjectCLI"]),
     ],
@@ -26,7 +26,6 @@ let package = Package(
         .package(url: "https://github.com/tuist/XcodeProj.git", .upToNextMajor(from: "8.12.0")),
     ],
     targets: [
-        // 跨平台核心模块
         .target(
             name: "Core",
             dependencies: []
@@ -52,19 +51,18 @@ let package = Package(
                 "Core",
                 "JSONRPCConnection",
                 "Logger",
-                "SwiftPMProjectProvider",
-                // XcodeProjectProvider 只在 macOS 下有效
-                "XcodeProjectProvider"
+                "SwiftPMProjectManagerProvider",
+                "XcodeProjectManagerProvider"
             ]
         ),
 
         // SwiftPM 项目提供者 (跨平台)
         .target(
-            name: "SwiftPMProjectProvider",
+            name: "SwiftPMProjectManagerProvider",
             dependencies: ["Core", "Logger"]
         ),
 
-        // Xcode 项目管理 (macOS专用)
+        // Xcode mac only
         .target(
             name: "XcodeProjectManagement",
             dependencies: [
@@ -84,9 +82,9 @@ let package = Package(
             ]
         ),
 
-        // Xcode 项目提供者 (macOS专用)
+        // XcodeProjectManagerProvider (MacOS only)
         .target(
-            name: "XcodeProjectProvider",
+            name: "XcodeProjectManagerProvider",
             dependencies: [
                 "XcodeProjectManagement"
             ],
@@ -106,7 +104,7 @@ let package = Package(
         .executableTarget(
             name: "XcodeProjectCLI",
             dependencies: [
-                "XcodeProjectProvider",
+                "XcodeProjectManagerProvider",
                 "Logger",
             ],
             swiftSettings: [
@@ -114,7 +112,8 @@ let package = Package(
             ]
         ),
 
-        // 测试
+        // MARK: - Tests
+
         .testTarget(
             name: "CoreTests",
             dependencies: ["Core"]
@@ -125,8 +124,12 @@ let package = Package(
             resources: [.copy("Resources")]
         ),
         .testTarget(
-            name: "SwiftPMProjectProviderTests",
-            dependencies: ["SwiftPMProjectProvider"]
+            name: "SwiftPMProjectManagerProviderTests",
+            dependencies: ["SwiftPMProjectManagerProvider"]
+        ),
+        .testTarget(
+            name: "XcodeProjectManagerProviderTests",
+            dependencies: ["XcodeProjectManagerProvider"]
         ),
         .testTarget(
             name: "XcodeProjectManagementTests",

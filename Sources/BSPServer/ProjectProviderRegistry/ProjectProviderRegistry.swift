@@ -8,25 +8,22 @@
 import Core
 import Foundation
 import Logger
-import SwiftPMProjectProvider
+import SwiftPMProjectManagerProvider
 
 #if os(macOS)
-import XcodeProjectProvider
+import XcodeProjectManagerProvider
 #endif
 
-/// 全局Provider注册器
-/// 根据平台自动注册可用的Provider
-public enum ProjectProviderRegistry {
-    /// 获取所有可用的Provider
+public enum ProjectManagerProviderRegistry {
     public static func getAllProviders() -> [any ProjectManagerProvider] {
         var providers: [any ProjectManagerProvider] = []
 
         // 总是注册SwiftPM支持
-        // providers.append(SwiftPMProjectProvider())
+        providers.append(SwiftPMProjectManagerProvider())
 
         #if os(macOS)
         // 只在macOS上注册Xcode支持
-        providers.append(XcodeProjectProvider())
+        providers.append(XcodeProjectManagerProvider())
         #endif
 
         return providers

@@ -1,6 +1,6 @@
 ////
 ////  SwiftPMProjectInfo.swift
-////  SwiftPMProjectProvider Module
+////  SwiftPMProjectManagerProvider Module
 ////
 ////  Copyright © 2024 Wang Lun.
 ////
