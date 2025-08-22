@@ -52,26 +52,6 @@ public struct XcodeTargetInfo: Sendable {
     public let xcodeProductType: XcodeProductType
     public let buildSettings: [String: String]
 
-    public var isTestTarget: Bool {
-        xcodeProductType.isTestType == true || name.contains("Test")
-    }
-
-    public var isUITestTarget: Bool {
-        xcodeProductType == .uiTestBundle || name.contains("UITest")
-    }
-
-    public var isRunnableTarget: Bool {
-        xcodeProductType.isRunnableType == true
-    }
-
-    public var isApplicationTarget: Bool {
-        xcodeProductType.isApplicationType == true
-    }
-
-    public var isLibraryTarget: Bool {
-        xcodeProductType.isLibraryType == true
-    }
-
     public init(
         targetIdentifier: String,
         name: String,
@@ -86,7 +66,7 @@ public struct XcodeTargetInfo: Sendable {
     }
 }
 
-public actor XcodeProjectManager: ProjectStatusPublisher {
+public actor XcodeProjectManager {
     public let rootURL: URL
     let locator: XcodeProjectLocator
     let toolchain: XcodeToolchain
@@ -96,32 +76,6 @@ public actor XcodeProjectManager: ProjectStatusPublisher {
 
     private var projectState = ProjectState()
     private var stateObservers: [WeakProjectStateObserver] = []
-
-    // MARK: - Status Observer Support (保持向后兼容)
-
-    private var observers: [WeakProjectStatusObserver] = []
-
-    public func addObserver(_ observer: ProjectStatusObserver) async {
-        observers.append(WeakProjectStatusObserver(observer))
-    }
-
-    public func removeObserver(_ observer: ProjectStatusObserver) async {
-        observers.removeAll { $0.observer === observer || $0.observer == nil }
-    }
-
-    func notifyObservers(_ event: ProjectStatusEvent) async {
-        observers.removeAll { $0.observer == nil }
-
-        await withTaskGroup(of: Void.self) { group in
-            for weakObserver in observers {
-                if let observer = weakObserver.observer {
-                    group.addTask {
-                        await observer.onProjectStatusChanged(event)
-                    }
-                }
-            }
-        }
-    }
 
     // MARK: - Project State Management
 
@@ -159,7 +113,7 @@ public actor XcodeProjectManager: ProjectStatusPublisher {
         await notifyStateObservers(.buildStarted(target: target))
     }
 
-    func completeBuild(target: String, success: Bool) async {
+    func completeBuild(target: String, duration: TimeInterval, success: Bool) async {
         guard var buildTask = projectState.activeBuildTasks[target] else { return }
         let duration = Date().timeIntervalSince(buildTask.startTime)
         buildTask.status = .completed(success: success, duration: duration)
@@ -216,9 +170,6 @@ public actor XcodeProjectManager: ProjectStatusPublisher {
             rootURL: rootURL,
             xcodeProjectReference: xcodeProjectReference
         )
-
-        // Notify observers that project loading started (保持向后兼容)
-        await notifyObservers(ProjectStatusEvent.projectLoaded(projectPath: rootURL.path))
 
         // Load containers for workspace projects to get actual targets
         let actualTargets = try await loadActualTargets(

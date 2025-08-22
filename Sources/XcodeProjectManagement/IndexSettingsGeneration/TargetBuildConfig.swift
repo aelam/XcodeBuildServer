@@ -130,7 +130,7 @@ struct TargetBuildConfig {
 
     // General test flags - usable by all languages (computed on demand since they need targetProductType)
     func generalTestFlags(targetProductType: XcodeProductType) -> [String] {
-        guard targetProductType.isTestType else { return [] }
+        guard targetProductType.asProductType.isTestType else { return [] }
 
         let testFrameworkFlags = Self.extractTestFrameworkSearchFlags(from: buildSettingsPair)
         let testLibraryFlags = Self.extractTestLibrarySearchFlags(from: buildSettingsPair)

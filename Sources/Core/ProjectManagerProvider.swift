@@ -50,7 +50,6 @@ public actor ProjectManagerFactory {
         try await Task.detached {
             let providers = await self.providers
             logger.debug("Creating project manager for \(rootURL.path)")
-            // 检查所有Provider，找到第一个能处理此项目的
             for provider in providers where await provider.canHandle(projectURL: rootURL) {
                 return try await provider.createProjectManager(rootURL: rootURL, config: config)
             }
@@ -62,7 +61,6 @@ public actor ProjectManagerFactory {
     }
 }
 
-/// 项目管理器工厂错误
 public enum ProjectManagerFactoryError: Error, LocalizedError {
     case noSuitableProvider(String)
     case providerCreationFailed(String)

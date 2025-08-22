@@ -7,24 +7,17 @@
 
 import Foundation
 
-/// 项目管理器协议 - 支持不同类型的项目管理后端
 public protocol ProjectManager: AnyObject, Sendable {
-    /// 项目根目录
     var rootURL: URL { get async }
 
-    /// 当前项目信息
     var projectInfo: ProjectInfo? { get async }
 
-    /// 获取当前项目状态
     func getProjectState() async -> ProjectState
 
-    /// 项目类型
     var projectType: String { get }
 
-    /// 初始化项目管理器
     func initialize() async throws
 
-    /// 解析项目信息
     func resolveProjectInfo() async throws -> ProjectInfo
 
     func getTargetList(
@@ -34,7 +27,6 @@ public protocol ProjectManager: AnyObject, Sendable {
 
     func getSourceFileList(targetIdentifier: String) async -> [URL]
 
-    /// 获取指定文件的编译参数
     func getCompileArguments(targetIdentifier: String, sourceFileURL: URL) async throws -> [String]
 
     func buildGraph() async

@@ -16,7 +16,7 @@ public extension XcodeProjectManager {
         await startBuild(target: targetName)
 
         // Notify build started (保持向后兼容)
-        await notifyObservers(ProjectStatusEvent.buildStarted(target: targetName))
+        // await notifyObservers(ProjectStatusEvent.buildStarted(target: targetName))
         let startTime = Date()
 
         // Build Target
@@ -47,18 +47,10 @@ public extension XcodeProjectManager {
         let duration = Date().timeIntervalSince(startTime)
         let success = result.exitCode == 0
         if success {
-            await completeBuild(target: targetName, success: true)
-            // 保持向后兼容
-            await notifyObservers(ProjectStatusEvent.buildCompleted(
-                target: targetName,
-                success: true,
-                duration: duration
-            ))
+            await completeBuild(target: targetName, duration: duration, success: true)
         } else {
             let error = BuildError.buildFailed(exitCode: result.exitCode, output: result.output)
             await failBuild(target: targetName, error: error)
-            // 保持向后兼容
-            await notifyObservers(ProjectStatusEvent.buildFailed(target: targetName, error: error))
         }
 
         return result

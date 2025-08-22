@@ -40,3 +40,41 @@ public enum ProductType: CaseIterable, Sendable {
     case driverExtension
     case systemExtension
 }
+
+public extension ProductType {
+    var isTestType: Bool {
+        switch self {
+        case .unitTestBundle, .uiTestBundle, .ocUnitTestBundle:
+            true
+        default:
+            false
+        }
+    }
+
+    var isLibraryType: Bool {
+        switch self {
+        case .framework, .staticLibrary, .dynamicLibrary, .staticFramework:
+            true
+        default:
+            false
+        }
+    }
+
+    var isApplicationType: Bool {
+        switch self {
+        case .application, .watchApp, .watch2App:
+            true
+        default:
+            false
+        }
+    }
+
+    var isRunnableType: Bool {
+        switch self {
+        case .application, .watchApp, .watch2App, .watchExtension, .watch2Extension, .commandLineTool, .appExtension:
+            true
+        default:
+            false
+        }
+    }
+}
