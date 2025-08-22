@@ -8,7 +8,7 @@ extension XcodeProjectManager: @preconcurrency ProjectManager {
         "xcodeproj"
     }
 
-    public func buildGraph() async {}
+    public func updateBuildGraph() async {}
 
     public func buildIndex(for targets: [String]) async {}
 

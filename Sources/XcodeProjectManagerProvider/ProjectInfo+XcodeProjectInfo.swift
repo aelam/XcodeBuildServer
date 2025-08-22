@@ -12,9 +12,9 @@ import XcodeProjectManagement
 extension XcodeProjectInfo {
     func asProjectInfo() -> ProjectInfo {
         ProjectInfo(
-            rootURL: rootURL,
+            rootURL: baseProjectInfo.rootURL,
             name: name,
-            targets: xcodeTargets.map { $0.asProjectTarget() },
+            targets: baseProjectInfo.xcodeTargets.map { $0.asProjectTarget() },
             buildSettingsForIndex: [:],
             projectBuildSettings: xcodeProjectBuildSettings.asProjectBuildSettings()
         )

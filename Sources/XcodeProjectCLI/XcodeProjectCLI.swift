@@ -43,14 +43,15 @@ struct XcodeProjectCLI {
             let project = try await projectManager.resolveXcodeProjectInfo()
 
             logger.info("✓ Project loaded successfully")
-            logger.info("  - Root URL: \(project.rootURL.path)")
-            logger.info("  - Project Name: \(project.name)")
-            logger.info("  - Scheme Name: \(project.importantScheme.name)")
-            logger.info(" - Project Targets: \(project.xcodeTargets.map(\.name).joined(separator: ", "))")
+            let baseProjectInfo = project.baseProjectInfo
+            logger.info("  - Root URL: \(baseProjectInfo.rootURL.path)")
+            logger.info("  - Scheme Name: \(baseProjectInfo.importantScheme.name)")
+            logger
+                .info(" - Project Targets: \(project.baseProjectInfo.xcodeTargets.map(\.name).joined(separator: ", "))")
 
             // Targets
             logger.info("\n✅🗂️ Target Information:")
-            for target in project.xcodeTargets {
+            for target in project.baseProjectInfo.xcodeTargets {
                 logger.info("  - Target Name: \(target.name)")
                 logger.info("  - Is Test: \(target.xcodeProductType.isTestType)")
                 logger.info("  - Is Runnable: \(target.xcodeProductType.isRunnableType)")

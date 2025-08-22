@@ -108,10 +108,12 @@ public final class BSPServerService: ProjectStateObserver, @unchecked Sendable {
         serviceState.withLock { $0 = .stopped }
         logger.info("BSP Server Service stopped")
     }
+}
 
+public extension BSPServerService {
     // MARK: - Notification Sending
 
-    public func sendNotification(_ notification: NotificationType) async throws {
+    func sendNotification(_ notification: NotificationType) async throws {
         try await jsonrpcConnection.send(notification: notification)
     }
 }
@@ -228,7 +230,7 @@ public extension BSPServerService {
         _ message: String,
         type: MessageType
     ) async throws {
-        try await messageHandler.sendNotification(
+        try await sendNotification(
             WindowShowMessageNotification(
                 type: type,
                 message: message

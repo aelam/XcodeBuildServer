@@ -9,7 +9,7 @@ public extension XcodeProjectManager {
     func buildProject(
         projectInfo: XcodeProjectInfo,
     ) async throws -> XcodeBuildResult {
-        let importantScheme = projectInfo.importantScheme
+        let importantScheme = projectInfo.baseProjectInfo.importantScheme
         let targetName = importantScheme.name
 
         // 使用状态管理开始构建
@@ -20,7 +20,7 @@ public extension XcodeProjectManager {
         let startTime = Date()
 
         // Build Target
-        let result: XcodeBuildResult = switch projectInfo.projectLocation {
+        let result: XcodeBuildResult = switch projectInfo.baseProjectInfo.projectLocation {
         case let .explicitWorkspace(workspaceURL):
             try await buildWorkspace(
                 workspaceURL: workspaceURL,
@@ -39,7 +39,7 @@ public extension XcodeProjectManager {
                 scheme: importantScheme,
                 configuration: projectInfo.xcodeProjectBuildSettings.configuration,
                 derivedDataPath: projectInfo.xcodeProjectBuildSettings.derivedDataPath,
-                rootURL: projectInfo.rootURL
+                rootURL: projectInfo.baseProjectInfo.rootURL
             )
         }
 

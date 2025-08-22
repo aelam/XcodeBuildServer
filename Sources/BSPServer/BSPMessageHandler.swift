@@ -39,12 +39,4 @@ public final class BSPMessageHandler: ContextualMessageHandler, Sendable {
     public func setBSPServerService(_ service: BSPServerService) {
         self.bspServerService = service
     }
-
-    /// 发送通知到客户端（通过服务层）
-    public func sendNotification(_ notification: NotificationType) async throws {
-        guard let service = bspServerService else {
-            throw JSONRPCTransportError.transportClosed
-        }
-        try await service.sendNotification(notification)
-    }
 }

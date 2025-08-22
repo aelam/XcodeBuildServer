@@ -7,7 +7,6 @@
 
 import Foundation
 
-/// 项目状态
 public struct ProjectState: Sendable {
     public var projectLoadState: ProjectLoadState = .uninitialized
     public var activeBuildTasks: [String: BuildTask] = [:]
@@ -21,6 +20,33 @@ public enum ProjectLoadState: Sendable {
     case loading(projectPath: String)
     case loaded(projectInfo: ProjectInfo)
     case failed(Error)
+}
+
+public enum BuildTargetChangeState: Sendable {
+    public struct BuildTargetEvent: Codable, Hashable, Sendable {
+        public enum BuildTargetEventKind: Int, Codable, Hashable, Sendable {
+            /// The build target is new.
+            case created = 1
+
+            /// The build target has changed.
+            case changed = 2
+
+            /// The build target has been deleted.
+            case deleted = 3
+        }
+
+        /// The identifier for the changed build target.
+        public var target: String
+
+        /// The kind of change for this build target.
+        public var kind: BuildTargetEventKind?
+
+        // Kind of data to expect in the `data` field. If this field is not set, the kind of data is not specified.
+        // public var dataKind: BuildTargetEventDataKind?
+    }
+
+    case none
+    case changed(event: [BuildTargetEvent])
 }
 
 public struct BuildTask: Sendable {

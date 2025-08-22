@@ -20,6 +20,7 @@ public protocol ProjectManager: AnyObject, Sendable {
 
     func resolveProjectInfo() async throws -> ProjectInfo
 
+    // workspace/buildTargets
     func getTargetList(
         resolveSourceFiles: Bool,
         resolveDependencies: Bool
@@ -29,7 +30,7 @@ public protocol ProjectManager: AnyObject, Sendable {
 
     func getCompileArguments(targetIdentifier: String, sourceFileURL: URL) async throws -> [String]
 
-    func buildGraph() async
+    func updateBuildGraph() async
 
     func buildIndex(for targets: [String]) async
 
