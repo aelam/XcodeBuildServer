@@ -13,22 +13,35 @@ public struct XcodeProjectProjectBuildSettings: Sendable, Codable, Hashable {
     public let derivedDataPath: URL
     public let indexStoreURL: URL
     public let indexDatabaseURL: URL
-    public let configuration: String
-    public let sdkStatCacheDir: String // SDK_STAT_CACHE_DIR
-    public let sdkStatCachePath: String // SDK_STAT_CACHE_PATH
+    public let symRoot: URL
+    public let objRoot: URL
+    public let sdkStatCacheDir: URL // SDK_STAT_CACHE_DIR
+    public let sdkStatCachePath: URL // SDK_STAT_CACHE_PATH
+
+    public init(derivedDataPath: URL) {
+        self.derivedDataPath = derivedDataPath
+        self.indexStoreURL = derivedDataPath.appendingPathComponent("Index.noIndex/DataStore")
+        self.indexDatabaseURL = derivedDataPath.appendingPathComponent("IndexDatabase.noIndex")
+        self.symRoot = derivedDataPath.appendingPathComponent("Build/Products")
+        self.objRoot = derivedDataPath.appendingPathComponent("Build/Intermediates.noindex")
+        self.sdkStatCacheDir = derivedDataPath.deletingLastPathComponent()
+        self.sdkStatCachePath = sdkStatCacheDir.appendingPathComponent("SDKStatCache")
+    }
 
     public init(
         derivedDataPath: URL,
         indexStoreURL: URL,
         indexDatabaseURL: URL,
-        configuration: String,
-        sdkStatCacheDir: String,
-        sdkStatCachePath: String
+        symRoot: URL,
+        objRoot: URL,
+        sdkStatCacheDir: URL,
+        sdkStatCachePath: URL
     ) {
         self.derivedDataPath = derivedDataPath
         self.indexStoreURL = indexStoreURL
         self.indexDatabaseURL = indexDatabaseURL
-        self.configuration = configuration
+        self.symRoot = symRoot
+        self.objRoot = objRoot
         self.sdkStatCacheDir = sdkStatCacheDir
         self.sdkStatCachePath = sdkStatCachePath
     }
@@ -136,6 +149,9 @@ public actor XcodeProjectManager {
             xcodeProjectReference: xcodeProjectReference
         )
 
+        let derivedDataPath = PathHash.derivedDataFullPath(for: projectLocation.workspaceURL.path)
+        let xcodeProjectBuildSettings = XcodeProjectProjectBuildSettings(derivedDataPath: derivedDataPath)
+
         // Load containers for workspace projects to get actual targets
         let actualTargets = try await loadActualTargets(
             projectLocation: projectLocation
@@ -152,9 +168,12 @@ public actor XcodeProjectManager {
         guard let importantScheme else {
             throw XcodeProjectError.noSchemesFound("No schemes found in project at \(rootURL.path)")
         }
+
         self.xcodeProjectBaseInfo = XcodeProjectBaseInfo(
             rootURL: rootURL,
             projectLocation: projectLocation,
+            xcodeProjectBuildSettings: xcodeProjectBuildSettings,
+            // derivedDataPath: derivedDataPath,
             importantScheme: importantScheme,
             xcodeTargets: actualTargets,
             schemes: schemes
@@ -174,19 +193,18 @@ public actor XcodeProjectManager {
             settingsLoader: settingsLoader
         )
 
-        // Get index URLs using the first available scheme (shared per workspace)
-        let projectBuildSettings = try await settingsLoader.loadProjectBuildSettings(
-            buildSettingsList: buildSettingsList
-        )
+        let derivedDataPath = xcodeProjectBaseInfo.xcodeProjectBuildSettings.derivedDataPath
 
         let buildSettingsMap = try await settingsLoader.loadBuildSettingsMap(
             rootURL: rootURL,
             targets: xcodeProjectBaseInfo.xcodeTargets,
+            configuration: "Debug",
+            xcodeProjectBuildSettings: xcodeProjectBaseInfo.xcodeProjectBuildSettings,
             customFlags: [
-                "SYMROOT=" + projectBuildSettings.derivedDataPath.appendingPathComponent("Build/Products").path,
-                "OBJROOT=" + projectBuildSettings.derivedDataPath.appendingPathComponent("Build/Intermediates.noindex")
+                "SYMROOT=" + derivedDataPath.appendingPathComponent("Build/Products").path,
+                "OBJROOT=" + derivedDataPath.appendingPathComponent("Build/Intermediates.noindex")
                     .path,
-                "SDK_STAT_CACHE_DIR=" + projectBuildSettings.derivedDataPath.deletingLastPathComponent().path,
+                "SDK_STAT_CACHE_DIR=" + derivedDataPath.deletingLastPathComponent().path,
                 // "BUILD_DIR=/tmp/__A__/Build/Products"
                 // "BUILD_ROOT=/tmp/__A__/Build/Products"
             ]
@@ -194,17 +212,17 @@ public actor XcodeProjectManager {
 
         let buildSettingsForIndex = IndexSettingsGeneration.generate(
             rootURL: rootURL,
-            projectBuildSettings: projectBuildSettings,
+            xcodeProjectBuildSettings: xcodeProjectBaseInfo.xcodeProjectBuildSettings,
             buildSettingsMap: buildSettingsMap
         )
 
         let xcodeProjectInfo = XcodeProjectInfo(
             baseProjectInfo: xcodeProjectBaseInfo,
             buildSettingsList: buildSettingsList,
-            projectBuildSettings: projectBuildSettings,
-            derivedDataPath: projectBuildSettings.derivedDataPath,
-            indexStoreURL: projectBuildSettings.indexStoreURL,
-            indexDatabaseURL: projectBuildSettings.indexDatabaseURL,
+//            xcodeProjectBuildSettings: xcodeProjectBuildSettings,
+//            derivedDataPath: projectBuildSettings.derivedDataPath,
+//            indexStoreURL: projectBuildSettings.indexStoreURL,
+//            indexDatabaseURL: projectBuildSettings.indexDatabaseURL,
             xcodeBuildSettingsForIndex: buildSettingsForIndex
         )
         self.xcodeProjectInfo = xcodeProjectInfo

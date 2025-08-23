@@ -96,34 +96,45 @@ public struct ProjectTarget: Sendable {
     }
 }
 
-public struct FileBuildSettingInfo: Sendable {
-    public let language: Language?
-    public let outputFilePath: String?
-}
-
-/// 抽象主要构建设置协议
 public struct ProjectBuildSettings: Sendable {
-    /// DerivedData 路径
     public let derivedDataPath: URL
-
-    /// 索引存储路径
     public let indexStoreURL: URL
-
-    /// 索引数据库路径
     public let indexDatabaseURL: URL
+    public let symRoot: URL // SYMROOT
+    public let objRoot: URL // OBJROOT
+    public let sdkStatCacheDir: URL // SDK_STAT_CACHE_DIR
+    public let sdkStatCachePath: URL // SDK_STAT_CACHE_PATH
 
-    /// 配置名称
-    public let configuration: String
+    public init(derivedDataPath: URL) {
+        self.derivedDataPath = derivedDataPath
+        self.indexStoreURL = derivedDataPath.appendingPathComponent("Index.noIndex/DataStore")
+        self.indexDatabaseURL = derivedDataPath.appendingPathComponent("IndexDatabase.noIndex")
+        self.symRoot = derivedDataPath.appendingPathComponent("Build/Products")
+        self.objRoot = derivedDataPath.appendingPathComponent("Build/Intermediates.noindex")
+        self.sdkStatCacheDir = derivedDataPath.deletingLastPathComponent()
+        self.sdkStatCachePath = sdkStatCacheDir.appendingPathComponent("SDKStatCache")
+    }
 
     public init(
         derivedDataPath: URL,
         indexStoreURL: URL,
         indexDatabaseURL: URL,
-        configuration: String
+        symRoot: URL,
+        objRoot: URL,
+        sdkStatCacheDir: URL,
+        sdkStatCachePath: URL
     ) {
         self.derivedDataPath = derivedDataPath
         self.indexStoreURL = indexStoreURL
         self.indexDatabaseURL = indexDatabaseURL
-        self.configuration = configuration
+        self.symRoot = symRoot
+        self.objRoot = objRoot
+        self.sdkStatCacheDir = sdkStatCacheDir
+        self.sdkStatCachePath = sdkStatCachePath
     }
+}
+
+public struct FileBuildSettingInfo: Sendable {
+    public let language: Language?
+    public let outputFilePath: String?
 }

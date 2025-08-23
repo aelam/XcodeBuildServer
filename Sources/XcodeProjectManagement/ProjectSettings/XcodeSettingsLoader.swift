@@ -17,46 +17,6 @@ public actor XcodeSettingsLoader {
         self.toolchain = toolchain
     }
 
-    public func loadProjectBuildSettings(
-        buildSettingsList: [XcodeBuildSettings]
-    ) throws -> XcodeProjectProjectBuildSettings {
-        guard let settings = buildSettingsList.first?.buildSettings else {
-            throw XcodeProjectError.invalidConfig("No build settings found")
-        }
-
-        guard let buildFolderPath = settings["BUILD_DIR"] else {
-            throw XcodeProjectError.invalidConfig("BUILD_DIR not found in build settings")
-        }
-
-        let configuration = settings["CONFIGURATION"] ?? "Debug"
-
-        let derivedDataPath = URL(fileURLWithPath: buildFolderPath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-
-        let indexStoreURL = derivedDataPath.appendingPathComponent("Index.noIndex/DataStore")
-        let indexDatabaseURL = derivedDataPath.appendingPathComponent("IndexDatabase.noIndex")
-        let sdkStatCacheDir = settings["SDK_STAT_CACHE_DIR"] ?? derivedDataPath.deletingLastPathComponent().path
-        let sdkStatCachePath = settings["SDK_STAT_CACHE_PATH"] ?? sdkStatCacheDir.appending("SDKStatCache")
-
-        do {
-            if !FileManager.default.fileExists(atPath: indexDatabaseURL.path) {
-                try FileManager.default.createDirectory(at: indexDatabaseURL, withIntermediateDirectories: true)
-            }
-        } catch {
-            throw XcodeProjectError.invalidConfig("Failed to create index database directory: \(error)")
-        }
-
-        return XcodeProjectProjectBuildSettings(
-            derivedDataPath: derivedDataPath,
-            indexStoreURL: indexStoreURL,
-            indexDatabaseURL: indexDatabaseURL,
-            configuration: configuration,
-            sdkStatCacheDir: sdkStatCacheDir,
-            sdkStatCachePath: sdkStatCachePath
-        )
-    }
-
     public func runXcodeBuild(
         arguments: [String],
         workingDirectory: URL

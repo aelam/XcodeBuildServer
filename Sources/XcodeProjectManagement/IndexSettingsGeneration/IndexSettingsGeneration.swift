@@ -6,14 +6,14 @@ import XcodeProj
 enum IndexSettingsGeneration {
     static func generate(
         rootURL: URL,
-        projectBuildSettings: XcodeProjectProjectBuildSettings,
+        xcodeProjectBuildSettings: XcodeProjectProjectBuildSettings,
         buildSettingsMap: XcodeBuildSettingsMap
     ) -> XcodeBuildSettingsForIndex {
         // sourceMap: [targetIdentifier: [filePath]]
         let sourceMap = loadSourceFiles(targetIdentifierRawValues: Array(buildSettingsMap.keys))
 
         // Create project-level configuration once (shared across all targets)
-        let projectConfig = ProjectConfig(projectBuildSettings: projectBuildSettings, rootURL: rootURL)
+        let projectConfig = ProjectConfig(projectBuildSettings: xcodeProjectBuildSettings, rootURL: rootURL)
 
         var indexSettings: XcodeBuildSettingsForIndex = [:]
         for (targetIdentifier, settings) in buildSettingsMap {

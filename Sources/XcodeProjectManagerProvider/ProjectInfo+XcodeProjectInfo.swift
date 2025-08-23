@@ -16,7 +16,7 @@ extension XcodeProjectInfo {
             name: name,
             targets: baseProjectInfo.xcodeTargets.map { $0.asProjectTarget() },
             buildSettingsForIndex: [:],
-            projectBuildSettings: xcodeProjectBuildSettings.asProjectBuildSettings()
+            projectBuildSettings: baseProjectInfo.xcodeProjectBuildSettings.asProjectBuildSettings()
         )
     }
 }
@@ -45,7 +45,10 @@ extension XcodeProjectProjectBuildSettings {
             derivedDataPath: derivedDataPath,
             indexStoreURL: indexStoreURL,
             indexDatabaseURL: indexDatabaseURL,
-            configuration: configuration
+            symRoot: symRoot,
+            objRoot: objRoot,
+            sdkStatCacheDir: sdkStatCacheDir,
+            sdkStatCachePath: sdkStatCachePath
         )
     }
 }

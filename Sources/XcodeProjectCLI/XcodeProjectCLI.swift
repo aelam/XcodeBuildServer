@@ -53,17 +53,17 @@ struct XcodeProjectCLI {
             logger.info("\n✅🗂️ Target Information:")
             for target in project.baseProjectInfo.xcodeTargets {
                 logger.info("  - Target Name: \(target.name)")
-                logger.info("  - Is Test: \(target.xcodeProductType.isTestType)")
-                logger.info("  - Is Runnable: \(target.xcodeProductType.isRunnableType)")
+                logger.info("  - Is Test: \(target.xcodeProductType.asProductType.isTestType)")
+                logger.info("  - Is Runnable: \(target.xcodeProductType.asProductType.isRunnableType)")
             }
 
             // Show indexing paths
-            let xcodeProjectBuildSettings = project.xcodeProjectBuildSettings
+            let xcodeProjectBuildSettings = project.baseProjectInfo.xcodeProjectBuildSettings
             logger.info("\n✅🗂️ Indexing Information:")
             logger.info("  - Index Store URL: \(xcodeProjectBuildSettings.indexStoreURL.path)")
             logger.info("  - Index Database URL: \(xcodeProjectBuildSettings.indexDatabaseURL.path)")
             logger.info("  - Derived Data Path: \(xcodeProjectBuildSettings.derivedDataPath.path)")
-            logger.info("  - Configuration: \(xcodeProjectBuildSettings.configuration)")
+            logger.info("  - Configuration: \(project.baseProjectInfo.configuration)")
 
             let endTimestamp = Date()
             logger.info("Loading time: \(endTimestamp.timeIntervalSince(timestamp)) seconds")
