@@ -1,20 +1,20 @@
 import Foundation
 
 // Configuration structures
-struct SwiftFileBuildConfig: SourceFileBuildConfigurable {
-    let targetBuildConfig: TargetBuildConfig
+struct SwiftFileBuildSettings: SourceFileBuildConfigurable {
+    let targetBuildSettings: TargetBuildSettings
     let sourceFile: String
     let language: XcodeLanguageDialect
     let targetProductType: XcodeProductType
     let sourceFiles: [String]
 
     init(
-        targetBuildConfig: TargetBuildConfig,
+        targetBuildSettings: TargetBuildSettings,
         sourceFile: String,
         language: XcodeLanguageDialect,
         context: SwiftBuildContext
     ) {
-        self.targetBuildConfig = targetBuildConfig
+        self.targetBuildSettings = targetBuildSettings
         self.sourceFile = sourceFile
         self.language = language
         self.targetProductType = context.targetProductType
@@ -33,19 +33,19 @@ struct SwiftFileBuildConfig: SourceFileBuildConfigurable {
 
     // Common computed properties
     var outputFilePath: String {
-        targetBuildConfig.buildOutputFilePath(for: sourceFile)
+        targetBuildSettings.buildOutputFilePath(for: sourceFile)
     }
 
     // Swift-specific computed properties
     var ASTModuleName: String? {
         guard language.isSwift else { return nil }
-        return targetBuildConfig.moduleName
+        return targetBuildSettings.moduleName
     }
 
     var ASTBuiltProductsDir: String {
         guard language.isSwift else { return "" }
-        return targetBuildConfig.configurationBuildDir
-            .appendingPathComponent(targetBuildConfig.moduleName)
+        return targetBuildSettings.configurationBuildDir
+            .appendingPathComponent(targetBuildSettings.moduleName)
             .path
     }
 
@@ -57,13 +57,13 @@ struct SwiftFileBuildConfig: SourceFileBuildConfigurable {
     // MARK: - Private Swift Command Building
 
     private func buildSwiftASTCommandArguments() -> [String] {
-        let basicFlags = targetBuildConfig.basicSwiftFlags
-        let includePathFlags = targetBuildConfig.generalIncludePathFlags.flatMap { ["-Xcc", $0] }
-        let frameworkPathFlags = targetBuildConfig.generalFrameworkPathFlags
-        let searchPathFlags = targetBuildConfig.generalSearchPathFlags
-        let conditionFlags = targetBuildConfig.compilationConditionFlags
-        let swiftFlags = targetBuildConfig.swiftSpecificFlags(sourceFiles: sourceFiles)
-        let testFlags = targetBuildConfig.generalTestFlags(targetProductType: targetProductType)
+        let basicFlags = targetBuildSettings.basicSwiftFlags
+        let includePathFlags = targetBuildSettings.generalIncludePathFlags.flatMap { ["-Xcc", $0] }
+        let frameworkPathFlags = targetBuildSettings.generalFrameworkPathFlags
+        let searchPathFlags = targetBuildSettings.generalSearchPathFlags
+        let conditionFlags = targetBuildSettings.compilationConditionFlags
+        let swiftFlags = targetBuildSettings.swiftSpecificFlags(sourceFiles: sourceFiles)
+        let testFlags = targetBuildSettings.generalTestFlags(targetProductType: targetProductType)
         let cacheFlags = buildCacheAndProductFlags()
         let advancedFlags = buildAdvancedCompilerFlags()
 
@@ -79,17 +79,17 @@ struct SwiftFileBuildConfig: SourceFileBuildConfigurable {
     }
 
     private func buildCacheAndProductFlags() -> [String] {
-        let frameworkFlags = targetBuildConfig.generalFrameworkPathFlags
+        let frameworkFlags = targetBuildSettings.generalFrameworkPathFlags
         let productFlags: [String] = [
-            "-Xcc", "-I", "-Xcc", targetBuildConfig.productPath.path,
-            "-I", targetBuildConfig.productPath.path
+            "-Xcc", "-I", "-Xcc", targetBuildSettings.productPath.path,
+            "-I", targetBuildSettings.productPath.path
         ] + frameworkFlags.flatMap { ["-Xcc", $0] } + frameworkFlags
 
-        let sdkStatCacheFlags = targetBuildConfig.generalSDKStatCacheFlags
+        let sdkStatCacheFlags = targetBuildSettings.generalSDKStatCacheFlags
         let batchFlags: [String] = [
             "-c", "-j14", "-enable-batch-mode"
         ] + sdkStatCacheFlags + [
-            "-I\(targetBuildConfig.swiftOverridesHmapPath.path)"
+            "-I\(targetBuildSettings.swiftOverridesHmapPath.path)"
         ]
 
         let protocolFlags: [String] = [
@@ -97,7 +97,7 @@ struct SwiftFileBuildConfig: SourceFileBuildConfigurable {
             "-Xfrontend",
             "-const-gather-protocols-file",
             "-Xfrontend",
-            targetBuildConfig.constExtractProtocols.path
+            targetBuildSettings.constExtractProtocols.path
         ]
 
         return productFlags + batchFlags + protocolFlags
@@ -107,13 +107,13 @@ struct SwiftFileBuildConfig: SourceFileBuildConfigurable {
         let hmapFlags = buildSwiftHeaderMapFlags()
 
         let vfsoverlayFlags: [String] = [
-            "-Xcc", "-ivfsoverlay", "-Xcc", targetBuildConfig.vfsoverlayPath.path
+            "-Xcc", "-ivfsoverlay", "-Xcc", targetBuildSettings.vfsoverlayPath.path
         ]
 
-        let includePathFlags = targetBuildConfig.generalIncludePathFlags
+        let includePathFlags = targetBuildSettings.generalIncludePathFlags
             .flatMap { ["-Xcc", $0] }
 
-        let gccFlags: [String] = StringUtils.splitFlags(targetBuildConfig.gccPreprocessorDefinitions)
+        let gccFlags: [String] = StringUtils.splitFlags(targetBuildSettings.gccPreprocessorDefinitions)
 
         // Objective-C bridging header flags (Swift-specific)
         let bridgingHeaderFlags = buildBridgingHeaderFlags()
@@ -121,15 +121,15 @@ struct SwiftFileBuildConfig: SourceFileBuildConfigurable {
         let underlyingModuleFlags: [String] = [
             "-import-underlying-module",
             "-Xcc", "-ivfsoverlay", "-Xcc",
-            targetBuildConfig.configurationTempDir
-                .appendingPathComponent("\(targetBuildConfig.moduleName).build")
+            targetBuildSettings.configurationTempDir
+                .appendingPathComponent("\(targetBuildSettings.moduleName).build")
                 .appendingPathComponent("unextended-module-overlay.yaml")
                 .path
         ]
 
-        let workingDirFlags = targetBuildConfig.generalWorkingDirectoryFlags
+        let workingDirFlags = targetBuildSettings.generalWorkingDirectoryFlags
 
-        let extraFlags = TargetBuildConfig.buildDebugDiagnosticFlags().flatMap { ["-Xcc", $0] }
+        let extraFlags = TargetBuildSettings.buildDebugDiagnosticFlags().flatMap { ["-Xcc", $0] }
 
         return hmapFlags + vfsoverlayFlags + includePathFlags
             + gccFlags + bridgingHeaderFlags + underlyingModuleFlags + workingDirFlags + extraFlags
@@ -141,12 +141,13 @@ struct SwiftFileBuildConfig: SourceFileBuildConfigurable {
         var flags: [String] = []
 
         // Add Objective-C bridging header if it exists
-        if let bridgingHeader = targetBuildConfig.buildSettings["SWIFT_OBJC_BRIDGING_HEADER"], !bridgingHeader.isEmpty {
+        if let bridgingHeader = targetBuildSettings.buildSettings["SWIFT_OBJC_BRIDGING_HEADER"],
+           !bridgingHeader.isEmpty {
             flags.append(contentsOf: ["-import-objc-header", bridgingHeader])
         }
 
         // Add precompiled header output directory
-        if let pchOutputDir = targetBuildConfig.buildSettings["SHARED_PRECOMPS_DIR"], !pchOutputDir.isEmpty {
+        if let pchOutputDir = targetBuildSettings.buildSettings["SHARED_PRECOMPS_DIR"], !pchOutputDir.isEmpty {
             flags.append(contentsOf: ["-pch-output-dir", pchOutputDir])
         }
 
@@ -156,8 +157,8 @@ struct SwiftFileBuildConfig: SourceFileBuildConfigurable {
     // MARK: - Private Swift Helper Methods
 
     private func buildSwiftHeaderMapFlags() -> [String] {
-        let hmapBasePath = targetBuildConfig.hmapFolder.path
-        let moduleName = targetBuildConfig.moduleName
+        let hmapBasePath = targetBuildSettings.hmapFolder.path
+        let moduleName = targetBuildSettings.moduleName
 
         return [
             "-Xcc", "-iquote", "-Xcc", "\(hmapBasePath)/\(moduleName)-generated-files.hmap",

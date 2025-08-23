@@ -12,15 +12,15 @@ enum IndexSettingsGeneration {
         // sourceMap: [targetIdentifier: [filePath]]
         let sourceMap = loadSourceFiles(targetIdentifierRawValues: Array(buildSettingsMap.keys))
 
-        // Create project-level configuration once (shared across all targets)
-        let projectConfig = ProjectConfig(projectBuildSettings: xcodeProjectBuildSettings, rootURL: rootURL)
-
         var indexSettings: XcodeBuildSettingsForIndex = [:]
         for (targetIdentifier, settings) in buildSettingsMap {
             let targetProductType = XcodeProductType(rawValue: settings.buildSettings["PRODUCT_TYPE"] ?? "") ?? .none
 
             // Create target-level configuration once per target
-            let targetBuildConfig = TargetBuildConfig(buildSettings: settings, projectConfig: projectConfig)
+            let targetBuildSettings = TargetBuildSettings(
+                buildSettings: settings,
+                xcodeProjectBuildSettings: xcodeProjectBuildSettings
+            )
 
             // 获取该 target 的所有 source file 路径
             let sourceFiles = sourceMap[targetIdentifier] ?? []
@@ -32,18 +32,18 @@ enum IndexSettingsGeneration {
 
                 // Create appropriate file config based on language
                 let fileConfig: any SourceFileBuildConfigurable = if language.isSwift {
-                    SwiftFileBuildConfig(
-                        targetBuildConfig: targetBuildConfig,
+                    SwiftFileBuildSettings(
+                        targetBuildSettings: targetBuildSettings,
                         sourceFile: sourceFile,
                         language: language,
-                        context: SwiftFileBuildConfig.SwiftBuildContext(
+                        context: SwiftFileBuildSettings.SwiftBuildContext(
                             targetProductType: targetProductType,
                             sourceFiles: swiftSourceFiles
                         )
                     )
                 } else {
-                    ClangFileBuildConfig(
-                        targetBuildConfig: targetBuildConfig,
+                    ClangFileBuildSettings(
+                        targetBuildSettings: targetBuildSettings,
                         sourceFile: sourceFile,
                         language: language
                     )
@@ -51,16 +51,16 @@ enum IndexSettingsGeneration {
 
                 // 构造 buildSettingInfo
                 let buildSettingInfo = XcodeFileBuildSettingInfo(
-                    assetSymbolIndexPath: targetBuildConfig.buildAssetSymbolIndexPath(),
+                    assetSymbolIndexPath: targetBuildSettings.buildAssetSymbolIndexPath(),
                     clangASTBuiltProductsDir: language.isClang ? fileConfig.ASTBuiltProductsDir : nil,
                     clangASTCommandArguments: language.isClang ? fileConfig.ASTCommandArguments : [],
-                    clangPrefixFilePath: targetBuildConfig.clangPrefixFilePath,
+                    clangPrefixFilePath: targetBuildSettings.clangPrefixFilePath,
                     languageDialect: language,
                     outputFilePath: fileConfig.outputFilePath,
                     swiftASTBuiltProductsDir: language.isSwift ? fileConfig.ASTBuiltProductsDir : nil,
                     swiftASTCommandArguments: language.isSwift ? fileConfig.ASTCommandArguments : nil,
                     swiftASTModuleName: fileConfig.ASTModuleName,
-                    toolchains: targetBuildConfig.toolchains
+                    toolchains: targetBuildSettings.toolchains
                 )
                 fileInfos[sourceFile] = buildSettingInfo
             }

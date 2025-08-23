@@ -1,5 +1,5 @@
 protocol SourceFileBuildConfigurable {
-    var targetBuildConfig: TargetBuildConfig { get }
+    var targetBuildSettings: TargetBuildSettings { get }
     var sourceFile: String { get }
     var language: XcodeLanguageDialect { get }
     var outputFilePath: String { get }

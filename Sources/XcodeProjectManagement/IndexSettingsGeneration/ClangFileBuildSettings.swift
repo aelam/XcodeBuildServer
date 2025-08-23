@@ -1,20 +1,20 @@
 import Foundation
 
 // swiftlint:disable:next type_body_length
-struct ClangFileBuildConfig: SourceFileBuildConfigurable {
-    let targetBuildConfig: TargetBuildConfig
+struct ClangFileBuildSettings: SourceFileBuildConfigurable {
+    let targetBuildSettings: TargetBuildSettings
     let sourceFile: String
     let language: XcodeLanguageDialect
 
-    init(targetBuildConfig: TargetBuildConfig, sourceFile: String, language: XcodeLanguageDialect) {
-        self.targetBuildConfig = targetBuildConfig
+    init(targetBuildSettings: TargetBuildSettings, sourceFile: String, language: XcodeLanguageDialect) {
+        self.targetBuildSettings = targetBuildSettings
         self.sourceFile = sourceFile
         self.language = language
     }
 
     // Common computed properties
     var outputFilePath: String {
-        targetBuildConfig.buildOutputFilePath(for: sourceFile)
+        targetBuildSettings.buildOutputFilePath(for: sourceFile)
     }
 
     // Clang-specific computed properties
@@ -22,12 +22,12 @@ struct ClangFileBuildConfig: SourceFileBuildConfigurable {
 
     var clangASTBuiltProductsDir: String? {
         guard language.isClang else { return nil }
-        return targetBuildConfig.moduleName
+        return targetBuildSettings.moduleName
     }
 
     var ASTBuiltProductsDir: String {
         guard language.isClang else { return "" }
-        return targetBuildConfig.moduleName
+        return targetBuildSettings.moduleName
     }
 
     var ASTCommandArguments: [String] {
@@ -58,9 +58,9 @@ struct ClangFileBuildConfig: SourceFileBuildConfigurable {
         // Preprocessor definitions
         flags.append(contentsOf: buildPreprocessorFlags())
 
-        // Use basic compiler flags from targetBuildConfig
-        flags.append(contentsOf: ["-isysroot", targetBuildConfig.sdkRoot])
-        flags.append(contentsOf: ["-target", targetBuildConfig.targetTriple])
+        // Use basic compiler flags from targetBuildSettings
+        flags.append(contentsOf: ["-isysroot", targetBuildSettings.sdkRoot])
+        flags.append(contentsOf: ["-target", targetBuildSettings.targetTriple])
 
         // ARC and feature flags
         flags.append(contentsOf: buildClangFlags())
@@ -74,9 +74,9 @@ struct ClangFileBuildConfig: SourceFileBuildConfigurable {
         // Header map flags for Clang (without -Xcc prefix)
         flags.append(contentsOf: buildClangHeaderMapFlags())
 
-        flags.append(contentsOf: targetBuildConfig.generalIncludePathFlags)
-        flags.append(contentsOf: targetBuildConfig.generalFrameworkPathFlags)
-        flags.append(contentsOf: targetBuildConfig.generalWorkingDirectoryFlags)
+        flags.append(contentsOf: targetBuildSettings.generalIncludePathFlags)
+        flags.append(contentsOf: targetBuildSettings.generalFrameworkPathFlags)
+        flags.append(contentsOf: targetBuildSettings.generalWorkingDirectoryFlags)
 
         // Debug flags (clang-specific, without -Xclang prefix)
         flags.append(contentsOf: buildClangDebugFlags())
@@ -84,11 +84,11 @@ struct ClangFileBuildConfig: SourceFileBuildConfigurable {
         // Output flags (must be at the end)
         let outputName = URL(fileURLWithPath: sourceFile).deletingPathExtension().lastPathComponent
         let outputPath = "/" + [
-            targetBuildConfig.projectName + ".build",
-            targetBuildConfig.configuration + targetBuildConfig.effectivePlatformName,
-            targetBuildConfig.moduleName + ".build",
+            targetBuildSettings.projectName + ".build",
+            targetBuildSettings.configuration + targetBuildSettings.effectivePlatformName,
+            targetBuildSettings.moduleName + ".build",
             "Objects-normal",
-            targetBuildConfig.nativeArch,
+            targetBuildSettings.nativeArch,
             outputName + "-\(generateHashForFile()).o"
         ].joined(separator: "/")
 
@@ -119,14 +119,14 @@ struct ClangFileBuildConfig: SourceFileBuildConfigurable {
             "-fmodules-prune-after=345600",
             // "-fno-cxx-modules",
             "-gmodules",
-            "-fmodules-cache-path=\(targetBuildConfig.projectConfig.moduleCachePath)",
+            "-fmodules-cache-path=\(targetBuildSettings.xcodeProjectBuildSettings.moduleCachePath.path)",
             "-Xclang", "-fmodule-format=raw",
             "-fmodules-validate-system-headers"
         ]
 
         // Add @import support for Objective-C files (only if modules are enabled)
         if language == .objc || language == .objcCpp,
-           targetBuildConfig.buildSettings["CLANG_ENABLE_MODULES"] == "YES" {
+           targetBuildSettings.buildSettings["CLANG_ENABLE_MODULES"] == "YES" {
             flags.append(contentsOf: [
                 // "-Xclang", "-fmodules-autolink",
                 // "-Xclang", "-fmodules-decluse"
@@ -138,7 +138,7 @@ struct ClangFileBuildConfig: SourceFileBuildConfigurable {
 
     // swiftlint:disable:next cyclomatic_complexity
     private func buildClangFlags() -> [String] {
-        let settings = targetBuildConfig.buildSettings
+        let settings = targetBuildSettings.buildSettings
         var flags: [String] = []
 
         // Add user-configured Clang flags from build settings
@@ -234,14 +234,14 @@ struct ClangFileBuildConfig: SourceFileBuildConfigurable {
         var flags: [String] = []
 
         // Add user-configured warning flags from build settings
-        if let warningCFlags = targetBuildConfig.buildSettings["WARNING_CFLAGS"] {
+        if let warningCFlags = targetBuildSettings.buildSettings["WARNING_CFLAGS"] {
             let warningFlags = StringUtils.splitFlags(warningCFlags)
             flags.append(contentsOf: warningFlags)
         }
 
         // Add C++ specific warning flags if this is a C++ file
         if language == .cpp || language == .objcCpp {
-            if let warningCppFlags = targetBuildConfig.buildSettings["WARNING_CPLUSPLUSFLAGS"] {
+            if let warningCppFlags = targetBuildSettings.buildSettings["WARNING_CPLUSPLUSFLAGS"] {
                 let cppWarningFlags = StringUtils.splitFlags(warningCppFlags)
                 flags.append(contentsOf: cppWarningFlags)
             }
@@ -328,7 +328,7 @@ struct ClangFileBuildConfig: SourceFileBuildConfigurable {
         }
 
         // Add GCC preprocessor definitions from build settings (includes DEBUG=1, etc.)
-        let gccFlags = StringUtils.splitFlags(targetBuildConfig.gccPreprocessorDefinitions)
+        let gccFlags = StringUtils.splitFlags(targetBuildSettings.gccPreprocessorDefinitions)
         flags.append(contentsOf: gccFlags)
 
         return flags
@@ -347,7 +347,7 @@ struct ClangFileBuildConfig: SourceFileBuildConfigurable {
 
         // Add system frameworks import paths for ObjC files
         if language == .objc || language == .objcCpp {
-            let sdkPath = targetBuildConfig.sdkRoot
+            let sdkPath = targetBuildSettings.sdkRoot
 
             // Add system framework search paths
             flags.append(contentsOf: [
@@ -384,8 +384,8 @@ struct ClangFileBuildConfig: SourceFileBuildConfigurable {
     }
 
     private func buildClangHeaderMapFlags() -> [String] {
-        let hmapBasePath = targetBuildConfig.clangHmapPath.path
-        let moduleName = targetBuildConfig.moduleName
+        let hmapBasePath = targetBuildSettings.clangHmapPath.path
+        let moduleName = targetBuildSettings.moduleName
 
         return [
             "-iquote", "\(hmapBasePath)/\(moduleName)-generated-files.hmap",
@@ -407,7 +407,7 @@ struct ClangFileBuildConfig: SourceFileBuildConfigurable {
 
     private func buildSDKStatCacheFlags() -> [String] {
         // For clang, we don't need -Xcc prefix
-        ["-ivfsstatcache", targetBuildConfig.sdkStatCachePath]
+        ["-ivfsstatcache", targetBuildSettings.sdkStatCachePath]
     }
 
     private func generateHashForFile() -> String {

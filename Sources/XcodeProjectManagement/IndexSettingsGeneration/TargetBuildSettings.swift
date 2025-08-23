@@ -1,7 +1,7 @@
 import Foundation
 
 // swiftlint:disable:next type_body_length
-struct TargetBuildConfig {
+struct TargetBuildSettings {
     // Raw build settings (kept for backward compatibility)
     private let buildSettingsPair: [String: String]
 
@@ -9,7 +9,7 @@ struct TargetBuildConfig {
     var buildSettings: [String: String] { buildSettingsPair }
 
     // Project-level config
-    let projectConfig: ProjectConfig
+    let xcodeProjectBuildSettings: XcodeProjectProjectBuildSettings
 
     // Target-level computed properties (cached)
     let moduleName: String
@@ -53,9 +53,12 @@ struct TargetBuildConfig {
     let generalSDKStatCacheFlags: [String]
     let generalSearchPathFlags: [String]
 
-    init(buildSettings: XcodeBuildSettings, projectConfig: ProjectConfig) {
+    init(
+        buildSettings: XcodeBuildSettings,
+        xcodeProjectBuildSettings: XcodeProjectProjectBuildSettings
+    ) {
         self.buildSettingsPair = buildSettings.buildSettings
-        self.projectConfig = projectConfig
+        self.xcodeProjectBuildSettings = xcodeProjectBuildSettings
 
         // Target-level properties (read once, cached)
         self.moduleName = buildSettingsPair["PRODUCT_MODULE_NAME"] ?? buildSettings.target
@@ -105,12 +108,12 @@ struct TargetBuildConfig {
         self.generalBasicFlags = Self.buildGeneralBasicFlags(
             sdkRoot: sdkRoot,
             targetTriple: targetTriple,
-            projectConfig: projectConfig
+            xcodeProjectBuildSettings: xcodeProjectBuildSettings
         )
 
         self.generalWorkingDirectoryFlags = Self.buildWorkingDirectoryFlags(
             buildSettingsPair: buildSettingsPair,
-            projectConfig: projectConfig
+            xcodeProjectBuildSettings: xcodeProjectBuildSettings
         )
 
         self.generalFrameworkPathFlags = ["-F\(configurationBuildDir.path)"]
@@ -142,8 +145,8 @@ struct TargetBuildConfig {
     // Module and cache flags
     var moduleCacheFlags: [String] {
         [
-            "-module-cache-path", projectConfig.moduleCachePath,
-            "-Xcc", "-fmodules-cache-path=\(projectConfig.moduleCachePath)"
+            "-module-cache-path", xcodeProjectBuildSettings.moduleCachePath.path,
+            "-Xcc", "-fmodules-cache-path=\(xcodeProjectBuildSettings.moduleCachePath.path)"
         ]
     }
 
@@ -153,7 +156,7 @@ struct TargetBuildConfig {
             "-sdk", sdkRoot,
             "-target", targetTriple,
             "-g",
-            "-index-store-path", projectConfig.indexStorePath
+            "-index-store-path", xcodeProjectBuildSettings.indexStoreURL.path
         ] + moduleCacheFlags
     }
 
@@ -285,25 +288,27 @@ struct TargetBuildConfig {
     private static func buildGeneralBasicFlags(
         sdkRoot: String,
         targetTriple: String,
-        projectConfig: ProjectConfig
+        xcodeProjectBuildSettings: XcodeProjectProjectBuildSettings
     ) -> [String] {
         [
             "-sdk", sdkRoot,
             "-target", targetTriple,
             "-g",
-            "-index-store-path", projectConfig.indexStorePath,
-            "-module-cache-path", projectConfig.moduleCachePath,
-            "-fmodules-cache-path=\(projectConfig.moduleCachePath)"
+            "-index-store-path", xcodeProjectBuildSettings.indexStoreURL.path,
+            "-module-cache-path", xcodeProjectBuildSettings.moduleCachePath.path,
+            "-fmodules-cache-path", xcodeProjectBuildSettings.moduleCachePath.path
         ]
     }
 
     private static func buildWorkingDirectoryFlags(
         buildSettingsPair: [String: String],
-        projectConfig: ProjectConfig
+        xcodeProjectBuildSettings: XcodeProjectProjectBuildSettings
     ) -> [String] {
-        [
-            "-working-directory",
-            buildSettingsPair["PROJECT_DIR"] ?? projectConfig.rootURL
+        guard let projectDir = buildSettingsPair["PROJECT_DIR"] else {
+            return []
+        }
+        return [
+            "-working-directory", projectDir
         ]
     }
 

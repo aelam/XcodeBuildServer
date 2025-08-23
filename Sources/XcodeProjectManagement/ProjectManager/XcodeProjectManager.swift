@@ -9,6 +9,7 @@ import Foundation
 import Logger
 import XcodeProj
 
+/// Project Level buildSettings
 public struct XcodeProjectProjectBuildSettings: Sendable, Codable, Hashable {
     public let derivedDataPath: URL
     public let indexStoreURL: URL
@@ -17,6 +18,7 @@ public struct XcodeProjectProjectBuildSettings: Sendable, Codable, Hashable {
     public let objRoot: URL
     public let sdkStatCacheDir: URL // SDK_STAT_CACHE_DIR
     public let sdkStatCachePath: URL // SDK_STAT_CACHE_PATH
+    public let moduleCachePath: URL // parent of derivedDataPath
 
     public init(derivedDataPath: URL) {
         self.derivedDataPath = derivedDataPath
@@ -26,6 +28,8 @@ public struct XcodeProjectProjectBuildSettings: Sendable, Codable, Hashable {
         self.objRoot = derivedDataPath.appendingPathComponent("Build/Intermediates.noindex")
         self.sdkStatCacheDir = derivedDataPath.deletingLastPathComponent()
         self.sdkStatCachePath = sdkStatCacheDir.appendingPathComponent("SDKStatCache")
+        self.moduleCachePath = derivedDataPath.deletingLastPathComponent()
+            .appendingPathComponent("ModuleCache.noindex")
     }
 
     public init(
@@ -35,7 +39,8 @@ public struct XcodeProjectProjectBuildSettings: Sendable, Codable, Hashable {
         symRoot: URL,
         objRoot: URL,
         sdkStatCacheDir: URL,
-        sdkStatCachePath: URL
+        sdkStatCachePath: URL,
+        moduleCachePath: URL
     ) {
         self.derivedDataPath = derivedDataPath
         self.indexStoreURL = indexStoreURL
@@ -44,6 +49,7 @@ public struct XcodeProjectProjectBuildSettings: Sendable, Codable, Hashable {
         self.objRoot = objRoot
         self.sdkStatCacheDir = sdkStatCacheDir
         self.sdkStatCachePath = sdkStatCachePath
+        self.moduleCachePath = moduleCachePath
     }
 
     /// Custom flags for `xcodebuild -project {project} -target {target} SYSROOT={SYSROOT} -showBuildSettings -json`
