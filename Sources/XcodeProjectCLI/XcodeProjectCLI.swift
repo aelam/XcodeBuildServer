@@ -22,8 +22,6 @@ struct XcodeProjectCLI {
 
         do {
             let toolchain = XcodeToolchain()
-            try await toolchain.initialize()
-
             // Initialize the project manager
             let projectManager = XcodeProjectManager(
                 rootURL: projectURL,
@@ -36,39 +34,39 @@ struct XcodeProjectCLI {
                 )
             )
 
+            try await projectManager.initialize()
+
             // Load the project
             let timestamp = Date()
-            logger.info("Loading Xcode project at: \(timestamp)")
-            logger.info("Loading Xcode project from: \(projectPath)")
+            print("Loading Xcode project at: \(timestamp)")
+            print("Loading Xcode project from: \(projectPath)")
             let project = try await projectManager.resolveXcodeProjectInfo()
 
-            logger.info("✓ Project loaded successfully")
+            print("✓ Project loaded successfully")
             let baseProjectInfo = project.baseProjectInfo
-            logger.info("  - Root URL: \(baseProjectInfo.rootURL.path)")
-            logger.info("  - Scheme Name: \(baseProjectInfo.importantScheme.name)")
-            logger
-                .info(" - Project Targets: \(project.baseProjectInfo.xcodeTargets.map(\.name).joined(separator: ", "))")
+            print("  - Root URL: \(baseProjectInfo.rootURL.path)")
+            print("  - Scheme Name: \(baseProjectInfo.importantScheme.name)")
+            print(" - Project Targets: \(project.baseProjectInfo.xcodeTargets.map(\.name).joined(separator: ", "))")
 
             // Targets
-            logger.info("\n✅🗂️ Target Information:")
+            print("\n✅🗂️ Target Information:")
             for target in project.baseProjectInfo.xcodeTargets {
-                logger.info("  - Target Name: \(target.name)")
-                logger.info("  - Is Test: \(target.xcodeProductType.asProductType.isTestType)")
-                logger.info("  - Is Runnable: \(target.xcodeProductType.asProductType.isRunnableType)")
+                print("  - Target Name: \(target.name)")
+                print("  - Is Test: \(target.xcodeProductType.asProductType.isTestType)")
+                print("  - Is Runnable: \(target.xcodeProductType.asProductType.isRunnableType)")
             }
 
             // Show indexing paths
             let xcodeProjectBuildSettings = project.baseProjectInfo.xcodeProjectBuildSettings
-            logger.info("\n✅🗂️ Indexing Information:")
-            logger.info("  - Index Store URL: \(xcodeProjectBuildSettings.indexStoreURL.path)")
-            logger.info("  - Index Database URL: \(xcodeProjectBuildSettings.indexDatabaseURL.path)")
-            logger.info("  - Derived Data Path: \(xcodeProjectBuildSettings.derivedDataPath.path)")
-            logger.info("  - Configuration: \(project.baseProjectInfo.configuration)")
-
+            print("\n✅🗂️ Indexing Information:")
+            print("  - Index Store URL: \(xcodeProjectBuildSettings.indexStoreURL.path)")
+            print("  - Index Database URL: \(xcodeProjectBuildSettings.indexDatabaseURL.path)")
+            print("  - Derived Data Path: \(xcodeProjectBuildSettings.derivedDataPath.path)")
+            print("  - Configuration: \(project.baseProjectInfo.configuration)")
             let endTimestamp = Date()
-            logger.info("Loading time: \(endTimestamp.timeIntervalSince(timestamp)) seconds")
+            print("Loading time: \(endTimestamp.timeIntervalSince(timestamp)) seconds")
         } catch {
-            logger.error("❌ Error: \(error)")
+            print("❌ Error: \(error)")
         }
     }
 }

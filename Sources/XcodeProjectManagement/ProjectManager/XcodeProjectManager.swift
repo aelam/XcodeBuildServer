@@ -155,6 +155,7 @@ public actor XcodeProjectManager {
             xcodeProjectReference: xcodeProjectReference
         )
 
+        // Get project-level buildSettings without `xcodebuild`
         let derivedDataPath = PathHash.derivedDataFullPath(for: projectLocation.workspaceURL.path)
         let xcodeProjectBuildSettings = XcodeProjectProjectBuildSettings(derivedDataPath: derivedDataPath)
 
@@ -187,6 +188,10 @@ public actor XcodeProjectManager {
     }
 
     public func resolveXcodeProjectInfo() async throws -> XcodeProjectInfo {
+        if let xcodeProjectInfo {
+            return xcodeProjectInfo
+        }
+
         guard let xcodeProjectBaseInfo else {
             fatalError("XcodeProjectInfo cannot be resolved before initialize()")
         }
@@ -224,11 +229,6 @@ public actor XcodeProjectManager {
 
         let xcodeProjectInfo = XcodeProjectInfo(
             baseProjectInfo: xcodeProjectBaseInfo,
-            buildSettingsList: buildSettingsList,
-//            xcodeProjectBuildSettings: xcodeProjectBuildSettings,
-//            derivedDataPath: projectBuildSettings.derivedDataPath,
-//            indexStoreURL: projectBuildSettings.indexStoreURL,
-//            indexDatabaseURL: projectBuildSettings.indexDatabaseURL,
             xcodeBuildSettingsForIndex: buildSettingsForIndex
         )
         self.xcodeProjectInfo = xcodeProjectInfo
