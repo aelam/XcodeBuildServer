@@ -36,6 +36,6 @@ extension BSPServerService {
 
         let targetIdentifiers = targets.map(\.uri.stringValue)
 
-        await projectManager.startBuild(targets: targetIdentifiers)
+        await projectManager.buildIndex(for: targetIdentifiers)
     }
 }

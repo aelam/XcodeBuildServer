@@ -13,10 +13,10 @@ extension XcodeProjectManager {
             try await loadTargetsFromWorkspaceContainers(projectLocation: projectLocation)
         case let .implicitWorkspace(projectURL, _):
             // For project, load targets using XcodeProj
-            try loadTargetsFromXcodeProj(projectPath: projectURL)
+            try loadTargetsFromXcodeProj(projectURL: projectURL, isFromWorkspace: false)
         case let .standaloneProject(projectURL):
             // For standalone project, load targets using XcodeProj
-            try loadTargetsFromXcodeProj(projectPath: projectURL)
+            try loadTargetsFromXcodeProj(projectURL: projectURL, isFromWorkspace: false)
         }
     }
 
@@ -38,17 +38,20 @@ extension XcodeProjectManager {
                 if case let .file(fileRef) = element,
                    fileRef.location.path.hasSuffix(".xcodeproj") {
                     // Resolve project path relative to workspace
-                    let projectPath = resolveProjectPath(
+                    let projectURL = resolveProjectPath(
                         from: fileRef.location,
                         workspaceURL: workspaceURL
                     )
 
-                    if let projectPath {
+                    if let projectURL {
                         do {
-                            let projectTargets = try loadTargetsFromXcodeProj(projectPath: projectPath)
+                            let projectTargets = try loadTargetsFromXcodeProj(
+                                projectURL: projectURL,
+                                isFromWorkspace: true
+                            )
                             allTargets.append(contentsOf: projectTargets)
                         } catch {
-                            logger.error("Failed to load targets from project \(projectPath): \(error)")
+                            logger.error("Failed to load targets from project \(projectURL): \(error)")
                             // Continue with other projects
                         }
                     }
@@ -65,21 +68,23 @@ extension XcodeProjectManager {
     }
 
     /// Load targets from XcodeProj directly
-    func loadTargetsFromXcodeProj(projectPath: URL) throws -> [XcodeTarget] {
+    func loadTargetsFromXcodeProj(projectURL: URL, isFromWorkspace: Bool = false) throws -> [XcodeTarget] {
+        guard let project = try loadXcodeProjCache(projectURL: projectURL) else {
+            return []
+        }
         var targets = [XcodeTarget]()
-        let project = try XcodeProj(pathString: projectPath.path)
         for target in project.pbxproj.nativeTargets {
             let buildConfiguration = target.buildConfigurationList?.buildConfigurations.first?.buildSettings
-            let SDKROOT: String = buildConfiguration?["SDKROOT"] as? String ?? "iphoneos"
+            let SDKROOT: String = buildConfiguration?["SDKROOT"] as? String ?? "iphonesimulator"
             let platform = XcodeTarget.Platform(rawValue: SDKROOT) ?? .iOS
             let pbxProductType = target.productType ?? .none
             let productType = XcodeProductType(rawValue: pbxProductType.rawValue) ?? .none
             targets.append(
                 XcodeTarget(
                     name: target.name,
-                    projectURL: projectPath,
+                    projectURL: projectURL,
                     productName: target.productName,
-                    isFromWorkspace: false,
+                    isFromWorkspace: isFromWorkspace,
                     xcodeTargetPlatform: platform,
                     xcodeProductType: productType
                 )

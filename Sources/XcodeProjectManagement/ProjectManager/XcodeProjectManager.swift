@@ -7,6 +7,7 @@
 import Core
 import Foundation
 import Logger
+import PathKit
 import XcodeProj
 
 /// Project Level buildSettings
@@ -90,6 +91,18 @@ public actor XcodeProjectManager {
     let locator: XcodeProjectLocator
     let toolchain: XcodeToolchain
     let settingsLoader: XcodeSettingsLoader
+
+    private var xcodeProjCache: [URL: XcodeProj] = [:]
+
+    func loadXcodeProjCache(projectURL: URL) throws -> XcodeProj? {
+        if let cachedXcodeProj = xcodeProjCache[projectURL] {
+            return cachedXcodeProj
+        }
+        let projectURLPath = Path(projectURL.path)
+        let xcodeProj = try XcodeProj(path: projectURLPath)
+        xcodeProjCache[projectURL] = xcodeProj
+        return xcodeProj
+    }
 
     // MARK: - State Management
 
@@ -196,26 +209,16 @@ public actor XcodeProjectManager {
             fatalError("XcodeProjectInfo cannot be resolved before initialize()")
         }
 
-        // Load a build settings of any target to get DerivedData path
-        let buildSettingsList = try await loadBuildSettings(
-            rootURL: rootURL,
-            projectLocation: xcodeProjectBaseInfo.projectLocation,
-            scheme: xcodeProjectBaseInfo.importantScheme,
-            settingsLoader: settingsLoader
-        )
-
-        let derivedDataPath = xcodeProjectBaseInfo.xcodeProjectBuildSettings.derivedDataPath
-
+        let xcodeProjectBuildSettings = xcodeProjectBaseInfo.xcodeProjectBuildSettings
         let buildSettingsMap = try await settingsLoader.loadBuildSettingsMap(
             rootURL: rootURL,
             targets: xcodeProjectBaseInfo.xcodeTargets,
             configuration: "Debug",
-            xcodeProjectBuildSettings: xcodeProjectBaseInfo.xcodeProjectBuildSettings,
+            xcodeProjectBuildSettings: xcodeProjectBuildSettings,
             customFlags: [
-                "SYMROOT=" + derivedDataPath.appendingPathComponent("Build/Products").path,
-                "OBJROOT=" + derivedDataPath.appendingPathComponent("Build/Intermediates.noindex")
-                    .path,
-                "SDK_STAT_CACHE_DIR=" + derivedDataPath.deletingLastPathComponent().path,
+                "SYMROOT=" + xcodeProjectBuildSettings.symRoot.path,
+                "OBJROOT=" + xcodeProjectBuildSettings.objRoot.path,
+                "SDK_STAT_CACHE_DIR=" + xcodeProjectBuildSettings.sdkStatCacheDir.path,
                 // "BUILD_DIR=/tmp/__A__/Build/Products"
                 // "BUILD_ROOT=/tmp/__A__/Build/Products"
             ]
@@ -233,35 +236,6 @@ public actor XcodeProjectManager {
         )
         self.xcodeProjectInfo = xcodeProjectInfo
         return xcodeProjectInfo
-    }
-
-    /// Load build settings with correct parameters based on project type
-    private func loadBuildSettings(
-        rootURL: URL,
-        projectLocation: XcodeProjectLocation,
-        scheme: XcodeScheme,
-        configuration: String = "Debug",
-        settingsLoader: XcodeSettingsLoader
-    ) async throws -> [XcodeBuildSettings] {
-        switch projectLocation {
-        case .explicitWorkspace:
-            try await settingsLoader.loadBuildSettings(
-                rootURL: rootURL,
-                project: .workspace(
-                    workspaceURL: projectLocation.workspaceURL,
-                    scheme: scheme.name
-                ),
-            )
-        case let .implicitWorkspace(projectURL: projectURL, _), let .standaloneProject(projectURL):
-            // For project, use target directly
-            try await settingsLoader.loadBuildSettings(
-                rootURL: rootURL,
-                project: .project(
-                    projectURL: projectURL,
-                    buildMode: .scheme(scheme.name)
-                )
-            )
-        }
     }
 
     // MARK: - Build
@@ -327,6 +301,6 @@ extension XcodeProjectManager {
 
     /// Load targets from a single project using XcodeProj
     private func loadTargetsFromProject(projectURL: URL) async throws -> [XcodeTarget] {
-        try loadTargetsFromXcodeProj(projectPath: projectURL)
+        try loadTargetsFromXcodeProj(projectURL: projectURL)
     }
 }

@@ -10,7 +10,9 @@ extension XcodeProjectManager: @preconcurrency ProjectManager {
 
     public func updateBuildGraph() async {}
 
-    public func buildIndex(for targets: [String]) async {}
+    public func buildIndex(for targets: [String]) async {
+        await startBuild(targets: targets)
+    }
 
     public func startBuild(targets: [String]) async {}
 
