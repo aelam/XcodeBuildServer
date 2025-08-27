@@ -13,44 +13,42 @@ import XcodeProj
 /// Project Level buildSettings
 public struct XcodeProjectProjectBuildSettings: Sendable, Codable, Hashable {
     public let derivedDataPath: URL
-    public let indexStoreURL: URL
-    public let indexDatabaseURL: URL
-    public let symRoot: URL
-    public let objRoot: URL
-    public let sdkStatCacheDir: URL // SDK_STAT_CACHE_DIR
-    public let sdkStatCachePath: URL // SDK_STAT_CACHE_PATH
-    public let moduleCachePath: URL // parent of derivedDataPath
 
-    public init(derivedDataPath: URL) {
-        self.derivedDataPath = derivedDataPath
-        self.indexStoreURL = derivedDataPath.appendingPathComponent("Index.noIndex/DataStore")
-        self.indexDatabaseURL = derivedDataPath.appendingPathComponent("IndexDatabase.noIndex")
-        self.symRoot = derivedDataPath.appendingPathComponent("Build/Products")
-        self.objRoot = derivedDataPath.appendingPathComponent("Build/Intermediates.noindex")
-        self.sdkStatCacheDir = derivedDataPath.deletingLastPathComponent()
-        self.sdkStatCachePath = sdkStatCacheDir.appendingPathComponent("SDKStatCache")
-        self.moduleCachePath = derivedDataPath.deletingLastPathComponent()
+    public var indexStoreURL: URL {
+        derivedDataPath.appendingPathComponent("Index.noIndex/DataStore")
+    }
+
+    public var indexDatabaseURL: URL {
+        derivedDataPath.appendingPathComponent("IndexDatabase.noIndex")
+    }
+
+    public var symRoot: URL {
+        derivedDataPath.appendingPathComponent("Build/Products")
+    }
+
+    public var objRoot: URL {
+        derivedDataPath.appendingPathComponent("Build/Intermediates.noindex")
+    }
+
+    public var sdkStatCacheDir: URL { // SDK_STAT_CACHE_DIR
+        derivedDataPath.deletingLastPathComponent()
+    }
+
+    public var sdkStatCachePath: URL { // SDK_STAT_CACHE_PATH
+        sdkStatCacheDir.appendingPathComponent("SDKStatCache")
+    }
+
+    public var moduleCachePath: URL { // parent of derivedDataPath
+        derivedDataPath.deletingLastPathComponent()
             .appendingPathComponent("ModuleCache.noindex")
     }
 
-    public init(
-        derivedDataPath: URL,
-        indexStoreURL: URL,
-        indexDatabaseURL: URL,
-        symRoot: URL,
-        objRoot: URL,
-        sdkStatCacheDir: URL,
-        sdkStatCachePath: URL,
-        moduleCachePath: URL
-    ) {
+    public var buildDir: URL {
+        derivedDataPath.appendingPathComponent("Build/Products")
+    }
+
+    public init(derivedDataPath: URL) {
         self.derivedDataPath = derivedDataPath
-        self.indexStoreURL = indexStoreURL
-        self.indexDatabaseURL = indexDatabaseURL
-        self.symRoot = symRoot
-        self.objRoot = objRoot
-        self.sdkStatCacheDir = sdkStatCacheDir
-        self.sdkStatCachePath = sdkStatCachePath
-        self.moduleCachePath = moduleCachePath
     }
 
     /// Custom flags for `xcodebuild -project {project} -target {target} SYSROOT={SYSROOT} -showBuildSettings -json`
