@@ -2,26 +2,14 @@ import Foundation
 import XcodeProj
 
 /// 通用 Xcode Build Setting 解析器。支持递归查找、$(inherited) 合并、自定义默认值。
-public class BuildSettingResolver {
-    public let project: PBXProject
-    public let target: PBXTarget
-    public let configuration: XCBuildConfiguration?
-    public var customDefaults: [String: String]
-
-    public init(
-        project: PBXProject,
-        target: PBXTarget,
-        configuration: XCBuildConfiguration?,
-        customDefaults: [String: String] = [:]
-    ) {
-        self.project = project
-        self.target = target
-        self.configuration = configuration
-        self.customDefaults = customDefaults
-    }
+struct BuildSettingResolver {
+    let project: PBXProject
+    let target: PBXTarget
+    let configuration: XCBuildConfiguration?
+    let customDefaults: [String: String]
 
     /// 主入口：解析任意 build setting key 的最终值（$(inherited) 递归合并）
-    public func resolve(forKey key: String) -> String? {
+    func resolve(forKey key: String) -> String? {
         // 1. 配置级别
         let configVal = configuration?.buildSettings[key] as? String
         // 2. Target级别
@@ -68,7 +56,7 @@ public class BuildSettingResolver {
     }
 
     /// 可扩展的全局默认值
-    public static func defaultFor(key: String) -> String? {
+    static func defaultFor(key: String) -> String? {
         switch key {
         case "SDKROOT": "iphonesimulator"
         case "ARCHS": "arm64"

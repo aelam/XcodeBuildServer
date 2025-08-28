@@ -70,14 +70,6 @@ struct BuildSettingsResolver {
     let xcodeProjectBuildSettings: XcodeProjectProjectBuildSettings
     let xcodeProj: XcodeProj
 
-    init(
-        xcodeProjectBuildSettings: XcodeProjectProjectBuildSettings,
-        xcodeProj: XcodeProj
-    ) {
-        self.xcodeProjectBuildSettings = xcodeProjectBuildSettings
-        self.xcodeProj = xcodeProj
-    }
-
     func value(
         for key: String,
         configuration: String = "Debug",
