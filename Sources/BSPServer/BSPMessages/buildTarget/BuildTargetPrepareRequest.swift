@@ -1,12 +1,11 @@
 //
-import JSONRPCConnection
-
 //  BuildTargetPrepareRequest.swift
 //
 //  Copyright © 2024 Wang Lun.
 //
 
 import Foundation
+import JSONRPCConnection
 
 /// The build target prepare request is sent from the client to the server to
 /// prepare build targets for background indexing. This method is typically

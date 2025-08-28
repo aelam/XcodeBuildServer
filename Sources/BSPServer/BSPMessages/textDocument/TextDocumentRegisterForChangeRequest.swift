@@ -1,12 +1,8 @@
 //
-import JSONRPCConnection
-
 //  TextDocumentRegisterForChangeRequest.swift
 //
 //  Copyright © 2024 Wang Lun.
 //
-
-import Foundation
 
 /**
  {
@@ -19,6 +15,9 @@ import Foundation
  "jsonrpc":"2.0"
  }
  */
+
+import Foundation
+import JSONRPCConnection
 
 public struct TextDocumentRegisterForChangeRequest: ContextualRequestType, Sendable {
     public typealias RequiredContext = BSPServerService

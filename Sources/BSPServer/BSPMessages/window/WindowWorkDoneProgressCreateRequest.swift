@@ -1,11 +1,11 @@
 //
-import JSONRPCConnection
-
 //  WindowWorkDoneProgressCreateRequest.swift
 //  XcodeBuildServer
 //
 //  Created by ST22956 on 2024/11/23.
 //
+
+import JSONRPCConnection
 
 public struct WindowWorkDoneProgressCreateRequest: ContextualRequestType, Sendable {
     public typealias RequiredContext = BSPServerService

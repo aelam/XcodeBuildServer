@@ -1,6 +1,4 @@
 //
-import JSONRPCConnection
-
 //  WorkspaceWaitForBuildSystemUpdates.swift
 //
 //  Copyright © 2024 Wang Lun.
@@ -8,6 +6,8 @@ import JSONRPCConnection
 
 /// https://github.com/swiftlang/sourcekit-lsp/blob/87b928540200708a198d829c4ad1bac37b1a5d69/Contributor%20Documentation/BSP%20Extensions.md
 ///
+
+import JSONRPCConnection
 
 public struct WorkspaceWaitForBuildSystemUpdatesRequest: ContextualRequestType, Sendable {
     public typealias RequiredContext = BSPServerService

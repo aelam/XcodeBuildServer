@@ -1,11 +1,11 @@
 //
-import JSONRPCConnection
-
 //  BuildTargetDidChangeNotification.swift
 //  XcodeBuildServer
 //
 //  Created by ST22956 on 2024/11/23.
 //
+
+import JSONRPCConnection
 
 struct BuildTargetDidChangeNotification: ContextualNotificationType, Sendable {
     typealias RequiredContext = BSPServerService

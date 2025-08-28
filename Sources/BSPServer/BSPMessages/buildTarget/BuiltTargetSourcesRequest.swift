@@ -1,6 +1,4 @@
 //
-import JSONRPCConnection
-
 //  BuiltTargetSourcesRequest.swift
 //
 //  Copyright © 2024 Wang Lun.
@@ -24,6 +22,7 @@ import JSONRPCConnection
 /// ```
 
 import Foundation
+import JSONRPCConnection
 import XcodeProjectManagement
 
 struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {

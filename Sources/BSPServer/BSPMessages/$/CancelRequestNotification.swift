@@ -1,11 +1,10 @@
 //
-import JSONRPCConnection
-
 //  CancelRequestNotification.swift
 //
 //  Copyright 2024 Wang Lun.
 //
 
+import JSONRPCConnection
 import Logger
 
 public struct CancelRequestNotification: ContextualNotificationType, Sendable {

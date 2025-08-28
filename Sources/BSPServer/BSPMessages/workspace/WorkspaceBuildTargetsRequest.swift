@@ -1,6 +1,4 @@
 //
-import JSONRPCConnection
-
 //  WorkspaceBuildTargetsRequest.swift
 //
 //  Copyright © 2024 Wang Lun.
@@ -11,7 +9,8 @@ import JSONRPCConnection
 ///   {
 /// "method":"workspace/buildTargets","id":2,"jsonrpc":"2.0","params":{}}
 
-///
+import JSONRPCConnection
+
 public struct WorkspaceBuildTargetsRequest: ContextualRequestType, Sendable {
     public typealias RequiredContext = BSPServerService
 
