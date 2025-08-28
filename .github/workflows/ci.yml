@@ -48,6 +48,7 @@ jobs:
     - name: Run Tests
       run: |
         echo "CI environment variable: $CI"
+        xcodebuild -version
         echo "Running tests in CI mode..."
         swift test --enable-code-coverage
       env:
