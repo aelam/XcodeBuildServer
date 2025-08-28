@@ -26,11 +26,11 @@ struct XcodeProjectManagerTests {
             )
         )
         try await projectManager.initialize()
-        let project = try await projectManager.resolveProjectInfo()
+        let project = try await projectManager.resolveXcodeProjectInfo()
 
-        #expect(project.rootURL == projectFolder)
+        #expect(project.baseProjectInfo.rootURL == projectFolder)
 
-        switch project.projectLocation {
+        switch project.baseProjectInfo.projectLocation {
         case let .explicitWorkspace(url):
             #expect(url.lastPathComponent == "Hello.xcworkspace")
         case .implicitWorkspace:
@@ -38,8 +38,7 @@ struct XcodeProjectManagerTests {
         case .standaloneProject:
             Issue.record("Expected explicit workspace, got standalone project")
         }
-        #expect(project.buildSettingsForIndex.count == 3)
-        #expect(project.targets.count == 3)
+        #expect(project.xcodeBuildSettingsForIndex.keys.count == 3)
     }
 
     @Test
@@ -59,11 +58,11 @@ struct XcodeProjectManagerTests {
             )
         )
         try await projectManager.initialize()
-        let projectInfo = try await projectManager.resolveProjectInfo()
+        let projectInfo = try await projectManager.resolveXcodeProjectInfo()
 
-        #expect(projectInfo.rootURL == projectFolder)
+        #expect(projectInfo.baseProjectInfo.rootURL == projectFolder)
 
-        switch projectInfo.projectLocation {
+        switch projectInfo.baseProjectInfo.projectLocation {
         case .explicitWorkspace:
             Issue.record("Expected implicit project workspace, got explicit workspace")
         case let .implicitWorkspace(_, url):
@@ -71,6 +70,6 @@ struct XcodeProjectManagerTests {
         case .standaloneProject:
             Issue.record("Expected implicit project workspace, got standalone project")
         }
-        #expect(projectInfo.buildSettingsForIndex.count == 3)
+        #expect(projectInfo.xcodeBuildSettingsForIndex.keys.count == 3)
     }
 }

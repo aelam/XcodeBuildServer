@@ -118,23 +118,33 @@ let package = Package(
             dependencies: ["Core"]
         ),
         .testTarget(
-            name: "BSPServerTests",
-            dependencies: ["BSPServer"],
-            resources: [.copy("Resources")]
-        ),
-        .testTarget(
             name: "SwiftPMProjectManagerProviderTests",
-            dependencies: ["SwiftPMProjectManagerProvider"]
-        ),
-        .testTarget(
-            name: "XcodeProjectManagerProviderTests",
-            dependencies: ["XcodeProjectManagerProvider"]
+            dependencies: [
+                "SwiftPMProjectManagerProvider"
+            ]
         ),
         .testTarget(
             name: "XcodeProjectManagementTests",
-            dependencies: [],
+            dependencies: [
+                "XcodeProjectManagement"
+            ],
             resources: [
                 .copy("README.md"),
+                .copy("Resources")
+            ]
+        ),
+        .testTarget(
+            name: "XcodeProjectManagerProviderTests",
+            dependencies: [
+                "XcodeProjectManagerProvider"
+            ]
+        ),
+        .testTarget(
+            name: "BSPServerTests",
+            dependencies: [
+                "BSPServer"
+            ],
+            resources: [
                 .copy("Resources")
             ]
         ),

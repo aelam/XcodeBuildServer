@@ -12,7 +12,7 @@ import XcodeProj
 
 /// Project Level buildSettings
 public struct XcodeProjectProjectBuildSettings: Sendable, Codable, Hashable {
-    public let derivedDataPath: URL
+    public let derivedDataPath: URL // @see PathHash.derivedDataFullPath
 
     public var indexStoreURL: URL {
         derivedDataPath.appendingPathComponent("Index.noIndex/DataStore")

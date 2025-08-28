@@ -83,6 +83,8 @@ extension XcodeProjectManager {
             print(buildConfiguration.buildSettings)
         }
 
+        project.pbxproj.buildConfigurations.forEach { print($0.buildSettings) }
+
         for target in project.pbxproj.nativeTargets {
             let buildSettings = target.buildConfigurationList?.buildConfigurations.first?.buildSettings
             let SDKROOT: String = buildSettings?["SDKROOT"] as? String ?? "iphonesimulator"

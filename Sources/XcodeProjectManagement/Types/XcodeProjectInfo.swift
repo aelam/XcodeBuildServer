@@ -12,16 +12,13 @@ public struct XcodeProjectBaseInfo: Sendable, Codable {
 
 public struct XcodeProjectInfo: Sendable, Codable {
     public let baseProjectInfo: XcodeProjectBaseInfo
-//    public let buildSettingsList: [XcodeBuildSettings]
     public let xcodeBuildSettingsForIndex: XcodeBuildSettingsForIndex
 
     public init(
         baseProjectInfo: XcodeProjectBaseInfo,
-//        buildSettingsList: [XcodeBuildSettings],
         xcodeBuildSettingsForIndex: XcodeBuildSettingsForIndex
     ) {
         self.baseProjectInfo = baseProjectInfo
-//        self.buildSettingsList = buildSettingsList
         self.xcodeBuildSettingsForIndex = xcodeBuildSettingsForIndex
     }
 
