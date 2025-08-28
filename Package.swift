@@ -143,9 +143,6 @@ let package = Package(
             name: "BSPServerTests",
             dependencies: [
                 "BSPServer"
-            ],
-            resources: [
-                .copy("Resources")
             ]
         ),
     ]
