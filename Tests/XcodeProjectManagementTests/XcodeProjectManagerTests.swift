@@ -11,9 +11,11 @@ import Testing
 struct XcodeProjectManagerTests {
     @Test
     func loadProjectFromWorkspace() async throws {
-        let projectFolder = Bundle.module.resourceURL!
-            .appendingPathComponent("DemoProjects")
-            .appendingPathComponent("HelloWorkspace")
+        let projectFolder = Bundle.module.url(
+            forResource: "HelloWorkspace",
+            withExtension: nil,
+            subdirectory: "Resources/DemoProjects"
+        )!
 
         let toolchain = XcodeToolchain()
         let projectManager = XcodeProjectManager(
@@ -42,10 +44,11 @@ struct XcodeProjectManagerTests {
 
     @Test
     func loadProjectFromXcodeproj() async throws {
-        let projectFolder = Bundle.module.resourceURL!
-            .appendingPathComponent("DemoProjects")
-            .appendingPathComponent("HelloProject")
-
+        let projectFolder = Bundle.module.url(
+            forResource: "HelloProject",
+            withExtension: nil,
+            subdirectory: "Resources/DemoProjects"
+        )!
         let toolchain = XcodeToolchain()
         let projectManager = XcodeProjectManager(
             rootURL: projectFolder,
