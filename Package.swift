@@ -84,9 +84,9 @@ let package = Package(
         .target(
             name: "BSPServer",
             dependencies: [
-                "Core",
-                "JSONRPCConnection",
                 "Logger",
+                "JSONRPCConnection",
+                "Core",
                 "SwiftPMProjectManagerProvider",
                 "XcodeProjectManagerProvider"
             ]

@@ -39,6 +39,9 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-spm-
     
+    - name: Resolve Dependencies
+      run: swift package resolve
+
     - name: Build
       run: swift build -v
       
