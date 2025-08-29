@@ -3,7 +3,7 @@ import Foundation
 public struct XcodeProjectBaseInfo: Sendable, Codable {
     public let rootURL: URL
     public let projectLocation: XcodeProjectLocation
-    public let xcodeProjectBuildSettings: XcodeProjectProjectBuildSettings
+    public let xcodeGlobalSettings: XcodeGlobalSettings
     public let importantScheme: XcodeScheme
     public let xcodeTargets: [XcodeTarget]
     public let schemes: [XcodeScheme]

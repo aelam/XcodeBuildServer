@@ -13,7 +13,6 @@ enum SourceFileLister {
             return SourceMap()
         }
         let sourceRoot = xcodeProjPath.parent()
-
         var sourceMap = SourceMap()
 
         for target in xcodeProj.pbxproj.nativeTargets where targets.contains(target.name) {
@@ -26,6 +25,7 @@ enum SourceFileLister {
                     xcodeProj: xcodeProj,
                     sourceRoot: sourceRoot
                 )
+                continue
             }
 
             // 旧结构：SourcesBuildPhase

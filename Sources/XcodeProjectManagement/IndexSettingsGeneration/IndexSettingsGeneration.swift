@@ -6,7 +6,7 @@ import XcodeProj
 enum IndexSettingsGeneration {
     static func generate(
         rootURL: URL,
-        xcodeProjectBuildSettings: XcodeProjectProjectBuildSettings,
+        xcodeGlobalSettings: XcodeGlobalSettings,
         buildSettingsMap: XcodeBuildSettingsMap
     ) -> XcodeBuildSettingsForIndex {
         // sourceMap: [targetIdentifier: [filePath]]
@@ -19,7 +19,7 @@ enum IndexSettingsGeneration {
             // Create target-level configuration once per target
             let targetBuildSettings = TargetBuildSettings(
                 buildSettings: settings,
-                xcodeProjectBuildSettings: xcodeProjectBuildSettings
+                xcodeGlobalSettings: xcodeGlobalSettings
             )
 
             // 获取该 target 的所有 source file 路径

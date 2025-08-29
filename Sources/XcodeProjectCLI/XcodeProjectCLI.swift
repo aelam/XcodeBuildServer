@@ -40,7 +40,6 @@ struct XcodeProjectCLI {
             let timestamp = Date()
             print("Loading Xcode project at: \(timestamp)")
             print("Loading Xcode project from: \(projectPath)")
-            // let project = try await projectManager.resolveXcodeProjectInfo()
             print("✓ Project loaded successfully")
             guard let baseProjectInfo = await projectManager.xcodeProjectBaseInfo else {
                 return
@@ -70,11 +69,11 @@ struct XcodeProjectCLI {
             }
 
             // Show indexing paths
-            let xcodeProjectBuildSettings = baseProjectInfo.xcodeProjectBuildSettings
+            let xcodeGlobalSettings = baseProjectInfo.xcodeGlobalSettings
             print("\n✅🗂️ Indexing Information:")
-            print("  - Index Store URL: \(xcodeProjectBuildSettings.indexStoreURL.path)")
-            print("  - Index Database URL: \(xcodeProjectBuildSettings.indexDatabaseURL.path)")
-            print("  - Derived Data Path: \(xcodeProjectBuildSettings.derivedDataPath.path)")
+            print("  - Index Store URL: \(xcodeGlobalSettings.indexStoreURL.path)")
+            print("  - Index Database URL: \(xcodeGlobalSettings.indexDatabaseURL.path)")
+            print("  - Derived Data Path: \(xcodeGlobalSettings.derivedDataPath.path)")
             print("  - Configuration: \(baseProjectInfo.configuration)")
             let endTimestamp = Date()
             print("Loading time: \(endTimestamp.timeIntervalSince(timestamp)) seconds")

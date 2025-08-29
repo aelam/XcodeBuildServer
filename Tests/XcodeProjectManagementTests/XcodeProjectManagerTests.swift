@@ -28,11 +28,13 @@ struct XcodeProjectManagerTests {
             )
         )
         try await projectManager.initialize()
-        let project = try await projectManager.resolveXcodeProjectInfo()
+        guard let xcodeProjectBaseInfo = await projectManager.xcodeProjectBaseInfo else {
+            throw NSError(domain: "XcodeProjectManagerTests", code: 1, userInfo: nil)
+        }
 
-        #expect(project.baseProjectInfo.rootURL == projectFolder)
+        #expect(xcodeProjectBaseInfo.rootURL == projectFolder)
 
-        switch project.baseProjectInfo.projectLocation {
+        switch xcodeProjectBaseInfo.projectLocation {
         case let .explicitWorkspace(url):
             #expect(url.lastPathComponent == "Hello.xcworkspace")
         case .implicitWorkspace:
@@ -60,11 +62,12 @@ struct XcodeProjectManagerTests {
             )
         )
         try await projectManager.initialize()
-        let projectInfo = try await projectManager.resolveXcodeProjectInfo()
+        guard let xcodeProjectBaseInfo = await projectManager.xcodeProjectBaseInfo else {
+            throw NSError(domain: "XcodeProjectManagerTests", code: 1, userInfo: nil)
+        }
+        #expect(xcodeProjectBaseInfo.rootURL == projectFolder)
 
-        #expect(projectInfo.baseProjectInfo.rootURL == projectFolder)
-
-        switch projectInfo.baseProjectInfo.projectLocation {
+        switch xcodeProjectBaseInfo.projectLocation {
         case .explicitWorkspace:
             Issue.record("Expected implicit project workspace, got explicit workspace")
         case let .implicitWorkspace(_, url):

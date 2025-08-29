@@ -9,7 +9,7 @@ struct TargetBuildSettings {
     var buildSettings: [String: String] { buildSettingsPair }
 
     // Project-level config
-    let xcodeProjectBuildSettings: XcodeProjectProjectBuildSettings
+    let xcodeGlobalSettings: XcodeGlobalSettings
 
     // Target-level computed properties (cached)
     let moduleName: String
@@ -55,10 +55,10 @@ struct TargetBuildSettings {
 
     init(
         buildSettings: XcodeBuildSettings,
-        xcodeProjectBuildSettings: XcodeProjectProjectBuildSettings
+        xcodeGlobalSettings: XcodeGlobalSettings
     ) {
         self.buildSettingsPair = buildSettings.buildSettings
-        self.xcodeProjectBuildSettings = xcodeProjectBuildSettings
+        self.xcodeGlobalSettings = xcodeGlobalSettings
 
         // Target-level properties (read once, cached)
         self.moduleName = buildSettingsPair["PRODUCT_MODULE_NAME"] ?? buildSettings.target
@@ -108,12 +108,12 @@ struct TargetBuildSettings {
         self.generalBasicFlags = Self.buildGeneralBasicFlags(
             sdkRoot: sdkRoot,
             targetTriple: targetTriple,
-            xcodeProjectBuildSettings: xcodeProjectBuildSettings
+            xcodeGlobalSettings: xcodeGlobalSettings
         )
 
         self.generalWorkingDirectoryFlags = Self.buildWorkingDirectoryFlags(
             buildSettingsPair: buildSettingsPair,
-            xcodeProjectBuildSettings: xcodeProjectBuildSettings
+            xcodeGlobalSettings: xcodeGlobalSettings
         )
 
         self.generalFrameworkPathFlags = ["-F\(configurationBuildDir.path)"]
@@ -146,8 +146,8 @@ struct TargetBuildSettings {
     // Module and cache flags
     var moduleCacheFlags: [String] {
         [
-            "-module-cache-path", xcodeProjectBuildSettings.moduleCachePath.path,
-            "-Xcc", "-fmodules-cache-path=\(xcodeProjectBuildSettings.moduleCachePath.path)"
+            "-module-cache-path", xcodeGlobalSettings.moduleCachePath.path,
+            "-Xcc", "-fmodules-cache-path=\(xcodeGlobalSettings.moduleCachePath.path)"
         ]
     }
 
@@ -157,7 +157,7 @@ struct TargetBuildSettings {
             "-sdk", sdkRoot,
             "-target", targetTriple,
             "-g",
-            "-index-store-path", xcodeProjectBuildSettings.indexStoreURL.path
+            "-index-store-path", xcodeGlobalSettings.indexStoreURL.path
         ] + moduleCacheFlags
     }
 
@@ -289,21 +289,21 @@ struct TargetBuildSettings {
     private static func buildGeneralBasicFlags(
         sdkRoot: String,
         targetTriple: String,
-        xcodeProjectBuildSettings: XcodeProjectProjectBuildSettings
+        xcodeGlobalSettings: XcodeGlobalSettings
     ) -> [String] {
         [
             "-sdk", sdkRoot,
             "-target", targetTriple,
             "-g",
-            "-index-store-path", xcodeProjectBuildSettings.indexStoreURL.path,
-            "-module-cache-path", xcodeProjectBuildSettings.moduleCachePath.path,
-            "-fmodules-cache-path", xcodeProjectBuildSettings.moduleCachePath.path
+            "-index-store-path", xcodeGlobalSettings.indexStoreURL.path,
+            "-module-cache-path", xcodeGlobalSettings.moduleCachePath.path,
+            "-fmodules-cache-path", xcodeGlobalSettings.moduleCachePath.path
         ]
     }
 
     private static func buildWorkingDirectoryFlags(
         buildSettingsPair: [String: String],
-        xcodeProjectBuildSettings: XcodeProjectProjectBuildSettings
+        xcodeGlobalSettings: XcodeGlobalSettings
     ) -> [String] {
         guard let projectDir = buildSettingsPair["PROJECT_DIR"] else {
             return []

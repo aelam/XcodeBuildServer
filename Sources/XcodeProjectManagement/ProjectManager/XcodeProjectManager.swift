@@ -10,7 +10,7 @@ import PathKit
 import XcodeProj
 
 /// Project Level buildSettings
-public struct XcodeProjectProjectBuildSettings: Sendable, Codable, Hashable {
+public struct XcodeGlobalSettings: Sendable, Codable, Hashable {
     public let derivedDataPath: URL // @see PathHash.derivedDataFullPath
 
     public var indexStoreURL: URL {
@@ -48,18 +48,6 @@ public struct XcodeProjectProjectBuildSettings: Sendable, Codable, Hashable {
 
     public init(derivedDataPath: URL) {
         self.derivedDataPath = derivedDataPath
-    }
-
-    /// Custom flags for `xcodebuild -project {project} -target {target} SYSROOT={SYSROOT} -showBuildSettings -json`
-    public var customFlagsMap: [String: String] {
-        [
-            "SYMROOT": derivedDataPath.path,
-            // "DERIVED_DATA_PATH": derivedDataPath.path, // doesn't work
-        ]
-    }
-
-    public var customFlags: [String] {
-        customFlagsMap.map { "\($0.key)=\($0.value)" }
     }
 }
 
@@ -165,7 +153,7 @@ public actor XcodeProjectManager {
 
         // Get project-level buildSettings without `xcodebuild`
         let derivedDataPath = PathHash.derivedDataFullPath(for: projectLocation.workspaceURL.path)
-        let xcodeProjectBuildSettings = XcodeProjectProjectBuildSettings(derivedDataPath: derivedDataPath)
+        let xcodeGlobalSettings = XcodeGlobalSettings(derivedDataPath: derivedDataPath)
 
         // Load containers for workspace projects to get actual targets
         let actualTargets = try await loadActualTargets(
@@ -187,7 +175,7 @@ public actor XcodeProjectManager {
         let xcodeProjectBaseInfo = XcodeProjectBaseInfo(
             rootURL: rootURL,
             projectLocation: projectLocation,
-            xcodeProjectBuildSettings: xcodeProjectBuildSettings,
+            xcodeGlobalSettings: xcodeGlobalSettings,
             importantScheme: importantScheme,
             xcodeTargets: actualTargets,
             schemes: schemes
@@ -210,16 +198,16 @@ public actor XcodeProjectManager {
 //            fatalError("XcodeProjectInfo cannot be resolved before initialize()")
 //        }
 //
-//        let xcodeProjectBuildSettings = xcodeProjectBaseInfo.xcodeProjectBuildSettings
+//        let xcodeGlobalSettings = xcodeProjectBaseInfo.xcodeGlobalSettings
 //        let buildSettingsMap = try await settingsLoader.loadBuildSettingsMap(
 //            rootURL: rootURL,
 //            targets: xcodeProjectBaseInfo.xcodeTargets,
 //            configuration: "Debug",
-//            xcodeProjectBuildSettings: xcodeProjectBuildSettings,
+//            xcodeGlobalSettings: xcodeGlobalSettings,
 //            customFlags: [
-//                "SYMROOT=" + xcodeProjectBuildSettings.symRoot.path,
-//                "OBJROOT=" + xcodeProjectBuildSettings.objRoot.path,
-//                "SDK_STAT_CACHE_DIR=" + xcodeProjectBuildSettings.sdkStatCacheDir.path,
+//                "SYMROOT=" + xcodeGlobalSettings.symRoot.path,
+//                "OBJROOT=" + xcodeGlobalSettings.objRoot.path,
+//                "SDK_STAT_CACHE_DIR=" + xcodeGlobalSettings.sdkStatCacheDir.path,
 //                // "BUILD_DIR=/tmp/__A__/Build/Products"
 //                // "BUILD_ROOT=/tmp/__A__/Build/Products"
 //            ]
@@ -227,7 +215,7 @@ public actor XcodeProjectManager {
 //
 //        let buildSettingsForIndex = IndexSettingsGeneration.generate(
 //            rootURL: rootURL,
-//            xcodeProjectBuildSettings: xcodeProjectBaseInfo.xcodeProjectBuildSettings,
+//            xcodeGlobalSettings: xcodeProjectBaseInfo.xcodeGlobalSettings,
 //            buildSettingsMap: buildSettingsMap
 //        )
 //

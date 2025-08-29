@@ -119,7 +119,7 @@ struct ClangFileBuildSettings: SourceFileBuildConfigurable {
             "-fmodules-prune-after=345600",
             // "-fno-cxx-modules",
             "-gmodules",
-            "-fmodules-cache-path=\(targetBuildSettings.xcodeProjectBuildSettings.moduleCachePath.path)",
+            "-fmodules-cache-path=\(targetBuildSettings.xcodeGlobalSettings.moduleCachePath.path)",
             "-Xclang", "-fmodule-format=raw",
             "-fmodules-validate-system-headers"
         ]

@@ -37,7 +37,7 @@ public extension XcodeProjectManager {
                 projectURL: projectURL,
                 scheme: importantScheme,
                 configuration: projectInfo.baseProjectInfo.configuration,
-                derivedDataPath: projectInfo.baseProjectInfo.xcodeProjectBuildSettings.derivedDataPath,
+                derivedDataPath: projectInfo.baseProjectInfo.xcodeGlobalSettings.derivedDataPath,
                 rootURL: projectInfo.baseProjectInfo.rootURL
             )
         }

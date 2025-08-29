@@ -44,7 +44,7 @@ public extension XcodeSettingsLoader {
         rootURL: URL,
         targets: [XcodeTarget],
         configuration: String? = "Debug",
-        xcodeProjectBuildSettings: XcodeProjectProjectBuildSettings,
+        xcodeGlobalSettings: XcodeGlobalSettings,
         customFlags: [String] = []
     ) async throws -> XcodeBuildSettingsMap {
         try await withThrowingTaskGroup(of: XcodeBuildSettingsMap.self) { taskGroup in
