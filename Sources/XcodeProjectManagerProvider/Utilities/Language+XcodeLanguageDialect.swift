@@ -1,3 +1,4 @@
+import BSPTypes
 import XcodeProjectManagement
 
 extension Language {

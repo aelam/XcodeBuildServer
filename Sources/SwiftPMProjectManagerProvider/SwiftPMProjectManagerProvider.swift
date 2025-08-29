@@ -5,7 +5,7 @@
 //  Copyright © 2024 Wang Lun.
 //
 
-import Core
+import BSPTypes
 import Foundation
 
 public struct SwiftPMProjectManagerProvider: ProjectManagerProvider {

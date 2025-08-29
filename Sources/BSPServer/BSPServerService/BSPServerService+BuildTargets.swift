@@ -4,7 +4,7 @@
 //  Copyright © 2024 Wang Lun.
 //
 
-import Core
+import BSPTypes
 import Foundation
 import JSONRPCConnection
 import Logger
@@ -29,7 +29,7 @@ extension BSPServerService {
     }
 
     /// 为索引构建目标（BSP 协议适配）
-    func buildTargetForIndex(targets: [BuildTargetIdentifier]) async throws {
+    func buildTargetForIndex(targets: [BSPBuildTargetIdentifier]) async throws {
         guard let projectManager else {
             throw BuildServerError.invalidConfiguration("Project not initialized")
         }

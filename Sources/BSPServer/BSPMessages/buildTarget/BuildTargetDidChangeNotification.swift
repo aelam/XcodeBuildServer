@@ -5,6 +5,7 @@
 //  Created by ST22956 on 2024/11/23.
 //
 
+import BSPTypes
 import JSONRPCConnection
 
 struct BuildTargetDidChangeNotification: ContextualNotificationType, Sendable {
@@ -53,7 +54,7 @@ struct BuildTargetDidChangeNotification: ContextualNotificationType, Sendable {
 
 public struct BuildTargetEvent: Codable, Hashable, Sendable {
     /// The identifier for the changed build target.
-    public let target: BuildTargetIdentifier
+    public let target: BSPBuildTargetIdentifier
 
     /// The kind of change for this build target.
     public let kind: BuildTargetEventKind?

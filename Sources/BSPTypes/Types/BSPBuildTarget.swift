@@ -73,7 +73,6 @@ public struct BSPBuildTarget: Codable, Hashable, Sendable {
 /// Clients should not infer metadata out of the URI structure such as the path or query parameters, use `BuildTarget`
 /// instead.
 ///
-public typealias BSPBuildTargetIdentifier = Core.BuildTargetIdentifier
 
 /// A list of predefined tags that can be used to categorize build targets.
 public struct BuildTargetTag: Codable, Hashable, RawRepresentable, Sendable {
@@ -201,3 +200,14 @@ public struct SourceKitBuildTarget: LSPAnyCodable, Codable {
         return .dictionary(result)
     }
 }
+
+public struct BuildTargetIdentifier: Codable, Hashable, Sendable {
+    /// The target's Uri
+    public var uri: URI
+
+    public init(uri: URI) {
+        self.uri = uri
+    }
+}
+
+public typealias BSPBuildTargetIdentifier = BuildTargetIdentifier

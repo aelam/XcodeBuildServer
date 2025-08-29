@@ -5,19 +5,9 @@ import XcodeProj
 enum SourceFileLister {
     // MARK: - SourceFiles
 
-    enum SourceItemType: Hashable {
-        case file
-        case directory
-    }
-
-    struct SourceItem: Hashable {
-        let path: URL
-        let itemType: SourceItemType
-    }
-
     typealias SourceMap = [String: [SourceItem]]
 
-    private static func loadSourceFiles(for xcodeProj: XcodeProj, targets: Set<String>) -> SourceMap {
+    static func loadSourceFiles(for xcodeProj: XcodeProj, targets: Set<String>) -> SourceMap {
         guard let xcodeProjPath = xcodeProj.path else {
             print("Cannot open Xcode project at \(xcodeProj.path?.string ?? "unknown path")")
             return SourceMap()
@@ -62,7 +52,7 @@ enum SourceFileLister {
             let fullFolderPath = sourceRoot + Path(folderPath)
             return SourceItem(
                 path: URL(filePath: fullFolderPath.string),
-                itemType: .directory
+                itemKind: .directory
             )
         }
     }
@@ -83,7 +73,7 @@ enum SourceFileLister {
                     }
                 }
             }.map { fullPath in
-                SourceItem(path: URL(filePath: fullPath), itemType: .file)
+                SourceItem(path: URL(filePath: fullPath), itemKind: .file)
             }
     }
 }

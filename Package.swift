@@ -8,14 +8,17 @@ let package = Package(
     platforms: [.macOS(.v13)],
     products: [
         // Base
-        .library(name: "Core", targets: ["Core"]),
+        // .library(name: "Core", targets: ["Core"]),
         .library(name: "JSONRPCConnection", targets: ["JSONRPCConnection"]),
         .library(name: "Logger", targets: ["Logger"]),
-        .library(name: "BSPServer", targets: ["BSPServer"]),
+        .library(name: "BSPTypes", targets: ["BSPTypes"]),
 
         // ProjectManagerProviders
         .library(name: "SwiftPMProjectManagerProvider", targets: ["SwiftPMProjectManagerProvider"]),
         .library(name: "XcodeProjectManagerProvider", targets: ["XcodeProjectManagerProvider"]),
+
+        // Server
+        .library(name: "BSPServer", targets: ["BSPServer"]),
 
         // CLI Tools
         .executable(name: "XcodeBuildServerCLI", targets: ["XcodeBuildServerCLI"]),
@@ -26,10 +29,10 @@ let package = Package(
         .package(url: "https://github.com/tuist/XcodeProj.git", .upToNextMajor(from: "8.12.0")),
     ],
     targets: [
-        .target(
-            name: "Core",
-            dependencies: ["Logger"]
-        ),
+        // .target(
+        //     name: "Core",
+        //     dependencies: ["Logger"]
+        // ),
         .target(
             name: "JSONRPCConnection",
             dependencies: ["Logger"]
@@ -44,18 +47,30 @@ let package = Package(
             ]
         ),
 
+        .target(
+            name: "BSPTypes",
+            dependencies: [
+                "Logger"
+            ]
+        ),
+
         // SwiftPMProjectManagerProvider for all platforms
         .target(
             name: "SwiftPMProjectManagerProvider",
-            dependencies: ["Core", "Logger"]
+            dependencies: [
+                // "Core",
+                "Logger",
+                "BSPTypes",
+            ]
         ),
 
         // Xcode mac only
         .target(
             name: "XcodeProjectManagement",
             dependencies: [
-                "Core",
+                // "Core",
                 "Logger",
+                "BSPTypes",
                 .product(
                     name: "XcodeProj",
                     package: "XcodeProj",
@@ -74,7 +89,8 @@ let package = Package(
         .target(
             name: "XcodeProjectManagerProvider",
             dependencies: [
-                "XcodeProjectManagement"
+                "XcodeProjectManagement",
+                "BSPTypes"
             ],
             swiftSettings: [
                 .define("MACOS_ONLY", .when(platforms: [.macOS]))
@@ -86,9 +102,10 @@ let package = Package(
             dependencies: [
                 "Logger",
                 "JSONRPCConnection",
-                "Core",
+                // "Core",
                 "SwiftPMProjectManagerProvider",
-                "XcodeProjectManagerProvider"
+                "XcodeProjectManagerProvider",
+                "BSPTypes"
             ]
         ),
 
@@ -113,10 +130,10 @@ let package = Package(
 
         // MARK: - Tests
 
-        .testTarget(
-            name: "CoreTests",
-            dependencies: ["Core"]
-        ),
+        // .testTarget(
+        //     name: "CoreTests",
+        //     dependencies: ["Core"]
+        // ),
         .testTarget(
             name: "SwiftPMProjectManagerProviderTests",
             dependencies: [

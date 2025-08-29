@@ -5,7 +5,7 @@
 //  Created by wang.lun on 2025/08/21.
 //
 
-import Core
+import BSPTypes
 import Foundation
 import XcodeProjectManagement
 

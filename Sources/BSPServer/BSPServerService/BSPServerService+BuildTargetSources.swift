@@ -5,10 +5,11 @@
 //  Created by wang.lun on 2025/08/21.
 //
 
+import BSPTypes
 import Foundation
 
 extension BSPServerService {
-    func getSourcesItems(targetIds: [BuildTargetIdentifier]) async throws -> [SourcesItem] {
+    func getSourcesItems(targetIds: [BSPBuildTargetIdentifier]) async throws -> [SourcesItem] {
         guard let projectManager else {
             throw BuildServerError.invalidConfiguration("Project manager not initialized")
         }

@@ -69,30 +69,20 @@ extension XcodeProjectManager {
 
     /// Load targets from XcodeProj directly
     func loadTargetsFromXcodeProj(projectURL: URL, isFromWorkspace: Bool = false) throws -> [XcodeTarget] {
-        guard let project = try loadXcodeProjCache(projectURL: projectURL) else {
+        guard let project = loadXcodeProjCache(projectURL: projectURL) else {
             return []
         }
         var targets = [XcodeTarget]()
-
-//        project.pbxproj.projects.forEach { project in
-//            project.targets.forEach { target in
-//                print(target.name)
-//            }
-//        }
-        for buildConfiguration in project.pbxproj.buildConfigurations {
-            print(buildConfiguration.buildSettings)
-        }
-
-        project.pbxproj.buildConfigurations.forEach { print($0.buildSettings) }
-
         for target in project.pbxproj.nativeTargets {
             let buildSettings = target.buildConfigurationList?.buildConfigurations.first?.buildSettings
             let SDKROOT: String = buildSettings?["SDKROOT"] as? String ?? "iphonesimulator"
             let platform = XcodeTarget.Platform(rawValue: SDKROOT) ?? .iOS
             let pbxProductType = target.productType ?? .none
             let productType = XcodeProductType(rawValue: pbxProductType.rawValue) ?? .none
+            let targetIdentifier = TargetIdentifier(projectFilePath: projectURL.path, targetName: target.name)
             targets.append(
                 XcodeTarget(
+                    targetIdentifier: targetIdentifier,
                     name: target.name,
                     projectURL: projectURL,
                     productName: target.productName,

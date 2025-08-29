@@ -26,6 +26,7 @@ public struct XcodeTarget: Sendable, Hashable, Codable {
 
     public typealias ProductType = XcodeProductType
 
+    public let targetIdentifier: TargetIdentifier
     public let name: String
     public let projectURL: URL
     public let projectName: String
@@ -50,6 +51,7 @@ public struct XcodeTarget: Sendable, Hashable, Codable {
     public var targetName: String { name }
 
     public init(
+        targetIdentifier: TargetIdentifier,
         name: String,
         projectURL: URL,
         productName: String?,
@@ -59,6 +61,7 @@ public struct XcodeTarget: Sendable, Hashable, Codable {
         xcodeTargetPlatform: Platform = .iOS,
         xcodeProductType: ProductType
     ) {
+        self.targetIdentifier = targetIdentifier
         self.name = name
         self.projectURL = projectURL
         self.projectName = projectURL.deletingPathExtension().lastPathComponent

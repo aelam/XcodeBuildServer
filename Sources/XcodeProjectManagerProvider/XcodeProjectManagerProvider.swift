@@ -5,10 +5,10 @@
 //  Copyright © 2024 Wang Lun.
 //
 
-import Core
 import Foundation
 
 #if os(macOS)
+import BSPTypes
 import Logger
 import XcodeProj
 import XcodeProjectManagement

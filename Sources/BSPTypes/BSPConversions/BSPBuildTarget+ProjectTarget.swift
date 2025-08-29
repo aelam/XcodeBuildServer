@@ -26,7 +26,7 @@ extension ProductType {
     }
 }
 
-extension BSPBuildTarget {
+public extension BSPBuildTarget {
     init?(projectTarget: ProjectTarget) {
         guard let id = try? BSPBuildTargetIdentifier(uri: URI(string: projectTarget.targetIndentifier)) else {
             return nil

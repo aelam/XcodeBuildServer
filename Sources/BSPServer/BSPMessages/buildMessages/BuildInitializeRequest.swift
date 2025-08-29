@@ -3,6 +3,7 @@
 //  Created by ST22956 on 2024/11/17.
 //
 
+import BSPTypes
 import Foundation
 import JSONRPCConnection
 import Logger

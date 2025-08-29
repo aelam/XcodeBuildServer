@@ -1,18 +1,18 @@
 import Foundation
 
-struct TargetIdentifier: Hashable, Sendable, Codable, RawRepresentable {
-    var rawValue: String
+public struct TargetIdentifier: Hashable, Sendable, Codable, RawRepresentable {
+    public var rawValue: String
 
-    let projectFilePath: String
-    let targetName: String
+    public let projectFilePath: String
+    public let targetName: String
 
-    init(projectFilePath: String, targetName: String) {
+    public init(projectFilePath: String, targetName: String) {
         self.projectFilePath = projectFilePath
         self.targetName = targetName
         self.rawValue = "xcode://\(projectFilePath)/\(targetName)"
     }
 
-    init(rawValue: String) {
+    public init(rawValue: String) {
         // xcode:///path/to/project.xcodeproj/TargetName
         let prefix = "xcode://"
         var trimmed = rawValue
@@ -29,7 +29,7 @@ struct TargetIdentifier: Hashable, Sendable, Codable, RawRepresentable {
         self.rawValue = rawValue
     }
 
-    var projectFolderURL: URL {
+    public var projectFolderURL: URL {
         URL(fileURLWithPath: projectFilePath).deletingLastPathComponent()
     }
 }

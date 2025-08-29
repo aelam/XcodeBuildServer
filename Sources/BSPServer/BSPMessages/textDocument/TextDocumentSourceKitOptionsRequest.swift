@@ -59,6 +59,9 @@ import Logger
 ///   "workingDirectory": "/path/to/project"
 /// }
 /// ```
+///
+import BSPTypes
+
 public struct TextDocumentSourceKitOptionsRequest: ContextualRequestType, Sendable {
     public typealias RequiredContext = BSPServerService
 
@@ -84,14 +87,14 @@ public struct TextDocumentSourceKitOptionsRequest: ContextualRequestType, Sendab
         /// in each target, thus the target specification is necessary for this request.
         ///
         /// - Important: The target URI should follow the format `xcode:///ProjectPath/TargetName`.
-        public var target: BuildTargetIdentifier
+        public var target: BSPBuildTargetIdentifier
 
         /// The programming language of the document.
         ///
         /// This helps the server provide language-specific compiler options and optimizations.
         ///
         /// - SeeAlso: ``Language`` for supported language types.
-        public var language: Language
+        public var language: BSPTypes.Language
     }
 
     public let id: JSONRPCID

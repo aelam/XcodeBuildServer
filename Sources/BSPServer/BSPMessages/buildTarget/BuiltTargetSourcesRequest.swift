@@ -21,9 +21,9 @@
 /// }
 /// ```
 
+import BSPTypes
 import Foundation
 import JSONRPCConnection
-import XcodeProjectManagement
 
 struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
     typealias RequiredContext = BSPServerService

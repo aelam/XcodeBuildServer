@@ -4,6 +4,7 @@
 //  Copyright © 2024 Wang Lun.
 //
 
+import BSPTypes
 import Foundation
 import JSONRPCConnection
 

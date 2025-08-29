@@ -1,4 +1,3 @@
-import Core
 import Foundation
 
 public enum BuildError: Error, Sendable {

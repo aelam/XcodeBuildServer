@@ -40,29 +40,42 @@ struct XcodeProjectCLI {
             let timestamp = Date()
             print("Loading Xcode project at: \(timestamp)")
             print("Loading Xcode project from: \(projectPath)")
-            let project = try await projectManager.resolveXcodeProjectInfo()
-
+            // let project = try await projectManager.resolveXcodeProjectInfo()
             print("✓ Project loaded successfully")
-            let baseProjectInfo = project.baseProjectInfo
+            guard let baseProjectInfo = await projectManager.xcodeProjectBaseInfo else {
+                return
+            }
+
+            let targetIdentifiers = baseProjectInfo.xcodeTargets.map(\.targetIdentifier)
+            let sourcesItems = await projectManager
+                .getSourcesItems(targetIdentifiers: targetIdentifiers)
+            for sourcesItem in sourcesItems {
+                print("Sources for target \(sourcesItem.target):")
+                for source in sourcesItem.sources {
+                    print(" - \(source.path)")
+                }
+            }
+
             print("  - Root URL: \(baseProjectInfo.rootURL.path)")
             print("  - Scheme Name: \(baseProjectInfo.importantScheme.name)")
-            print(" - Project Targets: \(project.baseProjectInfo.xcodeTargets.map(\.name).joined(separator: ", "))")
+            print(
+                " - Project Targets: \(baseProjectInfo.xcodeTargets.map(\.name).joined(separator: ", "))"
+            )
 
             // Targets
             print("\n✅🗂️ Target Information:")
-            for target in project.baseProjectInfo.xcodeTargets {
+            for target in baseProjectInfo.xcodeTargets {
                 print("  - Target Name: \(target.name)")
-                print("  - Is Test: \(target.xcodeProductType.asProductType.isTestType)")
-                print("  - Is Runnable: \(target.xcodeProductType.asProductType.isRunnableType)")
+                print("  - xcodeProductType: \(target.xcodeProductType)")
             }
 
             // Show indexing paths
-            let xcodeProjectBuildSettings = project.baseProjectInfo.xcodeProjectBuildSettings
+            let xcodeProjectBuildSettings = baseProjectInfo.xcodeProjectBuildSettings
             print("\n✅🗂️ Indexing Information:")
             print("  - Index Store URL: \(xcodeProjectBuildSettings.indexStoreURL.path)")
             print("  - Index Database URL: \(xcodeProjectBuildSettings.indexDatabaseURL.path)")
             print("  - Derived Data Path: \(xcodeProjectBuildSettings.derivedDataPath.path)")
-            print("  - Configuration: \(project.baseProjectInfo.configuration)")
+            print("  - Configuration: \(baseProjectInfo.configuration)")
             let endTimestamp = Date()
             print("Loading time: \(endTimestamp.timeIntervalSince(timestamp)) seconds")
         } catch {

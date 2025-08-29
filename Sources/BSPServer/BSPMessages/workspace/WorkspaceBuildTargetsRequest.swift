@@ -7,8 +7,14 @@
 ///
 ///
 ///   {
-/// "method":"workspace/buildTargets","id":2,"jsonrpc":"2.0","params":{}}
+///     "method":"workspace/buildTargets",
+///     "id":2,
+///     "jsonrpc":"2.0",
+///     "params":{}
+///   }
+///
 
+import BSPTypes
 import JSONRPCConnection
 
 public struct WorkspaceBuildTargetsRequest: ContextualRequestType, Sendable {

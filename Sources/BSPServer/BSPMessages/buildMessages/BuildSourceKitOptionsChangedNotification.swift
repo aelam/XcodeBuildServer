@@ -135,6 +135,7 @@
 /// Deprecated
 ///
 
+import BSPTypes
 import JSONRPCConnection
 
 public struct BuildSourceKitOptionsChangedNotification: ContextualNotificationType, Sendable {
@@ -158,10 +159,10 @@ public struct BuildSourceKitOptionsChangedNotification: ContextualNotificationTy
         /// A source file might be part of multiple targets and might have different compiler arguments in those two
         /// targets,
         /// thus the target is necessary in this request.
-        public var target: BuildTargetIdentifier
+        public var target: BSPTypes.BSPBuildTargetIdentifier
 
         /// The language with which the document was opened in the editor.
-        public var language: Language
+        public var language: BSPTypes.Language
     }
 
     public let id: JSONRPCID

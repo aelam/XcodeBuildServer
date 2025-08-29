@@ -1,9 +1,17 @@
-import Core
+import BSPTypes
 import Foundation
 import Logger
 import XcodeProjectManagement
 
 extension XcodeProjectManager: @preconcurrency ProjectManager {
+    public func getProjectState() async -> BSPTypes.ProjectState {
+        .init()
+    }
+
+    public func addStateObserver(_ observer: any BSPTypes.ProjectStateObserver) async {}
+
+    public func removeStateObserver(_ observer: any BSPTypes.ProjectStateObserver) async {}
+
     public var projectType: String {
         "xcodeproj"
     }

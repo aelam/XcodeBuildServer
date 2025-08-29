@@ -5,7 +5,8 @@
 //  Created by wang.lun on 2025/08/21.
 //
 
-import Core
+import BSPTypes
+import XcodeProjectManagement
 
 public extension XcodeProductType {
     var asProductType: ProductType {
