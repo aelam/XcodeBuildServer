@@ -14,7 +14,7 @@
 ///   }
 ///
 
-import BSPTypes
+import BuildServerProtocol
 import JSONRPCConnection
 
 public struct WorkspaceBuildTargetsRequest: ContextualRequestType, Sendable {

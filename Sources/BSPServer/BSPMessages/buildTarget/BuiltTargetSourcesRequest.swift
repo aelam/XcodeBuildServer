@@ -21,7 +21,7 @@
 /// }
 /// ```
 
-import BSPTypes
+import BuildServerProtocol
 import Foundation
 import JSONRPCConnection
 

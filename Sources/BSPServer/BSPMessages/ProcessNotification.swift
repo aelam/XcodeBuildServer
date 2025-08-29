@@ -7,7 +7,7 @@
 /// Notification from the build server to SourceKit-LSP to update a work done progress created using
 /// `window/workDoneProgress/create`.
 
-import BSPTypes
+import BuildServerProtocol
 import JSONRPCConnection
 
 struct ProcessNotification: ContextualNotificationType, Sendable {

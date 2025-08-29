@@ -8,7 +8,7 @@
 import Foundation
 
 #if os(macOS)
-import BSPTypes
+import BuildServerProtocol
 import Logger
 import XcodeProj
 import XcodeProjectManagement

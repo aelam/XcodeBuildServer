@@ -11,7 +11,7 @@ let package = Package(
         // .library(name: "Core", targets: ["Core"]),
         .library(name: "JSONRPCConnection", targets: ["JSONRPCConnection"]),
         .library(name: "Logger", targets: ["Logger"]),
-        .library(name: "BSPTypes", targets: ["BSPTypes"]),
+        .library(name: "BuildServerProtocol", targets: ["BuildServerProtocol"]),
 
         // ProjectManagerProviders
         .library(name: "SwiftPMProjectManagerProvider", targets: ["SwiftPMProjectManagerProvider"]),
@@ -48,7 +48,7 @@ let package = Package(
         ),
 
         .target(
-            name: "BSPTypes",
+            name: "BuildServerProtocol",
             dependencies: [
                 "Logger"
             ]
@@ -60,7 +60,7 @@ let package = Package(
             dependencies: [
                 // "Core",
                 "Logger",
-                "BSPTypes",
+                "BuildServerProtocol",
             ]
         ),
 
@@ -70,7 +70,7 @@ let package = Package(
             dependencies: [
                 // "Core",
                 "Logger",
-                "BSPTypes",
+                "BuildServerProtocol",
                 .product(
                     name: "XcodeProj",
                     package: "XcodeProj",
@@ -90,7 +90,7 @@ let package = Package(
             name: "XcodeProjectManagerProvider",
             dependencies: [
                 "XcodeProjectManagement",
-                "BSPTypes"
+                "BuildServerProtocol"
             ],
             swiftSettings: [
                 .define("MACOS_ONLY", .when(platforms: [.macOS]))
@@ -105,7 +105,7 @@ let package = Package(
                 // "Core",
                 "SwiftPMProjectManagerProvider",
                 "XcodeProjectManagerProvider",
-                "BSPTypes"
+                "BuildServerProtocol"
             ]
         ),
 

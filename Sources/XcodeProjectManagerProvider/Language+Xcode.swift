@@ -1,4 +1,4 @@
-import BSPTypes
+import BuildServerProtocol
 import XcodeProjectManagement
 
 extension XcodeLanguageDialect {
