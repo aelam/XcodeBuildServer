@@ -26,12 +26,7 @@ public extension BSPServerService {
         logger.warning("!!projectManager created: \(projectManager)")
         self.projectManager = projectManager
 
-        // 检测项目类型
-        let projectInfo = try await projectManager.resolveProjectInfo()
-
         // 订阅状态变化
         await subscribeToProjectManager(projectManager)
-
-        logger.info("Project loaded successfully: \(projectInfo.rootURL.lastPathComponent)")
     }
 }

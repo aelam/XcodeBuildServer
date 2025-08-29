@@ -18,15 +18,14 @@ public protocol ProjectManager: AnyObject, Sendable {
 
     func initialize() async throws
 
-    func resolveProjectInfo() async throws -> ProjectInfo
-
     // workspace/buildTargets
     func getTargetList(
         resolveSourceFiles: Bool,
         resolveDependencies: Bool
     ) async -> [ProjectTarget]
 
-    func getSourceFileList(targetIdentifier: String) async -> [URL]
+    // buildTarget/sources
+    func getSourceFileList(targetIdentifiers: [BSPBuildTargetIdentifier]) async -> [SourcesItem]
 
     func getCompileArguments(targetIdentifier: String, sourceFileURL: URL) async throws -> [String]
 

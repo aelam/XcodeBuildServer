@@ -157,9 +157,6 @@ public actor XcodeProjectManager {
 
     public func initialize() async throws {
         try await toolchain.initialize()
-//        let oldState = projectState.projectLoadState
-//        projectState.projectLoadState = .loading(projectPath: rootURL.path)
-//        await notifyStateObservers(.projectLoadStateChanged(from: oldState, to: projectState.projectLoadState))
 
         let projectLocation = try locator.resolveProjectType(
             rootURL: rootURL,
@@ -187,7 +184,7 @@ public actor XcodeProjectManager {
             throw XcodeProjectError.noSchemesFound("No schemes found in project at \(rootURL.path)")
         }
 
-        self.xcodeProjectBaseInfo = XcodeProjectBaseInfo(
+        let xcodeProjectBaseInfo = XcodeProjectBaseInfo(
             rootURL: rootURL,
             projectLocation: projectLocation,
             xcodeProjectBuildSettings: xcodeProjectBuildSettings,
@@ -195,50 +192,52 @@ public actor XcodeProjectManager {
             xcodeTargets: actualTargets,
             schemes: schemes
         )
-    }
-
-    public func resolveXcodeProjectInfo() async throws -> XcodeProjectInfo {
-        if let xcodeProjectInfo {
-            return xcodeProjectInfo
-        }
-
-        guard let xcodeProjectBaseInfo else {
-            fatalError("XcodeProjectInfo cannot be resolved before initialize()")
-        }
-
-        let xcodeProjectBuildSettings = xcodeProjectBaseInfo.xcodeProjectBuildSettings
-
-        // let buildSettingResolver = BuildSettingResolver(
-        //     project: PBXProject xcodeProjectBuildSettings: xcodeProjectBuildSettings
-        // )
-
-        let buildSettingsMap = try await settingsLoader.loadBuildSettingsMap(
-            rootURL: rootURL,
-            targets: xcodeProjectBaseInfo.xcodeTargets,
-            configuration: "Debug",
-            xcodeProjectBuildSettings: xcodeProjectBuildSettings,
-            customFlags: [
-                "SYMROOT=" + xcodeProjectBuildSettings.symRoot.path,
-                "OBJROOT=" + xcodeProjectBuildSettings.objRoot.path,
-                "SDK_STAT_CACHE_DIR=" + xcodeProjectBuildSettings.sdkStatCacheDir.path,
-                // "BUILD_DIR=/tmp/__A__/Build/Products"
-                // "BUILD_ROOT=/tmp/__A__/Build/Products"
-            ]
-        )
-
-        let buildSettingsForIndex = IndexSettingsGeneration.generate(
-            rootURL: rootURL,
-            xcodeProjectBuildSettings: xcodeProjectBaseInfo.xcodeProjectBuildSettings,
-            buildSettingsMap: buildSettingsMap
-        )
+        self.xcodeProjectBaseInfo = xcodeProjectBaseInfo
 
         let xcodeProjectInfo = XcodeProjectInfo(
             baseProjectInfo: xcodeProjectBaseInfo,
-            xcodeBuildSettingsForIndex: buildSettingsForIndex
+            xcodeBuildSettingsForIndex: [:]
         )
         self.xcodeProjectInfo = xcodeProjectInfo
-        return xcodeProjectInfo
     }
+
+//    public func resolveXcodeProjectInfo() async throws -> XcodeProjectInfo {
+//        if let xcodeProjectInfo {
+//            return xcodeProjectInfo
+//        }
+//
+//        guard let xcodeProjectBaseInfo else {
+//            fatalError("XcodeProjectInfo cannot be resolved before initialize()")
+//        }
+//
+//        let xcodeProjectBuildSettings = xcodeProjectBaseInfo.xcodeProjectBuildSettings
+//        let buildSettingsMap = try await settingsLoader.loadBuildSettingsMap(
+//            rootURL: rootURL,
+//            targets: xcodeProjectBaseInfo.xcodeTargets,
+//            configuration: "Debug",
+//            xcodeProjectBuildSettings: xcodeProjectBuildSettings,
+//            customFlags: [
+//                "SYMROOT=" + xcodeProjectBuildSettings.symRoot.path,
+//                "OBJROOT=" + xcodeProjectBuildSettings.objRoot.path,
+//                "SDK_STAT_CACHE_DIR=" + xcodeProjectBuildSettings.sdkStatCacheDir.path,
+//                // "BUILD_DIR=/tmp/__A__/Build/Products"
+//                // "BUILD_ROOT=/tmp/__A__/Build/Products"
+//            ]
+//        )
+//
+//        let buildSettingsForIndex = IndexSettingsGeneration.generate(
+//            rootURL: rootURL,
+//            xcodeProjectBuildSettings: xcodeProjectBaseInfo.xcodeProjectBuildSettings,
+//            buildSettingsMap: buildSettingsMap
+//        )
+//
+//        let xcodeProjectInfo = XcodeProjectInfo(
+//            baseProjectInfo: xcodeProjectBaseInfo,
+//            xcodeBuildSettingsForIndex: buildSettingsForIndex
+//        )
+//        self.xcodeProjectInfo = xcodeProjectInfo
+//        return xcodeProjectInfo
+//    }
 
     // MARK: - Build
 
