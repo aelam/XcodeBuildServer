@@ -41,7 +41,10 @@ extension LSPAny: Decodable {
             self = .dictionary(value)
         } else {
             let error = "LSPAny cannot be decoded: Unrecognized type."
-            throw DecodingError.dataCorruptedError(in: container, debugDescription: error)
+            throw DecodingError.dataCorruptedError(
+                in: container,
+                debugDescription: error
+            )
         }
     }
 }

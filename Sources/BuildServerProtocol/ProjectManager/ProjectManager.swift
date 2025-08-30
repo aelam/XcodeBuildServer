@@ -25,9 +25,13 @@ public protocol ProjectManager: AnyObject, Sendable {
     ) async -> [ProjectTarget]
 
     // buildTarget/sources
-    func getSourceFileList(targetIdentifiers: [BSPBuildTargetIdentifier]) async -> [SourcesItem]
+    func getSourceFileList(targetIdentifiers: [BSPBuildTargetIdentifier]) async
+        -> [SourcesItem]
 
-    func getCompileArguments(targetIdentifier: String, sourceFileURL: URL) async throws -> [String]
+    func getCompileArguments(
+        targetIdentifier: String,
+        sourceFileURL: URL
+    ) async throws -> [String]
 
     func updateBuildGraph() async
 
@@ -102,34 +106,17 @@ public struct ProjectBuildSettings: Sendable {
     public let symRoot: URL // SYMROOT
     public let objRoot: URL // OBJROOT
     public let sdkStatCacheDir: URL // SDK_STAT_CACHE_DIR
-    public let sdkStatCachePath: URL // SDK_STAT_CACHE_PATH
 
     public init(derivedDataPath: URL) {
         self.derivedDataPath = derivedDataPath
-        self.indexStoreURL = derivedDataPath.appendingPathComponent("Index.noIndex/DataStore")
-        self.indexDatabaseURL = derivedDataPath.appendingPathComponent("IndexDatabase.noIndex")
+        self.indexStoreURL = derivedDataPath
+            .appendingPathComponent("Index.noIndex/DataStore")
+        self.indexDatabaseURL = derivedDataPath
+            .appendingPathComponent("IndexDatabase.noIndex")
         self.symRoot = derivedDataPath.appendingPathComponent("Build/Products")
-        self.objRoot = derivedDataPath.appendingPathComponent("Build/Intermediates.noindex")
+        self.objRoot = derivedDataPath
+            .appendingPathComponent("Build/Intermediates.noindex")
         self.sdkStatCacheDir = derivedDataPath.deletingLastPathComponent()
-        self.sdkStatCachePath = sdkStatCacheDir.appendingPathComponent("SDKStatCache")
-    }
-
-    public init(
-        derivedDataPath: URL,
-        indexStoreURL: URL,
-        indexDatabaseURL: URL,
-        symRoot: URL,
-        objRoot: URL,
-        sdkStatCacheDir: URL,
-        sdkStatCachePath: URL
-    ) {
-        self.derivedDataPath = derivedDataPath
-        self.indexStoreURL = indexStoreURL
-        self.indexDatabaseURL = indexDatabaseURL
-        self.symRoot = symRoot
-        self.objRoot = objRoot
-        self.sdkStatCacheDir = sdkStatCacheDir
-        self.sdkStatCachePath = sdkStatCachePath
     }
 }
 

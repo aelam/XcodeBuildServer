@@ -43,4 +43,7 @@ private let notificationTypes: [NotificationType.Type] = [
     CancelRequestNotification.self,
 ]
 
-public let bspRegistry = MessageRegistry(requests: requestTypes, notifications: notificationTypes)
+public let bspRegistry = MessageRegistry(
+    requests: requestTypes,
+    notifications: notificationTypes
+)

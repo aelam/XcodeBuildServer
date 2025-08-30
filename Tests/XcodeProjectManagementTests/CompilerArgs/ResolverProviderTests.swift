@@ -7,16 +7,26 @@ import XcodeProj
 struct CompilerArgumentsProviderTests {
     //
     @Test
-    func resolveCompilerFlags() throws {
+    func resolveCompilerFlags() async throws {
         let projectFolder = Bundle.module.resourceURL!
             .appendingPathComponent("DemoProjects")
             .appendingPathComponent("HelloProject")
-        let projectFilePath = projectFolder.appendingPathComponent("Hello.xcodeproj").path
+        let projectFilePath = projectFolder
+            .appendingPathComponent("Hello.xcodeproj").path
         let derivedDataPath = PathHash.derivedDataFullPath(for: projectFilePath)
-        let xcodeGlobalSettings = XcodeGlobalSettings(derivedDataPath: derivedDataPath)
+        let xcodeGlobalSettings =
+            XcodeGlobalSettings(derivedDataPath: derivedDataPath)
+
+        let xcodeToolchain = XcodeToolchain()
+        try await xcodeToolchain.initialize()
+        guard let xcodeInstallation = await xcodeToolchain
+            .getSelectedInstallation() else {
+            return
+        }
 
         let xcodeProj = try XcodeProj(path: Path(projectFilePath))
-        let resolver = BuildSettingResolver(
+        let resolver = try BuildSettingResolver(
+            xcodeInstallation: xcodeInstallation,
             xcodeGlobalSettings: xcodeGlobalSettings,
             xcodeProj: xcodeProj,
             target: "Hello",
@@ -27,10 +37,13 @@ struct CompilerArgumentsProviderTests {
             .appendingPathComponent("Hello")
             .appendingPathComponent("HelloApp.swift")
 
-        let flags = CompilerArgumentsProvider(
+        let flags = ResolverProvider(
             resolver: resolver,
             compilerType: .swift
-        ).compileArguments(for: helloAppSwift)
+        ).arguments(
+            for: helloAppSwift,
+            compilerType: .swift
+        )
         print(flags)
     }
 }

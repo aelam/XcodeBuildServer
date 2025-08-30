@@ -7,15 +7,21 @@ enum SourceFileLister {
 
     typealias SourceMap = [String: [SourceItem]]
 
-    static func loadSourceFiles(for xcodeProj: XcodeProj, targets: Set<String>) -> SourceMap {
+    static func loadSourceFiles(
+        for xcodeProj: XcodeProj,
+        targets: Set<String>
+    ) -> SourceMap {
         guard let xcodeProjPath = xcodeProj.path else {
-            print("Cannot open Xcode project at \(xcodeProj.path?.string ?? "unknown path")")
+            print(
+                "Cannot open Xcode project at \(xcodeProj.path?.string ?? "unknown path")"
+            )
             return SourceMap()
         }
         let sourceRoot = xcodeProjPath.parent()
         var sourceMap = SourceMap()
 
-        for target in xcodeProj.pbxproj.nativeTargets where targets.contains(target.name) {
+        for target in xcodeProj.pbxproj.nativeTargets
+            where targets.contains(target.name) {
             var sourceItems = [SourceItem]()
 
             // Xcode15+：fileSystemSynchronizedGroups
@@ -29,11 +35,17 @@ enum SourceFileLister {
             }
 
             // 旧结构：SourcesBuildPhase
-            sourceItems += sourceFilesFromBuildPhases(target, sourceRoot: sourceRoot)
+            sourceItems += sourceFilesFromBuildPhases(
+                target,
+                sourceRoot: sourceRoot
+            )
 
             // 去重
             sourceItems = Array(Set(sourceItems))
-            let targetIdentifier = TargetIdentifier(projectFilePath: xcodeProjPath.string, targetName: target.name)
+            let targetIdentifier = TargetIdentifier(
+                projectFilePath: xcodeProjPath.string,
+                targetName: target.name
+            )
             sourceMap[targetIdentifier.rawValue] = sourceItems
         }
         return sourceMap
@@ -58,12 +70,16 @@ enum SourceFileLister {
     }
 
     // 辅助方法：从 build phase 获取源码文件
-    private static func sourceFilesFromBuildPhases(_ target: PBXNativeTarget, sourceRoot: Path) -> [SourceItem] {
+    private static func sourceFilesFromBuildPhases(
+        _ target: PBXNativeTarget,
+        sourceRoot: Path
+    ) -> [SourceItem] {
         target.buildPhases.compactMap { $0 as? PBXSourcesBuildPhase }
             .flatMap { sourcesPhase in
                 (sourcesPhase.files ?? []).compactMap { buildFile in
                     guard let fileRef = buildFile.file else { return nil }
-                    if let full = try? fileRef.fullPath(sourceRoot: sourceRoot)?.string {
+                    if let full = try? fileRef.fullPath(sourceRoot: sourceRoot)?
+                        .string {
                         return full
                     } else if let rel = fileRef.path {
                         return (sourceRoot + Path(rel)).string

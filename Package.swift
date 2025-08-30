@@ -1,5 +1,6 @@
 // swift-tools-version: 6.1
-// The swift-tools-version declares the minimum version of Swift required to build this package.
+// The swift-tools-version declares the minimum version of Swift required to
+// build this package.
 
 import PackageDescription
 
@@ -14,19 +15,34 @@ let package = Package(
         .library(name: "BuildServerProtocol", targets: ["BuildServerProtocol"]),
 
         // ProjectManagerProviders
-        .library(name: "SwiftPMProjectManagerProvider", targets: ["SwiftPMProjectManagerProvider"]),
-        .library(name: "XcodeProjectManagerProvider", targets: ["XcodeProjectManagerProvider"]),
+        .library(
+            name: "SwiftPMProjectManagerProvider",
+            targets: ["SwiftPMProjectManagerProvider"]
+        ),
+        .library(
+            name: "XcodeProjectManagerProvider",
+            targets: ["XcodeProjectManagerProvider"]
+        ),
 
         // Server
         .library(name: "BSPServer", targets: ["BSPServer"]),
 
         // CLI Tools
-        .executable(name: "XcodeBuildServerCLI", targets: ["XcodeBuildServerCLI"]),
+        .executable(
+            name: "XcodeBuildServerCLI",
+            targets: ["XcodeBuildServerCLI"]
+        ),
         .executable(name: "XcodeProjectCLI", targets: ["XcodeProjectCLI"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/SwiftyBeaver/SwiftyBeaver.git", from: "2.0.0"),
-        .package(url: "https://github.com/tuist/XcodeProj.git", .upToNextMajor(from: "8.12.0")),
+        .package(
+            url: "https://github.com/SwiftyBeaver/SwiftyBeaver.git",
+            from: "2.0.0"
+        ),
+        .package(
+            url: "https://github.com/tuist/XcodeProj.git",
+            .upToNextMajor(from: "8.12.0")
+        ),
     ],
     targets: [
         // .target(

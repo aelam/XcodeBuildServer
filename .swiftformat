@@ -45,3 +45,11 @@
 
 # File exclusions
 --exclude Pods,Generated,DerivedData,.build,Tests/*/Resources
+
+# 参数/形参：多行时每个都独立一行（SwiftLint 友好）
+--wraparguments before-first
+--wrapparameters before-first
+--closing-paren balanced
+
+# 集合字面量（数组/字典）也按同样风格
+--wrapcollections before-first
