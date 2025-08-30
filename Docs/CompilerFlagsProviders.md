@@ -28,6 +28,7 @@
 | **FrameworkSearchPathProvider** | `FRAMEWORK_SEARCH_PATHS` | `-F` |
 | **LibrarySearchPathProvider** | `LIBRARY_SEARCH_PATHS` | `-L` |
 | **ModuleProvider** | `CLANG_ENABLE_MODULES`, `PRODUCT_MODULE_NAME`, `PRODUCT_NAME` | `-fmodules`, `-fmodule-name Foo` |
+| **VFSOverlayProvider** | DerivedData 下的 `.vfsoverlay` 文件 (Xcode 生成) | `-ivfsoverlay <path>` |
 
 ### 4. 链接相关 (Linking)
 | Provider | 输入 Build Settings | 输出 Flags |
@@ -49,6 +50,7 @@
 | **IndexStoreProvider** | `INDEX_STORE_PATH`（或 DerivedData 推导） | `-index-store-path …` |
 | **ModuleCacheProvider** | `MODULE_CACHE_DIR`（或 DerivedData 默认值） | `-module-cache-path …` |
 | **OutputProvider** | `OBJECT_FILE_DIR`, `DERIVED_FILE_DIR` | `-o file.o`, `-emit-objc-header-path …` |
+| **SDKStatCacheProvider** | DerivedData 下的 `.sdkstatcache` 文件 (Xcode 生成) | `-ivfsstatcache <path>` |
 
 ---
 
@@ -56,49 +58,69 @@
 
 ```mermaid
 flowchart TD
-    A[XcodeProj .pbxproj] --> B[BuildSettingResolver]
-    B --> C{Resolved Build Settings<br/>[String:String]}
-    C --> D1[SDKProvider]
-    C --> D2[ArchProvider]
-    C --> D3[TargetTripleProvider]
-    C --> D4[OptimizationProvider]
-    C --> D5[LanguageStandardProvider]
-    C --> D6[DebugInfoProvider]
-    C --> D7[ClangWarningProvider]
-    C --> D8[GCCWarningProvider]
-    C --> D9[SearchPath Providers<br/>(Header/Framework/Library)]
-    C --> D10[ModuleProvider]
-    C --> D11[LinkerProvider]
-    C --> D12[BitcodeProvider]
-    C --> D13[DefinesProvider]
-    C --> D14[BridgingHeaderProvider]
-    C --> D15[ObjCProvider]
-    C --> D16[ToolchainProvider]
-    C --> D17[IndexStoreProvider]
-    C --> D18[ModuleCacheProvider]
-    C --> D19[OutputProvider]
+    A["XcodeProj .pbxproj"] --> B["BuildSettingResolver"]
+    B --> C["Resolved Build Settings\n[String:String]"]
 
-    D1 --> E[CompilerArgumentsBuilder]
-    D2 --> E
-    D3 --> E
-    D4 --> E
-    D5 --> E
-    D6 --> E
-    D7 --> E
-    D8 --> E
-    D9 --> E
-    D10 --> E
-    D11 --> E
-    D12 --> E
-    D13 --> E
-    D14 --> E
-    D15 --> E
-    D16 --> E
-    D17 --> E
-    D18 --> E
-    D19 --> E
+    subgraph Platform
+        D1["SDKProvider"]
+        D2["ArchProvider"]
+        D3["TargetTripleProvider"]
+        D4["DeploymentTargetProvider"]
+    end
 
-    E --> F[Final Compiler Arguments]
+    subgraph Compiler
+        D5["OptimizationProvider"]
+        D6["LanguageStandardProvider"]
+        D7["DebugInfoProvider"]
+        D8["ClangWarningProvider"]
+        D9["GCCWarningProvider"]
+        D10["SwiftSpecificProvider"]
+    end
+
+    subgraph SearchPaths
+        D11["HeaderSearchPathProvider"]
+        D12["FrameworkSearchPathProvider"]
+        D13["LibrarySearchPathProvider"]
+        D14["ModuleProvider"]
+        D15["VFSOverlayProvider"]
+    end
+
+    subgraph Linking
+        D16["LinkerProvider"]
+        D17["BitcodeProvider"]
+    end
+
+    subgraph Codegen
+        D18["DefinesProvider"]
+        D19["BridgingHeaderProvider"]
+        D20["ObjCProvider"]
+    end
+
+    subgraph Toolchain
+        D21["ToolchainProvider"]
+        D22["IndexStoreProvider"]
+        D23["ModuleCacheProvider"]
+        D24["OutputProvider"]
+        D25["SDKStatCacheProvider"]
+    end
+
+    C --> Platform
+    C --> Compiler
+    C --> SearchPaths
+    C --> Linking
+    C --> Codegen
+    C --> Toolchain
+
+    Platform --> E["CompilerArgumentsBuilder"]
+    Compiler --> E
+    SearchPaths --> E
+    Linking --> E
+    Codegen --> E
+    Toolchain --> E
+
+    E --> F["Final Compiler Arguments"]
+
+
 ```
 
 ## ✅ 总结
