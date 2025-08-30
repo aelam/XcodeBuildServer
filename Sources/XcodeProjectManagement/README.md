@@ -54,7 +54,6 @@ let settingsManager = XcodeSettingsManager(commandBuilder: commandBuilder)
 
 // Load build settings
 try await settingsManager.loadBuildSettings()
-try await settingsManager.loadBuildSettingsForIndex()
 try await settingsManager.loadIndexingPaths(target: "MyTarget")
 
 ```

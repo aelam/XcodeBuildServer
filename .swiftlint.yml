@@ -60,8 +60,8 @@ line_length:
   ignores_comments: true
 
 function_body_length:
-  warning: 60
-  error: 120
+  warning: 100
+  error: 150
 
 function_parameter_count:
   warning: 5

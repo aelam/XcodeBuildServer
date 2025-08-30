@@ -42,7 +42,6 @@
 - **文件特异性**：为特定文件返回专门的编译设置
 - **BuildServerContext 方法**：
   - `getCompileArguments(target:fileURI:)` - 获取文件编译参数
-  - `extractSchemeFromBuildTarget(_:)` - 解析目标scheme名称
   - `getWorkingDirectory()` - 获取工作目录
 - **错误处理**：完善的后备机制和错误恢复策略
 - **日志记录**：详细的调试和故障排除信息

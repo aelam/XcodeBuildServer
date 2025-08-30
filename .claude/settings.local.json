@@ -10,7 +10,10 @@
       "Bash(swift build:*)",
       "Bash(tree:*)",
       "Bash(chmod:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "Bash(grep:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(swift package resolve)"
     ],
     "deny": []
   }

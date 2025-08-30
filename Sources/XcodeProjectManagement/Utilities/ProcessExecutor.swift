@@ -96,7 +96,7 @@ public actor ProcessExecutor {
 
         logger
             .debug(
-                "Output preview:\n \(String(result.output.prefix(min(200_000, result.output.count))))"
+                "Output preview:\n \(String(result.output.prefix(min(2000, result.output.count))))"
             )
 
         if result.exitCode != 0 {

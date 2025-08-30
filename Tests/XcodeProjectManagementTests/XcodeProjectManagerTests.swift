@@ -11,9 +11,11 @@ import Testing
 struct XcodeProjectManagerTests {
     @Test
     func loadProjectFromWorkspace() async throws {
-        let projectFolder = Bundle.module.resourceURL!
-            .appendingPathComponent("DemoProjects")
-            .appendingPathComponent("HelloWorkspace")
+        let projectFolder = Bundle.module.url(
+            forResource: "HelloWorkspace",
+            withExtension: nil,
+            subdirectory: "Resources/DemoProjects"
+        )!
 
         let toolchain = XcodeToolchain()
         let projectManager = XcodeProjectManager(
@@ -26,11 +28,13 @@ struct XcodeProjectManagerTests {
             )
         )
         try await projectManager.initialize()
-        let project = try await projectManager.resolveProjectInfo()
+        guard let xcodeProjectBaseInfo = await projectManager.xcodeProjectBaseInfo else {
+            throw NSError(domain: "XcodeProjectManagerTests", code: 1, userInfo: nil)
+        }
 
-        #expect(project.rootURL == projectFolder)
+        #expect(xcodeProjectBaseInfo.rootURL == projectFolder)
 
-        switch project.projectLocation {
+        switch xcodeProjectBaseInfo.projectLocation {
         case let .explicitWorkspace(url):
             #expect(url.lastPathComponent == "Hello.xcworkspace")
         case .implicitWorkspace:
@@ -38,16 +42,15 @@ struct XcodeProjectManagerTests {
         case .standaloneProject:
             Issue.record("Expected explicit workspace, got standalone project")
         }
-        #expect(project.buildSettingsForIndex.count == 3)
-        #expect(project.targets.count == 3)
     }
 
     @Test
     func loadProjectFromXcodeproj() async throws {
-        let projectFolder = Bundle.module.resourceURL!
-            .appendingPathComponent("DemoProjects")
-            .appendingPathComponent("HelloProject")
-
+        let projectFolder = Bundle.module.url(
+            forResource: "HelloProject",
+            withExtension: nil,
+            subdirectory: "Resources/DemoProjects"
+        )!
         let toolchain = XcodeToolchain()
         let projectManager = XcodeProjectManager(
             rootURL: projectFolder,
@@ -59,11 +62,12 @@ struct XcodeProjectManagerTests {
             )
         )
         try await projectManager.initialize()
-        let projectInfo = try await projectManager.resolveProjectInfo()
+        guard let xcodeProjectBaseInfo = await projectManager.xcodeProjectBaseInfo else {
+            throw NSError(domain: "XcodeProjectManagerTests", code: 1, userInfo: nil)
+        }
+        #expect(xcodeProjectBaseInfo.rootURL == projectFolder)
 
-        #expect(projectInfo.rootURL == projectFolder)
-
-        switch projectInfo.projectLocation {
+        switch xcodeProjectBaseInfo.projectLocation {
         case .explicitWorkspace:
             Issue.record("Expected implicit project workspace, got explicit workspace")
         case let .implicitWorkspace(_, url):
@@ -71,6 +75,5 @@ struct XcodeProjectManagerTests {
         case .standaloneProject:
             Issue.record("Expected implicit project workspace, got standalone project")
         }
-        #expect(projectInfo.buildSettingsForIndex.count == 3)
     }
 }

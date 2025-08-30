@@ -182,7 +182,7 @@ swift test
 
 - **BSPServer**: Core BSP protocol implementation
 - **BuildServerContext**: Manages project state and configuration  
-- **JSONRPCServer**: JSON-RPC transport layer
+- **JSONRPCConnection**: JSON-RPC transport layer
 - **XcodeBuild Integration**: Interface with xcodebuild tool
 
 ### BSP Method Support

@@ -23,7 +23,7 @@
             "type": "lldb",
             "request": "attach",
             "waitFor": true,
-            "name": "wait and attach XcodeBuildServerCLI",
+            "name": "Wait and attach XcodeBuildServerCLI",
             "program": "${workspaceFolder:XcodeBuildServer}/.build/debug/XcodeBuildServerCLI"
         },
         {
