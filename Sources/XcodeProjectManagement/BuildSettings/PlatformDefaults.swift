@@ -137,16 +137,23 @@ enum PlatformDefaults {
 
         var m: [String: String] = [:]
         m["SDKROOT"] = sdkName // 平台名（语义型）
-        if let info = sdkInfo { m["SDKROOT_PATH"] = info.path } // 供 -sdk 使用
+        if let info = sdkInfo {
+            m["SDKROOT_PATH"] = info.path
+            m["SDK_VERSION"] = info.version
+            let targetTriple = [
+                spec.deviceARCHS,
+                "apple",
+                spec.family + info.version,
+                isSim ? "simulator" : ""
+            ].filter { !$0.isEmpty }.joined(separator: "-")
+            m["TARGET_TRIPLE"] = targetTriple
+        } // 供 -sdk 使用
         m["PLATFORM_NAME"] = sdkName
         m["EFFECTIVE_PLATFORM_NAME"] = effectiveSuffix(for: sdkName)
         m["SWIFT_VERSION"] = swiftVersion
         m["ENABLE_TESTABILITY"] = configuration == "Debug" ? "YES" : "NO"
         m["CODE_SIGN_IDENTITY"] = spec.codeSignIdentity
         m["DEPLOYMENT_TARGET_SETTING_NAME"] = spec.depKey
-
-        // 部署版本键
-        if let info = sdkInfo { m[spec.depKey] = info.version }
 
         // ARCHS
         if isSim {

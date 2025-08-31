@@ -1,22 +1,32 @@
 import Foundation
 import XcodeProj
 
+struct ArgContext {
+    let buildSettings: [String: String]
+    let compiler: CompilerType
+    let fileURL: URL?
+    let derivedDataPath: URL
+    let xcodeInstallation: XcodeInstallation?
+}
+
 protocol CompileArgProvider: Sendable {
-    func arguments(for fileURL: URL, compilerType: CompilerType) -> [String]
+    func arguments(for context: ArgContext) -> [String]
+}
+
+protocol BuildSettingResolvable: Sendable {
+    func resolve(forKey key: String) -> String?
+    func resolveFileCompilerFlags(for fileURL: URL) -> [String]?
 }
 
 struct CompileArgGenerator: Sendable {
+    let argContext: ArgContext
     let providers: [CompileArgProvider]
 
-    func compileArguments(
-        for fileURL: URL,
-        compilerType: CompilerType
-    ) -> [String] {
+    func compileArguments() -> [String] {
         var args: [String] = []
         for provider in providers {
-            args += provider.arguments(for: fileURL, compilerType: compilerType)
+            args += provider.arguments(for: argContext)
         }
-        args.append(fileURL.path)
         return args
     }
 }
@@ -30,31 +40,34 @@ extension CompileArgGenerator {
         configurationName: String = "Debug",
         fileURL: URL
     ) throws -> CompileArgGenerator {
-        let providers: [CompileArgProvider] = try [
-            ResolverProvider(
-                resolver: BuildSettingResolver(
-                    xcodeInstallation: xcodeInstallation,
-                    xcodeGlobalSettings: xcodeGlobalSettings,
-                    xcodeProj: xcodeProj,
-                    target: target,
-                    configuration: configurationName
-                ),
-                compilerType: XcodeLanguageDialect(fileExtension: fileURL
-                    .pathExtension
-                ).isSwift ? .swift : .clang
-            ),
-            HeaderMapProvider(derivedDataPath: xcodeGlobalSettings
-                .derivedDataPath
-            ),
-            IndexStoreProvider(derivedDataPath: xcodeGlobalSettings
-                .derivedDataPath
-            ),
-            DerivedSourcesProvider(derivedDataPath: xcodeGlobalSettings
-                .derivedDataPath
-            ),
+        let buildSettings = try BuildSettingResolver(
+            xcodeInstallation: xcodeInstallation,
+            xcodeGlobalSettings: xcodeGlobalSettings,
+            xcodeProj: xcodeProj,
+            target: target,
+            configuration: configurationName
+        )
+
+        let argContext = ArgContext(
+            buildSettings: buildSettings.resolvedBuildSettings,
+            compiler: XcodeLanguageDialect(fileExtension: fileURL.pathExtension).isSwift ? .swift : .clang,
+            fileURL: fileURL,
+            derivedDataPath: xcodeGlobalSettings.derivedDataPath,
+            xcodeInstallation: xcodeInstallation
+        )
+
+        let providers: [CompileArgProvider] = [
+            SDKProvider(),
+            TargetTripleProvider(),
+            HeaderMapProvider(),
+            IndexStoreProvider(),
+            DerivedSourcesProvider(),
             ClangWarningProvider()
         ]
 
-        return CompileArgGenerator(providers: providers)
+        return CompileArgGenerator(
+            argContext: argContext,
+            providers: providers
+        )
     }
 }

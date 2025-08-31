@@ -4,7 +4,7 @@ import Testing
 import XcodeProj
 @testable import XcodeProjectManagement
 
-struct CompilerArgumentsProviderTests {
+struct CompilerArgsGeneratorTests {
     //
     @Test
     func resolveCompilerFlags() async throws {
@@ -23,27 +23,23 @@ struct CompilerArgumentsProviderTests {
             .getSelectedInstallation() else {
             return
         }
-
+        try await xcodeToolchain.initialize()
         let xcodeProj = try XcodeProj(path: Path(projectFilePath))
-        let resolver = try BuildSettingResolver(
-            xcodeInstallation: xcodeInstallation,
-            xcodeGlobalSettings: xcodeGlobalSettings,
-            xcodeProj: xcodeProj,
-            target: "Hello",
-            configuration: "Debug"
-        )
 
         let helloAppSwift = projectFolder
             .appendingPathComponent("Hello")
             .appendingPathComponent("HelloApp.swift")
 
-        let flags = ResolverProvider(
-            resolver: resolver,
-            compilerType: .swift
-        ).arguments(
-            for: helloAppSwift,
-            compilerType: .swift
+        let generator = try CompileArgGenerator.create(
+            xcodeInstallation: xcodeInstallation,
+            xcodeGlobalSettings: xcodeGlobalSettings,
+            xcodeProj: xcodeProj,
+            target: "Hello",
+            configurationName: "Debug",
+            fileURL: helloAppSwift
         )
+
+        let flags = generator.compileArguments()
         print(flags)
     }
 }

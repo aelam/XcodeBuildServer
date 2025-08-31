@@ -38,7 +38,7 @@ struct BuildSettingResolver: @unchecked Sendable {
     private let sourceRoot: Path
     private let project: PBXProject
     private let xcodeProjTarget: PBXNativeTarget
-    private let resolvedBuildSettings: [String: String]
+    let resolvedBuildSettings: [String: String]
 
     init(
         xcodeInstallation: XcodeInstallation,
@@ -118,13 +118,9 @@ struct BuildSettingResolver: @unchecked Sendable {
             .first { $0.name == configuration }?.buildSettings
 
         // determine SDK
-        let sdk: String = // processSDK(
-            // sdk:
-            targetBuildSettings?["SDKROOT"] as? String
+        let sdk: String = targetBuildSettings?["SDKROOT"] as? String
             ?? projectBuildSettings?["SDKROOT"] as? String
             ?? "iphonesimulator" // ,
-        // forceSimulator: forceSimulator
-        // )
 
         let defaultBuildSettings = PlatformDefaults.settings(
             for: sdk,
@@ -279,19 +275,6 @@ struct BuildSettingResolver: @unchecked Sendable {
         }
 
         return out.trimmingCharacters(in: .whitespaces)
-    }
-
-    private static func processSDK(
-        sdk: String,
-        forceSimulator: Bool
-    ) -> String {
-        guard forceSimulator else { return sdk }
-        return switch sdk {
-        case "iphoneos": "iphonesimulator"
-        case "watchos": "watchsimulator"
-        case "tvos": "tvossimulator"
-        default: sdk
-        }
     }
 }
 
