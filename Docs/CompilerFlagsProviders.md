@@ -20,6 +20,9 @@
 | **ClangWarningProvider** | `CLANG_WARN_*` | `-Wdocumentation`, `-Wempty-body`, … |
 | **GCCWarningProvider** | `GCC_WARN_*` | `-Wunused-variable`, `-Wshadow`, `-Werror`, … |
 | **SwiftSpecificProvider** | `ENABLE_TESTABILITY`, `SWIFT_ACTIVE_COMPILATION_CONDITIONS`, `SWIFT_ENABLE_BATCH_MODE` | `-enable-testing`, `-DDEBUG`, `-enable-batch-mode` |
+| **DefinesProvider** | `GCC_PREPROCESSOR_DEFINITIONS`, `SWIFT_ACTIVE_COMPILATION_CONDITIONS` | `-DDEBUG`, `-DFOO=1` |
+| **BridgingHeaderProvider** | `SWIFT_OBJC_BRIDGING_HEADER` | `-import-objc-header …` |
+| **ObjCProvider** | `CLANG_ENABLE_OBJC_ARC` | `-fobjc-arc`, `-fno-objc-arc` |
 
 ### 3. 搜索路径 (Search Paths)
 | Provider | 输入 Build Settings | 输出 Flags |
@@ -36,14 +39,7 @@
 | **LinkerProvider** | `OTHER_LDFLAGS`, `EXPORTED_SYMBOLS_FILE`, `DEAD_CODE_STRIPPING`, `LD_RUNPATH_SEARCH_PATHS` | `-lFoo`, `-exported_symbols_list`, `-Wl,-dead_strip`, `-rpath …` |
 | **BitcodeProvider** | `ENABLE_BITCODE` | `-fembed-bitcode`, `-fno-embed-bitcode` |
 
-### 5. 宏 / 代码生成 (Defines & Codegen)
-| Provider | 输入 Build Settings | 输出 Flags |
-|----------|---------------------|------------|
-| **DefinesProvider** | `GCC_PREPROCESSOR_DEFINITIONS`, `SWIFT_ACTIVE_COMPILATION_CONDITIONS` | `-DDEBUG`, `-DFOO=1` |
-| **BridgingHeaderProvider** | `SWIFT_OBJC_BRIDGING_HEADER` | `-import-objc-header …` |
-| **ObjCProvider** | `CLANG_ENABLE_OBJC_ARC` | `-fobjc-arc`, `-fno-objc-arc` |
-
-### 6. 工具链与产物 (Toolchain & DerivedData)
+### 5. 工具链与产物 (Toolchain & DerivedData)
 | Provider | 输入 Build Settings | 输出 Flags |
 |----------|---------------------|------------|
 | **ToolchainProvider** | `TOOLCHAIN_DIR` | `-toolchain com.apple.dt.toolchain.XcodeDefault` |
@@ -90,12 +86,6 @@ flowchart TD
         D17["BitcodeProvider"]
     end
 
-    subgraph Codegen
-        D18["DefinesProvider"]
-        D19["BridgingHeaderProvider"]
-        D20["ObjCProvider"]
-    end
-
     subgraph Toolchain
         D21["ToolchainProvider"]
         D22["IndexStoreProvider"]
@@ -108,14 +98,12 @@ flowchart TD
     C --> Compiler
     C --> SearchPaths
     C --> Linking
-    C --> Codegen
     C --> Toolchain
 
     Platform --> E["CompilerArgumentsBuilder"]
     Compiler --> E
     SearchPaths --> E
     Linking --> E
-    Codegen --> E
     Toolchain --> E
 
     E --> F["Final Compiler Arguments"]
@@ -127,11 +115,10 @@ flowchart TD
 
 完整覆盖 `buildSettingsForIndex` 的 Providers 分类：
 
-- **平台信息**：SDK / Arch / TargetTriple / DeploymentTarget  
-- **编译选项**：Optimization / LanguageStandard / DebugInfo / Warnings / Swift 特性  
+- **平台信息**：SDK / Arch / TargetTriple / DeploymentTarget 
+- **编译选项**：Optimization / LanguageStandard / DebugInfo / Warnings / Swift 特性 / Defines / BridgingHeader / ObjC  
 - **搜索路径**：Header / Framework / Library / Module  
 - **链接**：Linker / Bitcode  
-- **宏与代码生成**：Defines / BridgingHeader / ObjC  
 - **工具链 & DerivedData**：Toolchain / IndexStore / ModuleCache / Output  
 
 ---

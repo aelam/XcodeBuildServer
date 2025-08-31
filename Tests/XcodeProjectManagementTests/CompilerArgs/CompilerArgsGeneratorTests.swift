@@ -7,7 +7,7 @@ import XcodeProj
 struct CompilerArgsGeneratorTests {
     //
     @Test
-    func resolveCompilerFlags() async throws {
+    func resolveProjectSwiftCompilerFlags() async throws {
         let projectFolder = Bundle.module.resourceURL!
             .appendingPathComponent("DemoProjects")
             .appendingPathComponent("HelloProject")
@@ -26,17 +26,57 @@ struct CompilerArgsGeneratorTests {
         try await xcodeToolchain.initialize()
         let xcodeProj = try XcodeProj(path: Path(projectFilePath))
 
-        let helloAppSwift = projectFolder
-            .appendingPathComponent("Hello")
-            .appendingPathComponent("HelloApp.swift")
+        let swiftFile = projectFolder
+            .appendingPathComponent("HelloObjectiveC")
+            .appendingPathComponent("SceneDelegate.swift")
 
         let generator = try CompileArgGenerator.create(
             xcodeInstallation: xcodeInstallation,
             xcodeGlobalSettings: xcodeGlobalSettings,
             xcodeProj: xcodeProj,
-            target: "Hello",
+            target: "HelloObjectiveC",
             configurationName: "Debug",
-            fileURL: helloAppSwift
+            fileURL: swiftFile
+        )
+        print("=============================")
+        let flags = generator.compileArguments()
+        for flag in flags {
+            print(flag)
+        }
+        print("=============================")
+    }
+
+    @Test
+    func resolveProjectClangCompilerFlags() async throws {
+        let projectFolder = Bundle.module.resourceURL!
+            .appendingPathComponent("DemoProjects")
+            .appendingPathComponent("HelloWorkspace")
+        let projectFilePath = projectFolder
+            .appendingPathComponent("Hello.xcodeproj").path
+        let derivedDataPath = PathHash.derivedDataFullPath(for: projectFilePath)
+        let xcodeGlobalSettings =
+            XcodeGlobalSettings(derivedDataPath: derivedDataPath)
+
+        let xcodeToolchain = XcodeToolchain()
+        try await xcodeToolchain.initialize()
+        guard let xcodeInstallation = await xcodeToolchain
+            .getSelectedInstallation() else {
+            return
+        }
+        try await xcodeToolchain.initialize()
+        let xcodeProj = try XcodeProj(path: Path(projectFilePath))
+
+        let clangFile = projectFolder
+            .appendingPathComponent("HelloObjectiveC")
+            .appendingPathComponent("Person.m")
+
+        let generator = try CompileArgGenerator.create(
+            xcodeInstallation: xcodeInstallation,
+            xcodeGlobalSettings: xcodeGlobalSettings,
+            xcodeProj: xcodeProj,
+            target: "HelloObjectiveC",
+            configurationName: "Debug",
+            fileURL: clangFile
         )
         print("=============================")
         let flags = generator.compileArguments()

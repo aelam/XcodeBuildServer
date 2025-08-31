@@ -60,11 +60,12 @@ extension CompileArgGenerator {
             // Platform
             SDKProvider(),
             TargetTripleProvider(),
+            // CompilerOptions
+            ClangWarningProvider(),
+            GCCWarningProvider(),
             // SearchPaths
             HeaderMapProvider(),
             DerivedSourcesProvider(),
-            // CompilerOptions
-            ClangWarningProvider(),
             // Toolchain and DerivedData
             SDKStatCacheProvider(),
             IndexStoreProvider()
