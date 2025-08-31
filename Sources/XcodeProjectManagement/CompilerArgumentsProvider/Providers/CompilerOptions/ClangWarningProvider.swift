@@ -31,31 +31,11 @@ struct ClangWarningProvider: CompileArgProvider, Sendable {
         return buildClangFlags(settings: context.buildSettings)
     }
 
-    // swiftlint:disable:next cyclomatic_complexity
     private func buildClangFlags(settings: [String: String]) -> [String] {
         var flags: [String] = []
 
-        // Add user-configured Clang flags from build settings
-        if let std = settings["CLANG_CXX_LANGUAGE_STANDARD"] {
-            flags.append("-std=\(std)")
-        }
-        if let std = settings["GCC_C_LANGUAGE_STANDARD"] {
-            flags.append("-std=\(std)") // e.g., "gnu11"
-        }
-        if settings["CLANG_ENABLE_MODULES"] == "YES" {
-            flags.append("-fmodules")
-        }
-        if settings["CLANG_ENABLE_OBJC_ARC"] == "YES" {
-            flags.append("-fobjc-arc")
-        }
-        if settings["CLANG_ENABLE_OBJC_WEAK"] == "YES" {
-            flags.append("-fobjc-weak")
-        }
-
-        for (key, flag) in clangWarnMap {
-            if settings[key] == "YES" {
-                flags.append(flag)
-            }
+        for (key, flag) in clangWarnMap where settings[key] == "YES" {
+            flags.append(flag)
         }
 
         return flags

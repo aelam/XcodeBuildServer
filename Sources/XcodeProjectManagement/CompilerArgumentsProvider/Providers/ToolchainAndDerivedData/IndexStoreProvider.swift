@@ -5,9 +5,6 @@ struct IndexStoreProvider: CompileArgProvider, Sendable {
         let indexStorePath = context.derivedDataPath
             .deletingLastPathComponent()
             .appendingPathComponent("Index.noindex/DataStore")
-        return [
-            "-index-store-path",
-            indexStorePath.path
-        ]
+        return ["-index-store-path", indexStorePath.path]
     }
 }

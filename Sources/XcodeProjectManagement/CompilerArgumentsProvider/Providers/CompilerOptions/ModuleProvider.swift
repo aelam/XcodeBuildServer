@@ -1,0 +1,48 @@
+import Foundation
+
+struct ModuleProvider: CompileArgProvider, Sendable {
+    // `-fmodules`,   `-fmodule-name  Foo`
+    func arguments(for context: ArgContext) -> [String] {
+        let moduleCachePath = context.derivedDataPath
+            .deletingLastPathComponent()
+            .appendingPathComponent("ModuleCache.noindex")
+        switch context.compiler {
+        case .swift:
+            return buildSwiftFlags(settings: context.buildSettings, moduleCachePath: moduleCachePath)
+        case .clang:
+            return buildClangFlags(settings: context.buildSettings, moduleCachePath: moduleCachePath)
+        }
+    }
+
+    private func buildSwiftFlags(settings: [String: String], moduleCachePath: URL) -> [String] {
+        var flags: [String] = []
+
+        if let moduleName = settings["PRODUCT_MODULE_NAME"] {
+            flags.append("-module-name \(moduleName)")
+        }
+
+        flags.append(contentsOf: ["-module-cache-path", moduleCachePath.path])
+        flags.append(contentsOf: ["-Xcc", "-Xclang", "-Xcc", "-fmodule-format=raw"])
+        flags.append(contentsOf: ["-Xcc", "-fmodules-validate-system-headers"])
+
+        return flags
+    }
+
+    private func buildClangFlags(settings: [String: String], moduleCachePath: URL) -> [String] {
+        guard settings["CLANG_ENABLE_MODULES"] == "YES" else {
+            return []
+        }
+
+        var flags: [String] = []
+        flags.append("-fmodules")
+        flags.append(contentsOf: ["-fmodule-cache-path", moduleCachePath.path])
+        flags.append("-fmodule-format=raw")
+        flags.append("-fmodules-validate-system-headers")
+
+        if let moduleName = settings["PRODUCT_MODULE_NAME"] {
+            flags.append("-fmodule-name \(moduleName)")
+        }
+
+        return flags
+    }
+}

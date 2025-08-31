@@ -63,6 +63,10 @@ extension CompileArgGenerator {
             // CompilerOptions
             ClangWarningProvider(),
             GCCWarningProvider(),
+            ModuleProvider(),
+            ObjectiveCFeaturesProvider(),
+            SwiftProvider(),
+
             // SearchPaths
             HeaderMapProvider(),
             DerivedSourcesProvider(),

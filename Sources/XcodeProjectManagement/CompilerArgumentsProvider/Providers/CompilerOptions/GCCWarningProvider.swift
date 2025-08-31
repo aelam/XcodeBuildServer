@@ -80,7 +80,6 @@ struct GCCWarningProvider: CompileArgProvider, Sendable {
         return buildFlags(settings: context.buildSettings)
     }
 
-    // swiftlint:disable:next cyclomatic_complexity
     private func buildFlags(settings: [String: String]) -> [String] {
         var flags: [String] = []
 
