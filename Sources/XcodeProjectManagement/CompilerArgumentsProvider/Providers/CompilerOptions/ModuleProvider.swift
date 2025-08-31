@@ -38,10 +38,18 @@ struct ModuleProvider: CompileArgProvider, Sendable {
         flags.append(contentsOf: ["-fmodule-cache-path", moduleCachePath.path])
         flags.append("-fmodule-format=raw")
         flags.append("-fmodules-validate-system-headers")
+        flags.append(contentsOf: [
+            "-fmodules-prune-interval=86400",
+            "-fmodules-prune-after=345600"
+        ])
 
         if let moduleName = settings["PRODUCT_MODULE_NAME"] {
-            flags.append("-fmodule-name \(moduleName)")
+            flags.append("-fmodule-name=\(moduleName)")
         }
+
+        // Warning
+        flags.append("-Wnon-modular-include-in-framework-module")
+        flags.append("-Werror=non-modular-include-in-framework-module")
 
         return flags
     }

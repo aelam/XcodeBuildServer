@@ -164,6 +164,8 @@ enum PlatformDefaults {
             m["ARCHS"] = spec.deviceARCHS
         }
 
+        m["NATIVE_ARCH"] = hostArch()
+
         return m
     }
 }

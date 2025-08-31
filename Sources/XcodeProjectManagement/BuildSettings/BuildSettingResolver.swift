@@ -71,6 +71,7 @@ struct BuildSettingResolver: @unchecked Sendable {
         self.xcodeProjTarget = xcodeProjTarget
         self.resolvedBuildSettings = Self.resolveBuildSettings(
             xcodeInstallation: xcodeInstallation,
+            sourceRoot: sourceRoot,
             project: project,
             target: xcodeProjTarget,
             configuration: configuration,
@@ -101,8 +102,10 @@ struct BuildSettingResolver: @unchecked Sendable {
         }
     }
 
+    // swiftlint:disable:next function_parameter_count
     private static func resolveBuildSettings(
         xcodeInstallation: XcodeInstallation,
+        sourceRoot: Path,
         project: PBXProject,
         target: PBXNativeTarget,
         configuration: String,
@@ -166,6 +169,8 @@ struct BuildSettingResolver: @unchecked Sendable {
             .appendingPathComponent(configuration + "-" + actualSDK)
             .appendingPathComponent(moduleName + ".build")
             .path
+        result["PROJECT_GUID"] = project.uuid
+        result["SRCROOT"] = sourceRoot.string
 
         return result
     }

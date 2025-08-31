@@ -3,6 +3,7 @@ import XcodeProj
 
 struct ArgContext {
     let buildSettings: [String: String]
+    let languageDialect: XcodeLanguageDialect
     let compiler: CompilerType
     let fileURL: URL?
     let derivedDataPath: URL
@@ -48,9 +49,11 @@ extension CompileArgGenerator {
             configuration: configurationName
         )
 
+        let languageDialect = XcodeLanguageDialect(fileExtension: fileURL.pathExtension)
         let argContext = ArgContext(
             buildSettings: buildSettings.resolvedBuildSettings,
-            compiler: XcodeLanguageDialect(fileExtension: fileURL.pathExtension).isSwift ? .swift : .clang,
+            languageDialect: languageDialect,
+            compiler: languageDialect.isSwift ? .swift : .clang,
             fileURL: fileURL,
             derivedDataPath: xcodeGlobalSettings.derivedDataPath,
             xcodeInstallation: xcodeInstallation
@@ -61,6 +64,7 @@ extension CompileArgGenerator {
             SDKProvider(),
             TargetTripleProvider(),
             // CompilerOptions
+            ClangProvider(),
             ClangWarningProvider(),
             GCCWarningProvider(),
             ModuleProvider(),
@@ -68,8 +72,13 @@ extension CompileArgGenerator {
             SwiftProvider(),
 
             // SearchPaths
+            HeaderSearchPathProvider(),
+            LibrarySearchPathProvider(),
+            FrameworkSearchPathProvider(),
             HeaderMapProvider(),
             DerivedSourcesProvider(),
+            VFSOverlayProvider(),
+
             // Toolchain and DerivedData
             SDKStatCacheProvider(),
             IndexStoreProvider()
