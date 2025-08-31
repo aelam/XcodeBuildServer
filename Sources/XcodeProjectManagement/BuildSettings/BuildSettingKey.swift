@@ -96,9 +96,11 @@ enum BuildSettingKey: String, CaseIterable {
     case swiftActiveCompilationConditions = "SWIFT_ACTIVE_COMPILATION_CONDITIONS"
 
     case configuration = "CONFIGURATION" // = Debug | Release
-    case configurationBuildDir =
-        "CONFIGURATION_BUILD_DIR" // = ${derivedDataPath}/Build/Products/Debug-iphoneos
-    // = ${derivedDataPath}/Build/Intermediates.noindex/Debug-iphoneos
+
+    // ${derivedDataPath}/Build/Products/Debug-iphoneos
+    case configurationBuildDir = "CONFIGURATION_BUILD_DIR"
+
+    // ${derivedDataPath}/Build/Intermediates.noindex/<ProjectName>.build/<Configuration>-<SDK>/<TargetName>.build
     case configurationTempDir = "CONFIGURATION_TEMP_DIR"
 
     // BUILT_PRODUCTS_DIR

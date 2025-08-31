@@ -57,12 +57,17 @@ extension CompileArgGenerator {
         )
 
         let providers: [CompileArgProvider] = [
+            // Platform
             SDKProvider(),
             TargetTripleProvider(),
+            // SearchPaths
             HeaderMapProvider(),
-            IndexStoreProvider(),
             DerivedSourcesProvider(),
-            ClangWarningProvider()
+            // CompilerOptions
+            ClangWarningProvider(),
+            // Toolchain and DerivedData
+            SDKStatCacheProvider(),
+            IndexStoreProvider()
         ]
 
         return CompileArgGenerator(

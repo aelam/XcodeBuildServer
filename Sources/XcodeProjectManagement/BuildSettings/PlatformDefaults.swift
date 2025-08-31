@@ -147,7 +147,7 @@ enum PlatformDefaults {
                 isSim ? "simulator" : ""
             ].filter { !$0.isEmpty }.joined(separator: "-")
             m["TARGET_TRIPLE"] = targetTriple
-        } // 供 -sdk 使用
+        }
         m["PLATFORM_NAME"] = sdkName
         m["EFFECTIVE_PLATFORM_NAME"] = effectiveSuffix(for: sdkName)
         m["SWIFT_VERSION"] = swiftVersion

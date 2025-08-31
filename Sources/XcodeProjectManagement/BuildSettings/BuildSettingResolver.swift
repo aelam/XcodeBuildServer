@@ -150,9 +150,22 @@ struct BuildSettingResolver: @unchecked Sendable {
             ]
         )
 
+        let moduleName = result["PRODUCT_NAME"]?.asRFC1034Identifier() ?? target.name.asRFC1034Identifier()
+        let actualSDK = result["PLATFORM_NAME"] ?? sdk
+        result["PROJECT"] = project.name
         result["SDKROOT"] = result["SDKROOT_PATH"]
-        result["PRODUCT_MODULE_NAME"] = result["PRODUCT_NAME"]?.asRFC1034Identifier()
+        result["PRODUCT_MODULE_NAME"] = moduleName
         result["SYMROOT"] = xcodeGlobalSettings.symRoot.path
+        result["CONFIGURATION_BUILD_DIR"] = xcodeGlobalSettings.derivedDataPath
+            .appendingPathComponent("Build/Products")
+            .appendingPathComponent(configuration + "-" + actualSDK)
+            .path
+        result["CONFIGURATION_TEMP_DIR"] = xcodeGlobalSettings.derivedDataPath
+            .appendingPathComponent("Build/Intermediates.noindex")
+            .appendingPathComponent(project.name + ".build")
+            .appendingPathComponent(configuration + "-" + actualSDK)
+            .appendingPathComponent(moduleName + ".build")
+            .path
 
         return result
     }

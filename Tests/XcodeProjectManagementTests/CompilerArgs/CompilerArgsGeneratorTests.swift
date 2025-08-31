@@ -38,8 +38,11 @@ struct CompilerArgsGeneratorTests {
             configurationName: "Debug",
             fileURL: helloAppSwift
         )
-
+        print("=============================")
         let flags = generator.compileArguments()
-        print(flags)
+        for flag in flags {
+            print(flag)
+        }
+        print("=============================")
     }
 }
