@@ -108,4 +108,53 @@ struct CompilerArgsGeneratorTests {
         }
         print("=============================")
     }
+
+    @Test
+    func resolvePodProject() async throws {
+        let targetName = "UserStickers"
+
+        let projectFolder = URL(fileURLWithPath: "/Users/wang.lun/Work/line-stickers-ios")
+        let projectFilePath = projectFolder
+            .appendingPathComponent("UserStickers/UserStickers.xcodeproj").path
+        let derivedDataPath = PathHash.derivedDataFullPath(for: projectFilePath)
+        let xcodeGlobalSettings =
+            XcodeGlobalSettings(derivedDataPath: derivedDataPath)
+
+        let xcodeToolchain = XcodeToolchain()
+        try await xcodeToolchain.initialize()
+        guard let xcodeInstallation = await xcodeToolchain
+            .getSelectedInstallation() else {
+            return
+        }
+        try await xcodeToolchain.initialize()
+        let xcodeProj = try XcodeProj(path: Path(projectFilePath))
+
+        let file = projectFolder
+            .appendingPathComponent("UserStickers/UserStickers/AppDelegate.swift")
+
+        let targetIdentifier = TargetIdentifier(
+            projectFilePath: projectFilePath,
+            targetName: targetName
+        )
+        let sourceItems = SourceFileLister.loadSourceFiles(
+            for: xcodeProj,
+            targets: [targetName]
+        )[targetIdentifier.rawValue] ?? []
+
+        let generator = try CompileArgGenerator.create(
+            xcodeInstallation: xcodeInstallation,
+            xcodeGlobalSettings: xcodeGlobalSettings,
+            xcodeProj: xcodeProj,
+            target: targetName,
+            configurationName: "Debug",
+            fileURL: file,
+            sourceItems: sourceItems
+        )
+        print("=============================")
+        let flags = generator.compileArguments()
+        for flag in flags {
+            print(flag)
+        }
+        print("=============================")
+    }
 }

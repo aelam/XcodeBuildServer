@@ -113,30 +113,45 @@ struct BuildSettingResolver: @unchecked Sendable {
         overrides: [String: String],
         forceSimulator: Bool
     ) -> [String: String] {
-        let projectBuildSettings = project.buildConfigurationList?
+        let projectBuildConfiguration = project.buildConfigurationList?
             .buildConfigurations
-            .first { $0.name == configuration }?.buildSettings
-        var targetBuildSettings = target.buildConfigurationList?
+            .first { $0.name == configuration }
+        let projectBuildSettings = projectBuildConfiguration?.buildSettings
+
+        let targetBuildConfiguration = target.buildConfigurationList?
             .buildConfigurations
-            .first { $0.name == configuration }?.buildSettings
+            .first { $0.name == configuration }
+
+        var xcconfigSettings: [String: String] = [:]
+        if
+            let baseConfigRef = targetBuildConfiguration?.baseConfiguration,
+            let xcconfigPath = try? baseConfigRef.fullPath(sourceRoot: sourceRoot) {
+            xcconfigSettings = (try? XCConfigParser.parse(at: xcconfigPath.url.path)) ?? [:]
+        }
+
+        let targetBuildSettings = targetBuildConfiguration?.buildSettings
 
         // determine SDK
         let sdk: String = targetBuildSettings?["SDKROOT"] as? String
             ?? projectBuildSettings?["SDKROOT"] as? String
             ?? "iphonesimulator" // ,
 
-        let defaultBuildSettings = PlatformDefaults.settings(
+        var defaultBuildSettings = PlatformDefaults.settings(
             for: sdk,
             configuration: configuration,
             xcode: xcodeInstallation,
             forceSimulator: forceSimulator
         )
 
-        if targetBuildSettings?["TARGET_NAME"] == nil {
-            targetBuildSettings?["TARGET_NAME"] = target.name
-        }
+        let buildDir = xcodeGlobalSettings.derivedDataPath
+            .appendingPathComponent("Build/Products")
 
-        let autoFix: [String: String] = ["CONFIGURATION": configuration]
+        defaultBuildSettings["CONFIGURATION"] = configuration
+        defaultBuildSettings["BUILD_DIR"] = buildDir.path
+        defaultBuildSettings["PROJECT_GUID"] = project.uuid
+        defaultBuildSettings["SRCROOT"] = sourceRoot.string
+
+        let autoFix: [String: String] = [:]
 
         // 1. project-level
         // 2. target-level
@@ -147,6 +162,7 @@ struct BuildSettingResolver: @unchecked Sendable {
             layers: [
                 defaultBuildSettings,
                 normalizeSettings(projectBuildSettings ?? [:]),
+                xcconfigSettings,
                 normalizeSettings(targetBuildSettings ?? [:]),
                 autoFix,
                 overrides
@@ -155,12 +171,10 @@ struct BuildSettingResolver: @unchecked Sendable {
 
         let moduleName = result["PRODUCT_NAME"]?.asRFC1034Identifier() ?? target.name.asRFC1034Identifier()
         let actualSDK = result["PLATFORM_NAME"] ?? sdk
-        result["PROJECT"] = project.name
         result["SDKROOT"] = result["SDKROOT_PATH"]
         result["PRODUCT_MODULE_NAME"] = moduleName
         result["SYMROOT"] = xcodeGlobalSettings.symRoot.path
-        result["CONFIGURATION_BUILD_DIR"] = xcodeGlobalSettings.derivedDataPath
-            .appendingPathComponent("Build/Products")
+        result["CONFIGURATION_BUILD_DIR"] = buildDir
             .appendingPathComponent(configuration + "-" + actualSDK)
             .path
         result["CONFIGURATION_TEMP_DIR"] = xcodeGlobalSettings.derivedDataPath
@@ -169,8 +183,6 @@ struct BuildSettingResolver: @unchecked Sendable {
             .appendingPathComponent(configuration + "-" + actualSDK)
             .appendingPathComponent(moduleName + ".build")
             .path
-        result["PROJECT_GUID"] = project.uuid
-        result["SRCROOT"] = sourceRoot.string
 
         return result
     }
@@ -220,9 +232,9 @@ struct BuildSettingResolver: @unchecked Sendable {
         var resolved: [String: String] = [:]
         var pending: [String: String] = [:]
 
-        // 2.1 seed：不含 `$(` 的先放入 resolved，其余进 pending
+        // 2.1 seed：不含占位符的先放入 resolved，其余进 pending
         for (k, v) in raw {
-            if v.contains("$(") {
+            if hasVar(v) {
                 pending[k] = v
             } else {
                 resolved[k] = v
@@ -237,8 +249,9 @@ struct BuildSettingResolver: @unchecked Sendable {
             var progressed = false
 
             for (k, v) in pending {
+                // 使用你已经改好的 expandVarsFast，已支持 $(KEY) 与 ${KEY}
                 let newV = expandVarsFast(v, using: resolved)
-                if newV.contains("$(") {
+                if hasVar(newV) {
                     // 还有未解析的占位符，下轮再试
                     stillPending[k] = newV
                 } else {
@@ -252,7 +265,7 @@ struct BuildSettingResolver: @unchecked Sendable {
             if !progressed { break } // 无进展，避免死循环
         }
 
-        // 2.3 兜底：还含 `$(` 的，最后再用已解析值做一次替换（无法解析的变量置空）
+        // 2.3 兜底：仍含占位符的做最后一次替换（未知变量置空）
         for (k, v) in pending {
             resolved[k] = expandVarsFast(v, using: resolved, replaceUnknownWithEmpty: true)
         }
@@ -260,32 +273,49 @@ struct BuildSettingResolver: @unchecked Sendable {
         return resolved
     }
 
-    /// 快速展开 $(KEY)；仅使用 `known` 里的已解析值
+    @inline(__always)
+    private static func hasVar(_ s: String) -> Bool {
+        // 同时支持 $(KEY) 与 ${KEY}
+        s.contains("$(") || s.contains("${")
+    }
+
+    /// 快速展开 $(KEY) ${KEY}；仅使用 `known` 里的已解析值
     private static func expandVarsFast(
         _ value: String,
         using known: [String: String],
         replaceUnknownWithEmpty: Bool = false
     ) -> String {
-        guard value.contains("$(") else { return value }
+        guard value.contains("$") else { return value }
         var out = ""
         var i = value.startIndex
 
         while i < value.endIndex {
-            if value[i] == "$",
-               value.index(after: i) < value.endIndex,
-               value[value.index(after: i)] == "(" {
-                var j = value.index(i, offsetBy: 2)
-                var name = ""
-                while j < value.endIndex, value[j] != ")" {
-                    name.append(value[j])
-                    j = value.index(after: j)
-                }
+            if value[i] == "$" {
+                let nextIndex = value.index(after: i)
+                if nextIndex < value.endIndex {
+                    let delimiter = value[nextIndex]
+                    var closing: Character?
+                    var j = value.index(after: nextIndex)
+                    if delimiter == "(" {
+                        closing = ")"
+                    } else if delimiter == "{" {
+                        closing = "}"
+                    }
 
-                if j < value.endIndex { // 命中闭合 ')'
-                    let rep = known[name] ?? (replaceUnknownWithEmpty ? "" : "$(\(name))")
-                    out.append(rep)
-                    i = value.index(after: j)
-                    continue
+                    if let closing {
+                        var name = ""
+                        while j < value.endIndex, value[j] != closing {
+                            name.append(value[j])
+                            j = value.index(after: j)
+                        }
+
+                        if j < value.endIndex { // 找到闭合符
+                            let rep = known[name] ?? (replaceUnknownWithEmpty ? "" : "$\(delimiter)\(name)\(closing)")
+                            out.append(rep)
+                            i = value.index(after: j)
+                            continue
+                        }
+                    }
                 }
             }
             out.append(value[i])
