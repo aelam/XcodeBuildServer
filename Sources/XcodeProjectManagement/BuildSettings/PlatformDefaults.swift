@@ -115,7 +115,7 @@ enum PlatformDefaults {
         forceSimulator: Bool = false,
         simulatorArchPolicy: SimulatorArchPolicy = .hostOnly,
         swiftVersion: String = "5.0"
-    ) -> [String: String] {
+    ) throws -> [String: String] {
         // 取规格
         guard let spec = specs[requestedSDK] ??
             specs[requestedSDK.replacingOccurrences(
@@ -132,24 +132,25 @@ enum PlatformDefaults {
 
         // 找 SDK 信息（用于 path + deployment target）
         // 设备/模拟器各自查询，没找到就回退到同家族 device
-        let sdkInfo = xcode.defaultDeploymentTarget(for: sdkName)
-            ?? xcode.defaultDeploymentTarget(for: spec.deviceSDK)
+        let sdkInfo = (try? xcode.defaultDeploymentTarget(for: sdkName))
+            ?? (try? xcode.defaultDeploymentTarget(for: spec.deviceSDK))
+        guard let sdkInfo else {
+            throw XcodeToolchainError.invalidSDK("Cannot find SDK info for \(sdkName)")
+        }
 
         var m: [String: String] = [:]
         m["SDKROOT"] = sdkName // 平台名（语义型）
-        if let info = sdkInfo {
-            m["SDKROOT_PATH"] = info.path
-            m["SDK_VERSION"] = info.version
-            let targetTriple = [
-                hostArch(),
-                "apple",
-                spec.family + info.version,
-                isSim ? "simulator" : ""
-            ].filter { !$0.isEmpty }.joined(separator: "-")
-            m["TARGET_TRIPLE"] = targetTriple
+        m["SDKROOT_PATH"] = sdkInfo.path
+        m["SDK_VERSION"] = sdkInfo.version
+        let targetTriple = [
+            hostArch(),
+            "apple",
+            spec.family + sdkInfo.version,
+            isSim ? "simulator" : ""
+        ].filter { !$0.isEmpty }.joined(separator: "-")
+        m["TARGET_TRIPLE"] = targetTriple
+        m["SDK_BUILD_VERSION"] = sdkInfo.buildVersion
 
-            m["SDK_BUILD_VERSION"] = info.buildVersion
-        }
         m["PLATFORM_NAME"] = sdkName
         m["EFFECTIVE_PLATFORM_NAME"] = effectiveSuffix(for: sdkName)
         m["SWIFT_VERSION"] = swiftVersion

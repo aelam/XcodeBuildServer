@@ -69,7 +69,7 @@ struct BuildSettingResolver: @unchecked Sendable {
         self.sourceRoot = sourceRoot
         self.project = project
         self.xcodeProjTarget = xcodeProjTarget
-        self.resolvedBuildSettings = Self.resolveBuildSettings(
+        self.resolvedBuildSettings = try Self.resolveBuildSettings(
             xcodeInstallation: xcodeInstallation,
             sourceRoot: sourceRoot,
             project: project,
@@ -112,7 +112,7 @@ struct BuildSettingResolver: @unchecked Sendable {
         xcodeGlobalSettings: XcodeGlobalSettings,
         overrides: [String: String],
         forceSimulator: Bool
-    ) -> [String: String] {
+    ) throws -> [String: String] {
         let projectBuildConfiguration = project.buildConfigurationList?
             .buildConfigurations
             .first { $0.name == configuration }
@@ -136,7 +136,7 @@ struct BuildSettingResolver: @unchecked Sendable {
             ?? projectBuildSettings?["SDKROOT"] as? String
             ?? "iphonesimulator" // ,
 
-        var defaultBuildSettings = PlatformDefaults.settings(
+        var defaultBuildSettings = try PlatformDefaults.settings(
             for: sdk,
             configuration: configuration,
             xcode: xcodeInstallation,

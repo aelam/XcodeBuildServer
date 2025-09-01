@@ -12,6 +12,7 @@ public enum XcodeToolchainError: Error, LocalizedError {
     case xcodebuildNotFound
     case invalidDeveloperDir(String)
     case toolchainSelectionFailed(String)
+    case invalidSDK(String)
 
     public var errorDescription: String? {
         switch self {
@@ -25,6 +26,8 @@ public enum XcodeToolchainError: Error, LocalizedError {
             "Invalid DEVELOPER_DIR: \(path)"
         case let .toolchainSelectionFailed(reason):
             "Failed to select toolchain: \(reason)"
+        case let .invalidSDK(reason):
+            "Invalid SDK: \(reason)"
         }
     }
 }
@@ -106,7 +109,7 @@ public extension XcodeInstallation {
     func defaultDeploymentTarget(
         for platformName: String,
         forSimulator: Bool = false
-    ) -> SDK? {
+    ) throws -> SDK {
         let platform = SDK.Platform(rawValue: platformName) ?? .iOSSimulator
 
         let sdkDir = developerDir
@@ -119,35 +122,31 @@ public extension XcodeInstallation {
             let contents = try? FileManager.default
             .contentsOfDirectory(atPath: sdkDir.path)
         else {
-            return nil
+            throw XcodeToolchainError.invalidSDK("No SDK found for \(platformName)")
         }
         let sdkNames = contents.filter { $0.hasSuffix(".sdk") }
-            .sorted { $0 > $1 }
+            .sorted(by: compareSDK).reversed()
         guard let sdkName = sdkNames.first else {
-            return nil
+            throw XcodeToolchainError.invalidSDK("No SDK found for \(platformName)")
         }
-        // 例: "iPhoneOS18.5.sdk" → 提取 18.5 → 返回 "18.0"
-        let versionString = sdkName.replacingOccurrences(
-            of: "\(platform.platformPathName)",
-            with: ""
-        )
-        .replacingOccurrences(of: ".sdk", with: "")
-        .replacingOccurrences(of: "OS", with: "") // AppleTVOS/WatchOS 处理
-        .replacingOccurrences(of: "Simulator", with: "")
         let sdkPath = sdkDir.appendingPathComponent(sdkName).path
-
         let plistPath = sdkPath + "/System/Library/CoreServices/SystemVersion.plist"
 
-        var buildVersion: String?
-        if let dict = NSDictionary(contentsOfFile: plistPath) {
-            buildVersion = dict["ProductBuildVersion"] as? String
+        guard let dict = NSDictionary(contentsOfFile: plistPath) else {
+            throw XcodeToolchainError.invalidSDK("Cannot read SDK plist at \(plistPath)")
+        }
+        guard let buildVersion = dict["ProductBuildVersion"] as? String else {
+            throw XcodeToolchainError.invalidSDK("Cannot find ProductBuildVersion in \(plistPath)")
+        }
+        guard let productVersion = dict["ProductVersion"] as? String else {
+            throw XcodeToolchainError.invalidSDK("Cannot find ProductVersion in \(plistPath)")
         }
 
         return SDK(
             name: platformName,
-            version: versionString,
+            version: productVersion,
             path: sdkPath,
-            buildVersion: buildVersion ?? "Unknown"
+            buildVersion: buildVersion
         )
     }
 }
@@ -472,4 +471,23 @@ private enum XcodePathResolver {
 
         return result.output.trimmingCharacters(in: .whitespacesAndNewlines)
     }
+}
+
+func compareSDK(_ lhs: String, _ rhs: String) -> Bool {
+    func parseVersion(_ name: String) -> (Int, Int) {
+        let base = name.replacingOccurrences(of: ".sdk", with: "")
+        guard let idx = base.firstIndex(where: { $0.isNumber }) else {
+            return (0, 0) // 没有数字，比如 MacOSX.sdk
+        }
+        let versionPart = base[idx...]
+        let comps = versionPart.split(separator: ".")
+        let major = Int(comps.first ?? "0") ?? 0
+        let minor = comps.count > 1 ? Int(comps[1]) ?? 0 : 0
+        return (major, minor)
+    }
+
+    let lv = parseVersion(lhs)
+    let rv = parseVersion(rhs)
+    if lv.0 != rv.0 { return lv.0 < rv.0 }
+    return lv.1 < rv.1
 }
