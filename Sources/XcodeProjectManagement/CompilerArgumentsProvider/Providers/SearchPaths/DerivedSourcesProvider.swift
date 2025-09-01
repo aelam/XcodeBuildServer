@@ -3,7 +3,8 @@ import Foundation
 struct DerivedSourcesProvider: CompileArgProvider, Sendable {
     func arguments(for context: ArgContext) -> [String] {
         buildModuleProductIncludeDir(settings: context.buildSettings) +
-            buildDerivedSourcesIncludeDir(settings: context.buildSettings)
+            buildDerivedSourcesIncludeDir(settings: context.buildSettings) +
+            buildGeneratedAssetSymbols(settings: context.buildSettings, compiler: context.compiler)
     }
 
     private func buildModuleProductIncludeDir(settings: [String: String]) -> [String] {
@@ -43,6 +44,23 @@ struct DerivedSourcesProvider: CompileArgProvider, Sendable {
             "-I", derivedNormalDir.path,
             "-I", derivedArchDir.path,
             "-I", derivedDir.path
+        ]
+    }
+
+    // swift only
+    private func buildGeneratedAssetSymbols(settings: [String: String], compiler: CompilerType) -> [String] {
+        guard
+            compiler == .swift,
+            let configurationTempDir = settings["CONFIGURATION_TEMP_DIR"]
+        else {
+            return []
+        }
+
+        return [
+            URL(fileURLWithPath: configurationTempDir)
+                .appendingPathComponent("DerivedSources")
+                .appendingPathComponent("GeneratedAssetSymbols.swift")
+                .path
         ]
     }
 }
