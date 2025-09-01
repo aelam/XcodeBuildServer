@@ -70,6 +70,7 @@ extension CompileArgGenerator {
             ModuleProvider(),
             ObjectiveCFeaturesProvider(),
             SwiftProvider(),
+            PCHProvider(),
 
             // SearchPaths
             HeaderSearchPathProvider(),
