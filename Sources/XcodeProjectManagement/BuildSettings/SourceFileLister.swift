@@ -31,14 +31,13 @@ enum SourceFileLister {
                     xcodeProj: xcodeProj,
                     sourceRoot: sourceRoot
                 )
-                continue
+            } else {
+                // 旧结构：SourcesBuildPhase
+                sourceItems += sourceFilesFromBuildPhases(
+                    target,
+                    sourceRoot: sourceRoot
+                )
             }
-
-            // 旧结构：SourcesBuildPhase
-            sourceItems += sourceFilesFromBuildPhases(
-                target,
-                sourceRoot: sourceRoot
-            )
 
             // 去重
             sourceItems = Array(Set(sourceItems))
@@ -62,8 +61,14 @@ enum SourceFileLister {
                 return nil // 如果没有路径，就丢掉
             }
             let fullFolderPath = sourceRoot + Path(folderPath)
+
+            var path = fullFolderPath.string
+            if !path.hasSuffix("/") {
+                path += "/"
+            }
+
             return SourceItem(
-                path: URL(filePath: fullFolderPath.string),
+                path: URL(filePath: path),
                 itemKind: .directory
             )
         }

@@ -30,13 +30,23 @@ struct CompilerArgsGeneratorTests {
             .appendingPathComponent("HelloObjectiveC")
             .appendingPathComponent("SceneDelegate.swift")
 
+        let targetIdentifier = TargetIdentifier(
+            projectFilePath: projectFilePath,
+            targetName: "HelloObjectiveC"
+        )
+        let sourceItems = SourceFileLister.loadSourceFiles(
+            for: xcodeProj,
+            targets: ["HelloObjectiveC"]
+        )[targetIdentifier.rawValue] ?? []
+
         let generator = try CompileArgGenerator.create(
             xcodeInstallation: xcodeInstallation,
             xcodeGlobalSettings: xcodeGlobalSettings,
             xcodeProj: xcodeProj,
             target: "HelloObjectiveC",
             configurationName: "Debug",
-            fileURL: swiftFile
+            fileURL: swiftFile,
+            sourceItems: sourceItems
         )
         print("=============================")
         let flags = generator.compileArguments()
@@ -70,13 +80,23 @@ struct CompilerArgsGeneratorTests {
             .appendingPathComponent("HelloObjectiveC")
             .appendingPathComponent("Person.m")
 
+        let targetIdentifier = TargetIdentifier(
+            projectFilePath: projectFilePath,
+            targetName: "HelloObjectiveC"
+        )
+        let sourceItems = SourceFileLister.loadSourceFiles(
+            for: xcodeProj,
+            targets: ["HelloObjectiveC"]
+        )[targetIdentifier.rawValue] ?? []
+
         let generator = try CompileArgGenerator.create(
             xcodeInstallation: xcodeInstallation,
             xcodeGlobalSettings: xcodeGlobalSettings,
             xcodeProj: xcodeProj,
             target: "HelloObjectiveC",
             configurationName: "Debug",
-            fileURL: clangFile
+            fileURL: clangFile,
+            sourceItems: sourceItems
         )
         print("=============================")
         let flags = generator.compileArguments()

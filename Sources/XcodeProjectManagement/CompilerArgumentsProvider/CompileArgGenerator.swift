@@ -6,6 +6,7 @@ struct ArgContext {
     let languageDialect: XcodeLanguageDialect
     let compiler: CompilerType
     let fileURL: URL?
+    let sourceItems: [SourceItem]
     let derivedDataPath: URL
     let xcodeInstallation: XcodeInstallation?
 }
@@ -39,7 +40,8 @@ extension CompileArgGenerator {
         xcodeProj: XcodeProj,
         target: String,
         configurationName: String = "Debug",
-        fileURL: URL
+        fileURL: URL,
+        sourceItems: [SourceItem] = []
     ) throws -> CompileArgGenerator {
         let buildSettings = try BuildSettingResolver(
             xcodeInstallation: xcodeInstallation,
@@ -55,6 +57,7 @@ extension CompileArgGenerator {
             languageDialect: languageDialect,
             compiler: languageDialect.isSwift ? .swift : .clang,
             fileURL: fileURL,
+            sourceItems: sourceItems,
             derivedDataPath: xcodeGlobalSettings.derivedDataPath,
             xcodeInstallation: xcodeInstallation
         )
@@ -70,6 +73,7 @@ extension CompileArgGenerator {
             ModuleProvider(),
             ObjectiveCFeaturesProvider(),
             SwiftProvider(),
+            SwiftFilesProvider(),
             PCHProvider(),
 
             // SearchPaths
