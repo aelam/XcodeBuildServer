@@ -85,6 +85,10 @@ extension CompileArgGenerator {
             VFSOverlayProvider(),
             TestSearchPathProvider(),
 
+            // DebugInfo
+            DebugInfoProvider(),
+            ProfileProvider(),
+
             // Toolchain and DerivedData
             SDKStatCacheProvider(),
             IndexStoreProvider(),

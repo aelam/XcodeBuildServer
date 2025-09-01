@@ -11,11 +11,25 @@ struct TestSearchPathProvider: CompileArgProvider, Sendable {
         buildFlags(settings: context.buildSettings)
     }
 
+    private func isTestTarget(settings: [String: String]) -> Bool {
+        settings["TEST_TARGET_NAME"] != nil || // Debug
+            settings["TEST_HOST"] != nil || settings["BUNDLE_LOADER"] != nil // Release
+    }
+
     private func buildFlags(settings: [String: String]) -> [String] {
-        guard let sdkRoot = settings["SDK_ROOT"] else { return [] }
+        guard
+            isTestTarget(settings: settings),
+            let sdkRoot = settings["SDKROOT"],
+            let sdkURL = URL(string: sdkRoot)
+        else { return [] }
+
+        let platformPath = sdkURL.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+
         return [
-            "-F", "\(sdkRoot)/Developer/Library/Frameworks", // TEST_FRAMEWORK_SEARCH_PATHS
-            "-L", "\(sdkRoot)/Developer/usr/lib" // TEST_LIBRARY_SEARCH_PATHS
+            // TEST_FRAMEWORK_SEARCH_PATHS
+            "-F", platformPath.appendingPathComponent("Developer/Library/Frameworks").path,
+            // TEST_LIBRARY_SEARCH_PATHS
+            "-L", platformPath.appendingPathComponent("Developer/usr/lib").path
         ]
     }
 }

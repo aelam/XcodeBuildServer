@@ -19,11 +19,6 @@ struct ClangProvider: CompileArgProvider, Sendable {
             flags.append(optimizationLevel)
         }
 
-        flags.append(contentsOf: [
-            "-fprofile-instr-generate",
-            "-fcoverage-mapping"
-        ])
-
         return flags
     }
 

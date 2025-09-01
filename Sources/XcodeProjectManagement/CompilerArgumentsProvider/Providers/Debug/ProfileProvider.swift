@@ -1,18 +1,20 @@
 import Foundation
 
-struct DebugInfoProvider: CompileArgProvider, Sendable {
+struct ProfileProvider: CompileArgProvider, Sendable {
     func arguments(for context: ArgContext) -> [String] {
         buildFlags(settings: context.buildSettings, compiler: context.compiler)
     }
 
     private func buildFlags(settings: [String: String], compiler: CompilerType) -> [String] {
         var flags: [String] = []
-        flags.append("-g")
-        flags.append("-gmodules")
 
         if compiler == .swift {
-            flags.append(contentsOf: ["-Xfrontend", "-serialize-debugging-options"])
+            // Coverage
+            flags.append(contentsOf: ["-profile-coverage-mapping", "-profile-generate"])
+        } else {
+            flags.append(contentsOf: ["-fprofile-instr-generate", "-fcoverage-mapping"])
         }
+
         return flags
     }
 }

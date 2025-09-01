@@ -8,6 +8,9 @@ struct CompilerArgsGeneratorTests {
     //
     @Test
     func resolveProjectSwiftCompilerFlags() async throws {
+        let targetName = "HelloUITests"
+        let fileName = "HelloUITestsLaunchTests.swift"
+
         let projectFolder = Bundle.module.resourceURL!
             .appendingPathComponent("DemoProjects")
             .appendingPathComponent("HelloWorkspace")
@@ -27,23 +30,23 @@ struct CompilerArgsGeneratorTests {
         let xcodeProj = try XcodeProj(path: Path(projectFilePath))
 
         let swiftFile = projectFolder
-            .appendingPathComponent("HelloObjectiveC")
-            .appendingPathComponent("SceneDelegate.swift")
+            .appendingPathComponent(targetName)
+            .appendingPathComponent(fileName)
 
         let targetIdentifier = TargetIdentifier(
             projectFilePath: projectFilePath,
-            targetName: "HelloObjectiveC"
+            targetName: targetName
         )
         let sourceItems = SourceFileLister.loadSourceFiles(
             for: xcodeProj,
-            targets: ["HelloObjectiveC"]
+            targets: [targetName]
         )[targetIdentifier.rawValue] ?? []
 
         let generator = try CompileArgGenerator.create(
             xcodeInstallation: xcodeInstallation,
             xcodeGlobalSettings: xcodeGlobalSettings,
             xcodeProj: xcodeProj,
-            target: "HelloObjectiveC",
+            target: targetName,
             configurationName: "Debug",
             fileURL: swiftFile,
             sourceItems: sourceItems

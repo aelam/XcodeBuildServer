@@ -31,6 +31,10 @@ struct SwiftProvider: CompileArgProvider, Sendable {
             }
         }
 
+        if settings["ENABLE_TESTABILITY"] == "YES" {
+            flags.append("-enable-testing")
+        }
+
         flags.append("-emit-const-values")
 
         if
