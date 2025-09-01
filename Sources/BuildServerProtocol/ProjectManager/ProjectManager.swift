@@ -51,17 +51,23 @@ public struct ProjectInfo: Sendable {
     public let name: String?
     public let targets: [ProjectTarget]
     public let derivedDataPath: URL
+    public let indexStoreURL: URL
+    public let indexDatabaseURL: URL
 
     public init(
         rootURL: URL,
         name: String?,
         targets: [ProjectTarget],
-        derivedDataPath: URL
+        derivedDataPath: URL,
+        indexStoreURL: URL,
+        indexDatabaseURL: URL
     ) {
         self.rootURL = rootURL
         self.name = name
         self.targets = targets
         self.derivedDataPath = derivedDataPath
+        self.indexStoreURL = indexStoreURL
+        self.indexDatabaseURL = indexDatabaseURL
     }
 }
 

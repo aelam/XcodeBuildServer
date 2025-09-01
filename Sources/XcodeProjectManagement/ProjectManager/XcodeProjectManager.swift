@@ -126,7 +126,6 @@ public actor XcodeProjectManager {
 //    }
 
     private let xcodeProjectReference: XcodeProjectReference?
-    public private(set) var xcodeProjectInfo: XcodeProjectInfo?
     public private(set) var xcodeProjectBaseInfo: XcodeProjectBaseInfo?
 
     public init(
@@ -185,12 +184,6 @@ public actor XcodeProjectManager {
             xcodeInstallation: selectedXcodeInstallation
         )
         self.xcodeProjectBaseInfo = xcodeProjectBaseInfo
-
-        let xcodeProjectInfo = XcodeProjectInfo(
-            baseProjectInfo: xcodeProjectBaseInfo,
-            xcodeBuildSettingsForIndex: [:]
-        )
-        self.xcodeProjectInfo = xcodeProjectInfo
     }
 
     // MARK: - Build

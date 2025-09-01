@@ -25,7 +25,7 @@ extension XcodeProjectManager: @preconcurrency ProjectManager {
     public func startBuild(targets: [String]) async {}
 
     public var projectInfo: ProjectInfo? {
-        xcodeProjectInfo?.asProjectInfo()
+        xcodeProjectBaseInfo?.asProjectInfo()
     }
 
     public func getTargetList(

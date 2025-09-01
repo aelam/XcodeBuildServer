@@ -92,6 +92,8 @@ public struct BuildInitializeRequest: ContextualRequestType, Sendable {
             let response = createResponseForBuildInitializeRequest(
                 rootURL: rootURL,
                 derivedDataPath: projectInfo.derivedDataPath,
+                indexStoreURL: projectInfo.indexStoreURL,
+                indexDatabaseURL: projectInfo.indexDatabaseURL,
                 clientCapabilities: self.params.capabilities
             )
 
@@ -103,11 +105,10 @@ public struct BuildInitializeRequest: ContextualRequestType, Sendable {
     private func createResponseForBuildInitializeRequest(
         rootURL: URL,
         derivedDataPath: URL,
+        indexStoreURL: URL,
+        indexDatabaseURL: URL,
         clientCapabilities: Params.BuildClientCapabilities
     ) -> BuildInitializeResponse {
-        let indexDataStoreURL = derivedDataPath.appendingPathComponent("Index.noIndex/DataStore")
-        let indexDatabaseURL = derivedDataPath.appendingPathComponent("IndexDatabase.noIndex")
-
         // Create server capabilities based on client capabilities
         let serverCapabilities = createServerCapabilities(
             clientCapabilities: clientCapabilities
@@ -124,7 +125,7 @@ public struct BuildInitializeRequest: ContextualRequestType, Sendable {
                 capabilities: serverCapabilities,
                 dataKind: "sourceKit",
                 data: .init(
-                    indexStorePath: indexDataStoreURL.path,
+                    indexStorePath: indexStoreURL.path,
                     indexDatabasePath: indexDatabaseURL.path,
                     prepareProvider: true,
                     sourceKitOptionsProvider: true,

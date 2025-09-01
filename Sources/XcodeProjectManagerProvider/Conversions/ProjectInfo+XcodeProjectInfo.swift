@@ -9,13 +9,15 @@ import BuildServerProtocol
 import Foundation
 import XcodeProjectManagement
 
-extension XcodeProjectInfo {
+extension XcodeProjectBaseInfo {
     func asProjectInfo() -> ProjectInfo {
         ProjectInfo(
-            rootURL: baseProjectInfo.rootURL,
-            name: name,
-            targets: baseProjectInfo.xcodeTargets.map { $0.asProjectTarget() },
-            derivedDataPath: baseProjectInfo.xcodeGlobalSettings.derivedDataPath
+            rootURL: rootURL,
+            name: "",
+            targets: xcodeTargets.map { $0.asProjectTarget() },
+            derivedDataPath: xcodeGlobalSettings.derivedDataPath,
+            indexStoreURL: xcodeGlobalSettings.indexStoreURL,
+            indexDatabaseURL: xcodeGlobalSettings.indexDatabaseURL
         )
     }
 }
