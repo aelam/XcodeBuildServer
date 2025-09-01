@@ -21,6 +21,7 @@ struct DiagnosticProvider: CompileArgProvider, Sendable {
         flags.append("-debug-time-type-check")
         flags.append("-Xfrontend")
         flags.append("-debug-time-closure-creation")
+        flags.append(contentsOf: ["-Xcc", "-Xclang", "-Xcc", "-detailed-preprocessing-record"])
 
         return flags
     }
@@ -34,7 +35,7 @@ struct DiagnosticProvider: CompileArgProvider, Sendable {
         flags.append("-fno-color-diagnostics")
         flags.append("-fmacro-backtrace-limit=0")
         flags.append("-fsyntax-only")
-        flags.append("-detailed-preprocessing-record")
+        flags.append(contentsOf: ["-Xclang", "-detailed-preprocessing-record"])
 
         return flags
     }

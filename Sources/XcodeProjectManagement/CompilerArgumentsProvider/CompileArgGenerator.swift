@@ -81,7 +81,8 @@ extension CompileArgGenerator {
 
             // Toolchain and DerivedData
             SDKStatCacheProvider(),
-            IndexStoreProvider()
+            IndexStoreProvider(),
+            OutputProvider(),
         ]
 
         return CompileArgGenerator(

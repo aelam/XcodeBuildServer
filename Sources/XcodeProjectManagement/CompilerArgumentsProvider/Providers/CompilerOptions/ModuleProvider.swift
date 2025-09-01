@@ -18,13 +18,13 @@ struct ModuleProvider: CompileArgProvider, Sendable {
         var flags: [String] = []
 
         if let moduleName = settings["PRODUCT_MODULE_NAME"] {
-            flags.append("-module-name \(moduleName)")
+            flags.append(contentsOf: ["-module-name", moduleName])
         }
 
         flags.append(contentsOf: ["-module-cache-path", moduleCachePath.path])
         flags.append(contentsOf: ["-Xcc", "-Xclang", "-Xcc", "-fmodule-format=raw"])
         flags.append(contentsOf: ["-Xcc", "-fmodules-validate-system-headers"])
-
+        flags.append(contentsOf: ["-Xcc", "-fretain-comments-from-system-headers"])
         return flags
     }
 
@@ -38,6 +38,7 @@ struct ModuleProvider: CompileArgProvider, Sendable {
         flags.append(contentsOf: ["-fmodule-cache-path", moduleCachePath.path])
         flags.append("-fmodule-format=raw")
         flags.append("-fmodules-validate-system-headers")
+        flags.append("-fretain-comments-from-system-headers")
         flags.append(contentsOf: [
             "-fmodules-prune-interval=86400",
             "-fmodules-prune-after=345600"

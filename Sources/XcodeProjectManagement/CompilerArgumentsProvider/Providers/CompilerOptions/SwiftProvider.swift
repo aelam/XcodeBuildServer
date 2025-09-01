@@ -16,10 +16,19 @@ struct SwiftProvider: CompileArgProvider, Sendable {
             flags.append(path) // objc bridging header full path
         }
 
+        flags.append("-c")
+        flags.append("-j14") //
         flags.append("-enable-batch-mode") // swift only
+        flags.append("-enable-bare-slash-regex")
+        flags.append(contentsOf: ["-enable-experimental-feature", "DebugDescriptionMacro"])
+        flags.append("-suppress-warnings")
 
         if let optimizationLevel = settings["SWIFT_OPTIMIZATION_LEVEL"] {
             flags.append(optimizationLevel)
+
+            if optimizationLevel == "-Onone" {
+                flags.append("-enforce-exclusivity=checked")
+            }
         }
 
         flags.append("-emit-const-values")
@@ -39,6 +48,16 @@ struct SwiftProvider: CompileArgProvider, Sendable {
                 fileURL.path
             ])
         }
+
+        // OTHER_SWIFT_FLAGS
+        if let otherSwiftFlags = settings["OTHER_SWIFT_FLAGS"] {
+            let otherFlags = otherSwiftFlags
+                .components(separatedBy: " ")
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+            flags.append(contentsOf: otherFlags)
+        }
+
         return flags
     }
 }
