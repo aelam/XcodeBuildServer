@@ -3,7 +3,7 @@ import Foundation
 struct SDKStatCacheProvider: CompileArgProvider, Sendable {
     func arguments(for context: ArgContext) -> [String] {
         guard
-            let buildVersion = context.xcodeInstallation?.buildVersion,
+            let buildVersion = context.buildSettings["SDK_BUILD_VERSION"],
             let sdkPath = context.buildSettings["SDKROOT_PATH"],
             let sdkVersion = context.buildSettings["SDK_VERSION"],
             let platformName = context.buildSettings["PLATFORM_NAME"]

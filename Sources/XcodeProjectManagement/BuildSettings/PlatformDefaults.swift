@@ -147,6 +147,8 @@ enum PlatformDefaults {
                 isSim ? "simulator" : ""
             ].filter { !$0.isEmpty }.joined(separator: "-")
             m["TARGET_TRIPLE"] = targetTriple
+
+            m["SDK_BUILD_VERSION"] = info.buildVersion
         }
         m["PLATFORM_NAME"] = sdkName
         m["EFFECTIVE_PLATFORM_NAME"] = effectiveSuffix(for: sdkName)

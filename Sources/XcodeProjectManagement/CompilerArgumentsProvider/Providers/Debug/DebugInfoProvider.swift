@@ -8,10 +8,11 @@ struct DebugInfoProvider: CompileArgProvider, Sendable {
     private func buildFlags(settings: [String: String], compiler: CompilerType) -> [String] {
         var flags: [String] = []
         flags.append("-g")
-        flags.append("-gmodules")
 
         if compiler == .swift {
             flags.append(contentsOf: ["-Xfrontend", "-serialize-debugging-options"])
+        } else {
+            flags.append("-gmodules")
         }
         return flags
     }

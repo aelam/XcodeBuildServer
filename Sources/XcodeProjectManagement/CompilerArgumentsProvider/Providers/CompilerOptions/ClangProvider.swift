@@ -9,7 +9,7 @@ struct ClangProvider: CompileArgProvider, Sendable {
     private func buildFlags(settings: [String: String], languageDialect: XcodeLanguageDialect) -> [String] {
         var flags: [String] = []
 
-        flags.append("-fallow-pch-with-compiler-errors")
+        flags.append(contentsOf: ["-Xclang", "-fallow-pch-with-compiler-errors"])
         flags.append(contentsOf: buildLangFlag(for: languageDialect))
         flags.append(contentsOf: buildPrecompiledHeaderFlags(settings: settings))
         flags.append(contentsOf: buildPreprocessorFlags(settings: settings))

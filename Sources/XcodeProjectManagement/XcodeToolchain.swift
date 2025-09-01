@@ -100,6 +100,7 @@ public extension XcodeInstallation {
         let name: String
         let version: String
         let path: String
+        let buildVersion: String
     }
 
     func defaultDeploymentTarget(
@@ -134,7 +135,20 @@ public extension XcodeInstallation {
         .replacingOccurrences(of: "OS", with: "") // AppleTVOS/WatchOS 处理
         .replacingOccurrences(of: "Simulator", with: "")
         let sdkPath = sdkDir.appendingPathComponent(sdkName).path
-        return SDK(name: platformName, version: versionString, path: sdkPath)
+
+        let plistPath = sdkPath + "/System/Library/CoreServices/SystemVersion.plist"
+
+        var buildVersion: String?
+        if let dict = NSDictionary(contentsOfFile: plistPath) {
+            buildVersion = dict["ProductBuildVersion"] as? String
+        }
+
+        return SDK(
+            name: platformName,
+            version: versionString,
+            path: sdkPath,
+            buildVersion: buildVersion ?? "Unknown"
+        )
     }
 }
 
