@@ -169,7 +169,7 @@ struct BuildSettingResolver: @unchecked Sendable {
             ]
         )
 
-        let actualSDK = result["PLATFORM_NAME"] ?? sdk
+        let effectivePlatformName = result["EFFECTIVE_PLATFORM_NAME"] ?? ""
         result["SDKROOT"] = result["SDKROOT_PATH"]
 
         let moduleName = target.name.asRFC1034Identifier()
@@ -178,12 +178,12 @@ struct BuildSettingResolver: @unchecked Sendable {
 
         result["SYMROOT"] = xcodeGlobalSettings.symRoot.path
         result["CONFIGURATION_BUILD_DIR"] = buildDir
-            .appendingPathComponent(configuration + "-" + actualSDK)
+            .appendingPathComponent(configuration + effectivePlatformName)
             .path
         result["CONFIGURATION_TEMP_DIR"] = xcodeGlobalSettings.derivedDataPath
             .appendingPathComponent("Build/Intermediates.noindex")
             .appendingPathComponent(project.name + ".build")
-            .appendingPathComponent(configuration + "-" + actualSDK)
+            .appendingPathComponent(configuration + effectivePlatformName)
             .appendingPathComponent(moduleName + ".build")
             .path
 

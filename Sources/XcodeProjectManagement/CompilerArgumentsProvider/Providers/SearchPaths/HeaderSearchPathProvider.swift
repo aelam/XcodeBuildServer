@@ -11,14 +11,8 @@ struct HeaderSearchPathProvider: CompileArgProvider, Sendable {
     }
 
     private func buildHeaderSearchPathsFlags(settings: [String: String], compiler: CompilerType) -> [String] {
-        var flags: [String] = []
-
-        for pathsKey in searchPathsKeys {
-            guard let paths = settings[pathsKey] else { continue }
-            flags.append(contentsOf: buildFlags(paths: paths, compiler: compiler))
-        }
-
-        return flags
+        searchPathsKeys.compactMap { settings[$0] }
+            .flatMap { buildFlags(paths: $0, compiler: compiler) }
     }
 
     private func buildFlags(paths: String, compiler: CompilerType) -> [String] {
