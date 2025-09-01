@@ -8,6 +8,7 @@ public struct XcodeProjectBaseInfo: Sendable, Codable {
     public let xcodeTargets: [XcodeTarget]
     public let schemes: [XcodeScheme]
     public var configuration = "Debug"
+    public let xcodeInstallation: XcodeInstallation
 }
 
 public struct XcodeProjectInfo: Sendable, Codable {

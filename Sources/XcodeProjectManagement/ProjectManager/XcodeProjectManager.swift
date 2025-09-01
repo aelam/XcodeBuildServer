@@ -145,6 +145,9 @@ public actor XcodeProjectManager {
 
     public func initialize() async throws {
         try await toolchain.initialize()
+        guard let selectedXcodeInstallation = await toolchain.getSelectedInstallation() else {
+            throw XcodeProjectError.toolchainError("No Xcode installation selected")
+        }
 
         let projectLocation = try locator.resolveProjectType(
             rootURL: rootURL,
@@ -178,7 +181,8 @@ public actor XcodeProjectManager {
             xcodeGlobalSettings: xcodeGlobalSettings,
             importantScheme: importantScheme,
             xcodeTargets: actualTargets,
-            schemes: schemes
+            schemes: schemes,
+            xcodeInstallation: selectedXcodeInstallation
         )
         self.xcodeProjectBaseInfo = xcodeProjectBaseInfo
 
@@ -188,44 +192,6 @@ public actor XcodeProjectManager {
         )
         self.xcodeProjectInfo = xcodeProjectInfo
     }
-
-//    public func resolveXcodeProjectInfo() async throws -> XcodeProjectInfo {
-//        if let xcodeProjectInfo {
-//            return xcodeProjectInfo
-//        }
-//
-//        guard let xcodeProjectBaseInfo else {
-//            fatalError("XcodeProjectInfo cannot be resolved before initialize()")
-//        }
-//
-//        let xcodeGlobalSettings = xcodeProjectBaseInfo.xcodeGlobalSettings
-//        let buildSettingsMap = try await settingsLoader.loadBuildSettingsMap(
-//            rootURL: rootURL,
-//            targets: xcodeProjectBaseInfo.xcodeTargets,
-//            configuration: "Debug",
-//            xcodeGlobalSettings: xcodeGlobalSettings,
-//            customFlags: [
-//                "SYMROOT=" + xcodeGlobalSettings.symRoot.path,
-//                "OBJROOT=" + xcodeGlobalSettings.objRoot.path,
-//                "SDK_STAT_CACHE_DIR=" + xcodeGlobalSettings.sdkStatCacheDir.path,
-//                // "BUILD_DIR=/tmp/__A__/Build/Products"
-//                // "BUILD_ROOT=/tmp/__A__/Build/Products"
-//            ]
-//        )
-//
-//        let buildSettingsForIndex = IndexSettingsGeneration.generate(
-//            rootURL: rootURL,
-//            xcodeGlobalSettings: xcodeProjectBaseInfo.xcodeGlobalSettings,
-//            buildSettingsMap: buildSettingsMap
-//        )
-//
-//        let xcodeProjectInfo = XcodeProjectInfo(
-//            baseProjectInfo: xcodeProjectBaseInfo,
-//            xcodeBuildSettingsForIndex: buildSettingsForIndex
-//        )
-//        self.xcodeProjectInfo = xcodeProjectInfo
-//        return xcodeProjectInfo
-//    }
 
     // MARK: - Build
 

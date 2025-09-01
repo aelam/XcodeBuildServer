@@ -47,23 +47,7 @@ extension XcodeProjectManager: @preconcurrency ProjectManager {
     }
 
     public func getCompileArguments(targetIdentifier: String, sourceFileURL: URL) async throws -> [String] {
-        guard
-            let xcodeProjectInfo,
-            let language = Language(inferredFromFileExtension: sourceFileURL)
-        else { return [] }
-        let buildSettings = xcodeProjectInfo.xcodeBuildSettingsForIndex
-        let buildSettingsForTarget = buildSettings[targetIdentifier]
-        let buildSettingForFile = buildSettingsForTarget?[sourceFileURL.path]
-
-        guard let buildSettingForFile else {
-            return []
-        }
-
-        if language.isSwift {
-            return buildSettingForFile.swiftASTCommandArguments ?? []
-        } else if language.isClang {
-            return buildSettingForFile.clangASTCommandArguments ?? []
-        }
-        return []
+        let xcodeTargetIdentifier = TargetIdentifier(rawValue: targetIdentifier)
+        return try await getCompileArguments(targetIdentifier: xcodeTargetIdentifier, sourceFileURL: sourceFileURL)
     }
 }

@@ -29,7 +29,7 @@ public enum XcodeToolchainError: Error, LocalizedError {
     }
 }
 
-public struct XcodeInstallation: Sendable {
+public struct XcodeInstallation: Sendable, Codable {
     public let path: URL
     public let version: String
     public let buildVersion: String
