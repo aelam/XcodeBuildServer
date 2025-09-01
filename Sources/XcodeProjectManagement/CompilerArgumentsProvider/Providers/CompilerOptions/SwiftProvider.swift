@@ -40,7 +40,7 @@ struct SwiftProvider: CompileArgProvider, Sendable {
         if
             let configurationTempDir = settings["CONFIGURATION_TEMP_DIR"],
             let targetName = settings["TARGET_NAME"],
-            let arch = settings["ARCH"] {
+            let arch = settings["NATIVE_ARCH"] {
             let fileURL = URL(fileURLWithPath: configurationTempDir)
                 .appendingPathComponent("Objects-normal")
                 .appendingPathComponent(arch)

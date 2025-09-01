@@ -8,8 +8,7 @@ import Foundation
 struct OutputProvider: CompileArgProvider, Sendable {
     func arguments(for context: ArgContext) -> [String] {
         guard
-            let fileURL = context.fileURL,
-            context.compiler == .clang
+            let fileURL = context.fileURL
         else {
             return []
         }

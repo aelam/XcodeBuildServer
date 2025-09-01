@@ -169,10 +169,13 @@ struct BuildSettingResolver: @unchecked Sendable {
             ]
         )
 
-        let moduleName = result["PRODUCT_NAME"]?.asRFC1034Identifier() ?? target.name.asRFC1034Identifier()
         let actualSDK = result["PLATFORM_NAME"] ?? sdk
         result["SDKROOT"] = result["SDKROOT_PATH"]
+
+        let moduleName = target.name.asRFC1034Identifier()
+        result["PRODUCT_NAME"] = target.name
         result["PRODUCT_MODULE_NAME"] = moduleName
+
         result["SYMROOT"] = xcodeGlobalSettings.symRoot.path
         result["CONFIGURATION_BUILD_DIR"] = buildDir
             .appendingPathComponent(configuration + "-" + actualSDK)

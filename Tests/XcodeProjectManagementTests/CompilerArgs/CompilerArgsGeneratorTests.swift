@@ -111,8 +111,8 @@ struct CompilerArgsGeneratorTests {
 
     @Test
     func resolvePodProject() async throws {
-        let targetName = "UserStickers"
-
+        let targetName = "UserStickersNotificationService"
+        let fileSubPath = "UserStickersNotificationService/NotificationService.swift"
         let projectFolder = URL(fileURLWithPath: "/Users/wang.lun/Work/line-stickers-ios")
         let projectFilePath = projectFolder
             .appendingPathComponent("UserStickers/UserStickers.xcodeproj").path
@@ -130,7 +130,7 @@ struct CompilerArgsGeneratorTests {
         let xcodeProj = try XcodeProj(path: Path(projectFilePath))
 
         let file = projectFolder
-            .appendingPathComponent("UserStickers/UserStickers/AppDelegate.swift")
+            .appendingPathComponent(fileSubPath)
 
         let targetIdentifier = TargetIdentifier(
             projectFilePath: projectFilePath,

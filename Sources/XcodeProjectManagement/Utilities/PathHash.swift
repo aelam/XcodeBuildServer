@@ -15,7 +15,7 @@ public enum PathHash {
         return base.appendingPathComponent(derivedDataFolderName(for: projectOrWorkspacePath))
     }
 
-    private static func hashStringForPath(_ projectOrWorkspacePath: String) -> String {
+    static func hashStringForPath(_ projectOrWorkspacePath: String) -> String {
         let digest = Insecure.MD5.hash(data: Data(projectOrWorkspacePath.utf8))
         let bytes = [UInt8](digest) // 16 bytes
 

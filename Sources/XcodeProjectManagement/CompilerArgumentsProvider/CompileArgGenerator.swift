@@ -63,6 +63,7 @@ extension CompileArgGenerator {
         )
 
         let providers: [CompileArgProvider] = [
+            WorkingDirectoryProvider(),
             // Platform
             SDKProvider(),
             TargetTripleProvider(),

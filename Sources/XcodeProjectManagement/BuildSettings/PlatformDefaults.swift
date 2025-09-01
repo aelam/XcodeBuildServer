@@ -141,7 +141,7 @@ enum PlatformDefaults {
             m["SDKROOT_PATH"] = info.path
             m["SDK_VERSION"] = info.version
             let targetTriple = [
-                spec.deviceARCHS,
+                hostArch(),
                 "apple",
                 spec.family + info.version,
                 isSim ? "simulator" : ""

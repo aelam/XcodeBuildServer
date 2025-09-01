@@ -51,7 +51,8 @@ struct DerivedSourcesProvider: CompileArgProvider, Sendable {
     private func buildGeneratedAssetSymbols(settings: [String: String], compiler: CompilerType) -> [String] {
         guard
             compiler == .swift,
-            let configurationTempDir = settings["CONFIGURATION_TEMP_DIR"]
+            let configurationTempDir = settings["CONFIGURATION_TEMP_DIR"],
+            settings["GENERATE_ASSET_SYMBOLS"] == "YES"
         else {
             return []
         }

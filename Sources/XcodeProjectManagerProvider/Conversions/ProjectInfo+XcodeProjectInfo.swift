@@ -15,9 +15,7 @@ extension XcodeProjectInfo {
             rootURL: baseProjectInfo.rootURL,
             name: name,
             targets: baseProjectInfo.xcodeTargets.map { $0.asProjectTarget() },
-            buildSettingsForIndex: [:],
-            projectBuildSettings: baseProjectInfo.xcodeGlobalSettings
-                .asProjectBuildSettings()
+            derivedDataPath: baseProjectInfo.xcodeGlobalSettings.derivedDataPath
         )
     }
 }
@@ -37,13 +35,5 @@ extension XcodeTarget {
 
     var targetIdentifier: String {
         "xcode://\(projectURL.path)/\(name)"
-    }
-}
-
-extension XcodeGlobalSettings {
-    func asProjectBuildSettings() -> ProjectBuildSettings {
-        ProjectBuildSettings(
-            derivedDataPath: derivedDataPath
-        )
     }
 }

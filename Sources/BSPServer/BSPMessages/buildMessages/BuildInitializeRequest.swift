@@ -91,7 +91,7 @@ public struct BuildInitializeRequest: ContextualRequestType, Sendable {
 
             let response = createResponseForBuildInitializeRequest(
                 rootURL: rootURL,
-                projectBuildSettings: projectInfo.projectBuildSettings,
+                derivedDataPath: projectInfo.derivedDataPath,
                 clientCapabilities: self.params.capabilities
             )
 
@@ -102,11 +102,11 @@ public struct BuildInitializeRequest: ContextualRequestType, Sendable {
 
     private func createResponseForBuildInitializeRequest(
         rootURL: URL,
-        projectBuildSettings: ProjectBuildSettings,
+        derivedDataPath: URL,
         clientCapabilities: Params.BuildClientCapabilities
     ) -> BuildInitializeResponse {
-        let indexDataStoreURL = projectBuildSettings.indexStoreURL
-        let indexDatabaseURL = projectBuildSettings.indexDatabaseURL
+        let indexDataStoreURL = derivedDataPath.appendingPathComponent("Index.noIndex/DataStore")
+        let indexDatabaseURL = derivedDataPath.appendingPathComponent("IndexDatabase.noIndex")
 
         // Create server capabilities based on client capabilities
         let serverCapabilities = createServerCapabilities(
@@ -114,7 +114,7 @@ public struct BuildInitializeRequest: ContextualRequestType, Sendable {
         )
         let fileWatchers = createFileSystemWatchers(
             rootURL: rootURL,
-            projectBuildSettings: projectBuildSettings
+            derivedDataPath: derivedDataPath
         )
         logger.debug("BuildInitializeRequest: creating response")
         let response = BuildInitializeResponse(
@@ -141,9 +141,8 @@ public struct BuildInitializeRequest: ContextualRequestType, Sendable {
 
     private func createFileSystemWatchers(
         rootURL: URL,
-        projectBuildSettings: ProjectBuildSettings
+        derivedDataPath: URL
     ) -> [FileSystemWatcher] {
-        let derivedDataPath = projectBuildSettings.derivedDataPath
         // Create file watcher, excluding derivedDataPath if inside project
         var fileWatchers: [FileSystemWatcher] = []
 

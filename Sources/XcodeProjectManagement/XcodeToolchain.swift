@@ -76,11 +76,11 @@ public extension XcodeInstallation {
                 switch self {
                 case .iOS: "iPhoneOS"
                 case .iOSSimulator: "iPhoneSimulator"
-                case .macOS: "MacOS"
-                case .watchOS: "watchOS"
-                case .watchOSSimulator: "watchOSSimulator"
-                case .tvOS: "tvOS"
-                case .tvOSSimulator: "tvOSSimulator"
+                case .macOS: "MacOSX"
+                case .watchOS: "WatchOS"
+                case .watchOSSimulator: "WatchOSSimulator"
+                case .tvOS: "AppleTVOS"
+                case .tvOSSimulator: "AppleTVSimulator"
                 }
             }
 
