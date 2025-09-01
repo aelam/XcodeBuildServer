@@ -12,7 +12,7 @@ struct SwiftProvider: CompileArgProvider, Sendable {
         if let sourceRoot = settings["SRCROOT"],
            let bridgingHeader = settings["SWIFT_OBJC_BRIDGING_HEADER"] {
             let path = sourceRoot + "/" + bridgingHeader
-            flags.append("-include")
+            flags.append("-import-objc-header")
             flags.append(path) // objc bridging header full path
         }
 

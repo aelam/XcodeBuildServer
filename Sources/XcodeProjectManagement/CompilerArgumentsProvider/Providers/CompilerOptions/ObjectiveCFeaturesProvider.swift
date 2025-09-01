@@ -7,7 +7,10 @@ struct ObjectiveCFeaturesProvider: CompileArgProvider, Sendable {
     ]
 
     func arguments(for context: ArgContext) -> [String] {
-        buildFlags(settings: context.buildSettings)
+        guard context.compiler == .clang else {
+            return []
+        }
+        return buildFlags(settings: context.buildSettings)
     }
 
     private func buildFlags(settings: [String: String]) -> [String] {

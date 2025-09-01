@@ -83,6 +83,7 @@ extension CompileArgGenerator {
             HeaderMapProvider(),
             DerivedSourcesProvider(),
             VFSOverlayProvider(),
+            TestSearchPathProvider(),
 
             // Toolchain and DerivedData
             SDKStatCacheProvider(),
