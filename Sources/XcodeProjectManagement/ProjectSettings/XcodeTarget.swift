@@ -3,27 +3,6 @@ import XcodeProj
 
 /// Target information with complete project context
 public struct XcodeTarget: Sendable, Hashable, Codable {
-    public enum Platform: String, Sendable, Codable, Hashable {
-        case iOS = "iphoneos"
-        case macOS = "macosx"
-        case tvOS = "appletvos"
-        case watchOS = "watchos"
-        case visionOS = "xros"
-
-        // "AVAILABLE_PLATFORMS" : "android appletvos appletvsimulator driverkit iphoneos iphonesimulator macosx qnx
-        // watchos watchsimulator xros xrsimulator",
-
-        func sdk(simulator: Bool) -> XcodeSDK {
-            switch self {
-            case .iOS: simulator ? .iOSSimulator : .iOS
-            case .macOS: .macOS
-            case .tvOS: simulator ? .tvSimulator : .tvOS
-            case .watchOS: simulator ? .watchSimulator : .watchOS
-            case .visionOS: simulator ? .visionSimulator : .visionOS
-            }
-        }
-    }
-
     public typealias ProductType = XcodeProductType
 
     public let targetIdentifier: XcodeTargetIdentifier
@@ -34,7 +13,7 @@ public struct XcodeTarget: Sendable, Hashable, Codable {
     public let isFromWorkspace: Bool
     public let buildForTesting: Bool
     public let buildForRunning: Bool
-    public let xcodeTargetPlatform: XcodeTarget.Platform
+    public let xcodeTargetPlatform: Platform
     public let xcodeProductType: XcodeProductType
 
     public var productNameWithExtension: String? {
@@ -107,5 +86,5 @@ public typealias XcodeSchemeTargetInfo = XcodeTarget
 
 public struct GroupedTargetsKey: Hashable, Sendable {
     let projectURL: URL
-    let platform: XcodeTarget.Platform
+    let platform: Platform
 }

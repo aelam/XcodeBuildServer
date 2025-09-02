@@ -52,60 +52,6 @@ public struct XcodeInstallation: Sendable, Codable {
 }
 
 public extension XcodeInstallation {
-    struct SDK {
-        enum Platform: String, Sendable {
-            case iOS = "iphoneos"
-            case iOSSimulator = "iphonesimulator"
-            case macOS = "macosx"
-            case watchOS = "watchos"
-            case watchOSSimulator = "watchsimulator"
-            case tvOS = "tvos"
-            case tvOSSimulator = "tvossimulator"
-
-            init(platformPathName: String) {
-                switch platformPathName {
-                case "iPhoneOS": self = .iOS
-                case "iPhoneSimulator": self = .iOSSimulator
-                case "MacOS": self = .macOS
-                case "watchOS": self = .watchOS
-                case "watchOSSimulator": self = .watchOSSimulator
-                case "tvOS": self = .tvOS
-                case "tvOSSimulator": self = .tvOSSimulator
-                default: self = .iOSSimulator // 默认值
-                }
-            }
-
-            var platformPathName: String {
-                switch self {
-                case .iOS: "iPhoneOS"
-                case .iOSSimulator: "iPhoneSimulator"
-                case .macOS: "MacOSX"
-                case .watchOS: "WatchOS"
-                case .watchOSSimulator: "WatchOSSimulator"
-                case .tvOS: "AppleTVOS"
-                case .tvOSSimulator: "AppleTVSimulator"
-                }
-            }
-
-            var buildSettingsKey: String {
-                switch self {
-                case .iOS: "IPHONEOS_DEPLOYMENT_TARGET"
-                case .iOSSimulator: "IPHONEOS_DEPLOYMENT_TARGET"
-                case .macOS: "MACOSX_DEPLOYMENT_TARGET"
-                case .watchOS: "WATCHOS_DEPLOYMENT_TARGET"
-                case .watchOSSimulator: "WATCHOS_DEPLOYMENT_TARGET"
-                case .tvOS: "TVOS_DEPLOYMENT_TARGET"
-                case .tvOSSimulator: "TVOS_DEPLOYMENT_TARGET"
-                }
-            }
-        }
-
-        let name: String
-        let version: String
-        let path: String
-        let buildVersion: String
-    }
-
     func defaultDeploymentTarget(
         for platformName: String,
         forSimulator: Bool = false

@@ -76,7 +76,7 @@ extension XcodeProjectManager {
         for target in project.pbxproj.nativeTargets {
             let buildSettings = target.buildConfigurationList?.buildConfigurations.first?.buildSettings
             let SDKROOT: String = buildSettings?["SDKROOT"] as? String ?? "iphonesimulator"
-            let platform = XcodeTarget.Platform(rawValue: SDKROOT) ?? .iOS
+            let platform = Platform(rawValue: SDKROOT) ?? .iOS
             let pbxProductType = target.productType ?? .none
             let productType = XcodeProductType(rawValue: pbxProductType.rawValue) ?? .none
             let targetIdentifier = XcodeTargetIdentifier(projectFilePath: projectURL.path, targetName: target.name)

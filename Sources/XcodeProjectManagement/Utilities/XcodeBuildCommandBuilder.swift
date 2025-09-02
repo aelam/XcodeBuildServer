@@ -16,18 +16,6 @@ public enum XcodeProjectConfiguration: Sendable {
     case workspace(workspaceURL: URL, scheme: String?)
 }
 
-public enum XcodeSDK: String, Sendable {
-    case macOS = "macosx"
-    case iOS = "iphoneos"
-    case iOSSimulator = "iphonesimulator"
-    case watchOS = "watchos"
-    case watchSimulator = "watchsimulator"
-    case tvOS = "appletvos"
-    case tvSimulator = "appletvsimulator"
-    case visionOS = "xros"
-    case visionSimulator = "xrsimulator"
-}
-
 public enum XcodeBuildDestination: Sendable {
     case macOS
     case iOS

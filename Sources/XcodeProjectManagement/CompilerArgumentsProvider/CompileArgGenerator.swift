@@ -1,6 +1,8 @@
 import Foundation
 import XcodeProj
 
+public enum CompilerType: Sendable { case swift, clang }
+
 struct ArgContext {
     let buildSettings: [String: String]
     let languageDialect: XcodeLanguageDialect
