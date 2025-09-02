@@ -31,7 +31,7 @@ struct FlashSpaceTests {
         let file = projectFolder
             .appendingPathComponent(fileSubPath)
 
-        let targetIdentifier = TargetIdentifier(
+        let targetIdentifier = XcodeTargetIdentifier(
             projectFilePath: projectFilePath,
             targetName: targetName
         )

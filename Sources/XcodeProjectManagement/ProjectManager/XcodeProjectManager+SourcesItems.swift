@@ -1,5 +1,5 @@
 extension XcodeProjectManager {
-    public func getSourcesItems(targetIdentifiers: [TargetIdentifier]) -> [SourcesItem] {
+    public func getSourcesItems(targetIdentifiers: [XcodeTargetIdentifier]) -> [SourcesItem] {
         // Implementation goes here
         guard let xcodeProjectBaseInfo else {
             fatalError("XcodeProjectInfo cannot be resolved before initialize()")

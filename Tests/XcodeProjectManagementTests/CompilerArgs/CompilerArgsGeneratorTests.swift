@@ -33,7 +33,7 @@ struct CompilerArgsGeneratorTests {
             .appendingPathComponent(targetName)
             .appendingPathComponent(fileName)
 
-        let targetIdentifier = TargetIdentifier(
+        let targetIdentifier = XcodeTargetIdentifier(
             projectFilePath: projectFilePath,
             targetName: targetName
         )
@@ -83,7 +83,7 @@ struct CompilerArgsGeneratorTests {
             .appendingPathComponent("HelloObjectiveC")
             .appendingPathComponent("Person.m")
 
-        let targetIdentifier = TargetIdentifier(
+        let targetIdentifier = XcodeTargetIdentifier(
             projectFilePath: projectFilePath,
             targetName: "HelloObjectiveC"
         )
@@ -132,7 +132,7 @@ struct CompilerArgsGeneratorTests {
         let file = projectFolder
             .appendingPathComponent(fileSubPath)
 
-        let targetIdentifier = TargetIdentifier(
+        let targetIdentifier = XcodeTargetIdentifier(
             projectFilePath: projectFilePath,
             targetName: targetName
         )

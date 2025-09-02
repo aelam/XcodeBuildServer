@@ -41,7 +41,7 @@ enum SourceFileLister {
 
             // 去重
             sourceItems = Array(Set(sourceItems))
-            let targetIdentifier = TargetIdentifier(
+            let targetIdentifier = XcodeTargetIdentifier(
                 projectFilePath: xcodeProjPath.string,
                 targetName: target.name
             )

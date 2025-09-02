@@ -9,7 +9,7 @@ import Foundation
 
 public extension BSPServerService {
     func getCompileArguments(
-        targetIdentifier: BuildTargetIdentifier,
+        targetIdentifier: BSPBuildTargetIdentifier,
         fileURL: URL
     ) async throws -> [String] {
         guard let projectManager else {

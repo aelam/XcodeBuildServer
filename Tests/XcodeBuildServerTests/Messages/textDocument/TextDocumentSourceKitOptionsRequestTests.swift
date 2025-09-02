@@ -165,7 +165,7 @@ struct TextDocumentSourceKitOptionsRequestTests {
     @Test
     func paramsCreation() throws {
         let textDocument = try TextDocumentIdentifier(URI(string: "file:///test.swift"))
-        let target = try BuildTargetIdentifier(uri: URI(string: "xcode:///Project/Scheme/Target"))
+        let target = try BSPBuildTargetIdentifier(uri: URI(string: "xcode:///Project/Scheme/Target"))
 
         let params = TextDocumentSourceKitOptionsRequest.Params(
             textDocument: textDocument,

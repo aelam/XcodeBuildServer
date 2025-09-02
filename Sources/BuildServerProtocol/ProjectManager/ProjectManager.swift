@@ -25,7 +25,7 @@ public protocol ProjectManager: AnyObject, Sendable {
     ) async -> [ProjectTarget]
 
     // buildTarget/sources
-    func getSourceFileList(targetIdentifiers: [BSPBuildTargetIdentifier]) async
+    func getSourceFileList(targetIdentifiers: [BSPBuildTargetIdentifier]) async throws
         -> [SourcesItem]
 
     func getCompileArguments(

@@ -24,9 +24,9 @@ public struct BuildTargetPrepareRequest: ContextualRequestType, Sendable {
 
     public struct Params: Codable, Sendable {
         /// The build targets to prepare for background indexing
-        public let targets: [BuildTargetIdentifier]
+        public let targets: [BSPBuildTargetIdentifier]
 
-        public init(targets: [BuildTargetIdentifier]) {
+        public init(targets: [BSPBuildTargetIdentifier]) {
             self.targets = targets
         }
     }

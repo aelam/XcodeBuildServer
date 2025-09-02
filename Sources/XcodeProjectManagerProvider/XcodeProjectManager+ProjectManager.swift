@@ -35,19 +35,19 @@ extension XcodeProjectManager: @preconcurrency ProjectManager {
         projectInfo?.targets ?? []
     }
 
-    public func getSourceFileList(targetIdentifiers: [BSPBuildTargetIdentifier]) async
+    public func getSourceFileList(targetIdentifiers: [BSPBuildTargetIdentifier]) async throws
         -> [BuildServerProtocol.SourcesItem] {
         let xcodeTargetIdentifiers = targetIdentifiers.map { identifier in
-            TargetIdentifier(rawValue: identifier.uri.stringValue)
+            XcodeTargetIdentifier(rawValue: identifier.uri.stringValue)
         }
         let xcodeSourceItems = getSourcesItems(targetIdentifiers: xcodeTargetIdentifiers)
-        return xcodeSourceItems.map {
-            $0.asBSPSourcesItems()
+        return try xcodeSourceItems.compactMap {
+            try $0.asBSPSourcesItems()
         }
     }
 
     public func getCompileArguments(targetIdentifier: String, sourceFileURL: URL) async throws -> [String] {
-        let xcodeTargetIdentifier = TargetIdentifier(rawValue: targetIdentifier)
+        let xcodeTargetIdentifier = XcodeTargetIdentifier(rawValue: targetIdentifier)
         return try await getCompileArguments(targetIdentifier: xcodeTargetIdentifier, sourceFileURL: sourceFileURL)
     }
 }

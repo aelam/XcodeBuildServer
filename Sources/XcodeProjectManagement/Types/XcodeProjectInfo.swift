@@ -13,14 +13,11 @@ public struct XcodeProjectBaseInfo: Sendable, Codable {
 
 public struct XcodeProjectInfo: Sendable, Codable {
     public let baseProjectInfo: XcodeProjectBaseInfo
-    public let xcodeBuildSettingsForIndex: XcodeBuildSettingsForIndex
 
     public init(
-        baseProjectInfo: XcodeProjectBaseInfo,
-        xcodeBuildSettingsForIndex: XcodeBuildSettingsForIndex
+        baseProjectInfo: XcodeProjectBaseInfo
     ) {
         self.baseProjectInfo = baseProjectInfo
-        self.xcodeBuildSettingsForIndex = xcodeBuildSettingsForIndex
     }
 
     public var workspaceURL: URL {

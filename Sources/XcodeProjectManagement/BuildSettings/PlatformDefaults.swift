@@ -13,7 +13,7 @@ enum PlatformDefaults {
         var u = utsname(); uname(&u)
         let bytes = Mirror(reflecting: u.machine).children
             .compactMap { $0.value as? Int8 } + [0]
-        let s = String(cString: bytes)
+        let s = String(decoding: bytes.map { UInt8(bitPattern: $0) }, as: UTF8.self)
         return s.contains("x86") ? "x86_64" : "arm64"
     }
 

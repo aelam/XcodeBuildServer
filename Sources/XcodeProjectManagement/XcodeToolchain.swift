@@ -125,7 +125,8 @@ public extension XcodeInstallation {
             throw XcodeToolchainError.invalidSDK("No SDK found for \(platformName)")
         }
         let sdkNames = contents.filter { $0.hasSuffix(".sdk") }
-            .sorted(by: compareSDK).reversed()
+            .sorted(by: compareSDK)
+            .reversed()
         guard let sdkName = sdkNames.first else {
             throw XcodeToolchainError.invalidSDK("No SDK found for \(platformName)")
         }

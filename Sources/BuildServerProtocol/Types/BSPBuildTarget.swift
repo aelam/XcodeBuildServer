@@ -27,7 +27,7 @@
 /// compute
 public struct BSPBuildTarget: Codable, Hashable, Sendable {
     /// The target’s unique identifier
-    public var id: BuildTargetIdentifier
+    public var id: BSPBuildTargetIdentifier
 
     /// A human readable name for this target.
     /// May be presented in the user interface.
@@ -56,7 +56,7 @@ public struct BSPBuildTarget: Codable, Hashable, Sendable {
     public var languageIds: [Language]
 
     /// The direct upstream build target dependencies of this build target
-    public var dependencies: [BuildTargetIdentifier]
+    public var dependencies: [BSPBuildTargetIdentifier]
 
     /// The capabilities of this build target.
     public var capabilities: BuildTargetCapabilities
@@ -201,7 +201,7 @@ public struct SourceKitBuildTarget: LSPAnyCodable, Codable {
     }
 }
 
-public struct BuildTargetIdentifier: Codable, Hashable, Sendable {
+public struct BSPBuildTargetIdentifier: Codable, Hashable, Sendable {
     /// The target's Uri
     public var uri: URI
 
@@ -209,5 +209,3 @@ public struct BuildTargetIdentifier: Codable, Hashable, Sendable {
         self.uri = uri
     }
 }
-
-public typealias BSPBuildTargetIdentifier = BuildTargetIdentifier

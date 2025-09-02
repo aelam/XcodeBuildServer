@@ -11,7 +11,7 @@ public struct SourceItem: Codable, Hashable, Sendable {
 }
 
 public struct SourcesItem: Codable, Hashable, Sendable {
-    public var target: TargetIdentifier
+    public var target: XcodeTargetIdentifier
 
     /// The text documents and directories that belong to this build target.
     public var sources: [SourceItem]
@@ -20,7 +20,7 @@ public struct SourcesItem: Codable, Hashable, Sendable {
     /// Example: ["file://Users/name/dev/metals/src/main/scala"]
     public var roots: [URL]?
 
-    public init(target: TargetIdentifier, sources: [SourceItem], roots: [URL]? = nil) {
+    public init(target: XcodeTargetIdentifier, sources: [SourceItem], roots: [URL]? = nil) {
         self.target = target
         self.sources = sources
         self.roots = roots

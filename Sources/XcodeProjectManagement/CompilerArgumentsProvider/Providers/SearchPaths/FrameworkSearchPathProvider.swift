@@ -8,13 +8,24 @@ struct FrameworkSearchPathProvider: CompileArgProvider, Sendable {
     ]
 
     func arguments(for context: ArgContext) -> [String] {
-        buildFlags(settings: context.buildSettings)
+        buildFlagsForFrameworkSearch(settings: context.buildSettings) +
+            buildFlagsForSwiftPM(settings: context.buildSettings)
     }
 
-    private func buildFlags(settings: [String: String]) -> [String] {
+    private func buildFlagsForFrameworkSearch(settings: [String: String]) -> [String] {
         frameworkSearchPathKeys
             .compactMap { settings[$0] }
             .flatMap { buildFlags(for: $0) }
+    }
+
+    // XcodeProject with SwiftPM frameworks
+    private func buildFlagsForSwiftPM(settings: [String: String]) -> [String] {
+        guard let configurationBuildDir = settings["CONFIGURATION_BUILD_DIR"] else {
+            return []
+        }
+        let packageFrameworkURLs = URL(fileURLWithPath: configurationBuildDir)
+            .appendingPathComponent("PackageFrameworks").path
+        return buildFlags(for: packageFrameworkURLs)
     }
 
     private func buildFlags(for paths: String) -> [String] {

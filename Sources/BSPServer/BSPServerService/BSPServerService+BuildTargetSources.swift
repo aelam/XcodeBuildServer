@@ -13,6 +13,6 @@ extension BSPServerService {
         guard let projectManager else {
             throw BuildServerError.invalidConfiguration("Project manager not initialized")
         }
-        return await projectManager.getSourceFileList(targetIdentifiers: targetIds)
+        return try await projectManager.getSourceFileList(targetIdentifiers: targetIds)
     }
 }

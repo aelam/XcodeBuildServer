@@ -9,9 +9,9 @@ import BuildServerProtocol
 import XcodeProjectManagement
 
 extension XcodeProjectManagement.SourcesItem {
-    func asBSPSourcesItems() -> BuildServerProtocol.SourcesItem {
-        BuildServerProtocol.SourcesItem(
-            target: BuildTargetIdentifier(uri: try! URI(string: self.target.rawValue)),
+    func asBSPSourcesItems() throws -> BuildServerProtocol.SourcesItem {
+        try BuildServerProtocol.SourcesItem(
+            target: BSPBuildTargetIdentifier(uri: URI(string: self.target.rawValue)),
             sources: sources.map { $0.asBSPSourceItem()
             }
         )

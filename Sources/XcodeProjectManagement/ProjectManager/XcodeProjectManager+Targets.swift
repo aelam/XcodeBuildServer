@@ -79,7 +79,7 @@ extension XcodeProjectManager {
             let platform = XcodeTarget.Platform(rawValue: SDKROOT) ?? .iOS
             let pbxProductType = target.productType ?? .none
             let productType = XcodeProductType(rawValue: pbxProductType.rawValue) ?? .none
-            let targetIdentifier = TargetIdentifier(projectFilePath: projectURL.path, targetName: target.name)
+            let targetIdentifier = XcodeTargetIdentifier(projectFilePath: projectURL.path, targetName: target.name)
             targets.append(
                 XcodeTarget(
                     targetIdentifier: targetIdentifier,

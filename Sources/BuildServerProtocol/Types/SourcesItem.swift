@@ -1,5 +1,5 @@
 public struct SourcesItem: Codable, Hashable, Sendable {
-    public var target: BuildTargetIdentifier
+    public var target: BSPBuildTargetIdentifier
 
     /// The text documents and directories that belong to this build target.
     public var sources: [SourceItem]
@@ -8,7 +8,7 @@ public struct SourcesItem: Codable, Hashable, Sendable {
     /// Example: ["file://Users/name/dev/metals/src/main/scala"]
     public var roots: [URI]?
 
-    public init(target: BuildTargetIdentifier, sources: [SourceItem], roots: [URI]? = nil) {
+    public init(target: BSPBuildTargetIdentifier, sources: [SourceItem], roots: [URI]? = nil) {
         self.target = target
         self.sources = sources
         self.roots = roots

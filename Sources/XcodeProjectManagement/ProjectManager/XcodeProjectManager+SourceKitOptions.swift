@@ -8,7 +8,7 @@
 import Foundation
 
 public extension XcodeProjectManager {
-    func getCompileArguments(targetIdentifier: TargetIdentifier, sourceFileURL: URL) async throws -> [String] {
+    func getCompileArguments(targetIdentifier: XcodeTargetIdentifier, sourceFileURL: URL) async throws -> [String] {
         let projectFilePath = targetIdentifier.projectFilePath
         let targetName = targetIdentifier.targetName
 

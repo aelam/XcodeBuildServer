@@ -33,7 +33,7 @@ struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
     }
 
     struct Params: Codable, Sendable {
-        let targets: [BuildTargetIdentifier]
+        let targets: [BSPBuildTargetIdentifier]
     }
 
     let params: Params

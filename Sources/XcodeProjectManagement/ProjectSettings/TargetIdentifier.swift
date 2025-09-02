@@ -1,6 +1,6 @@
 import Foundation
 
-public struct TargetIdentifier: Hashable, Sendable, Codable, RawRepresentable {
+public struct XcodeTargetIdentifier: Hashable, Sendable, Codable, RawRepresentable {
     public var rawValue: String
 
     public let projectFilePath: String

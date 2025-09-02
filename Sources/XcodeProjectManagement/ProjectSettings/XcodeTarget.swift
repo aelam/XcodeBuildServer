@@ -26,7 +26,7 @@ public struct XcodeTarget: Sendable, Hashable, Codable {
 
     public typealias ProductType = XcodeProductType
 
-    public let targetIdentifier: TargetIdentifier
+    public let targetIdentifier: XcodeTargetIdentifier
     public let name: String
     public let projectURL: URL
     public let projectName: String
@@ -51,7 +51,7 @@ public struct XcodeTarget: Sendable, Hashable, Codable {
     public var targetName: String { name }
 
     public init(
-        targetIdentifier: TargetIdentifier,
+        targetIdentifier: XcodeTargetIdentifier,
         name: String,
         projectURL: URL,
         productName: String?,
