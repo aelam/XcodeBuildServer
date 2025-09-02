@@ -1,3 +1,4 @@
+// TODO: update Platform/SDK to improve the relationship
 public enum XcodeSDK: String, Sendable {
     case macOS = "macosx"
     case iOS = "iphoneos"

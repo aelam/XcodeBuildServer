@@ -162,25 +162,11 @@ public actor XcodeProjectManager {
             projectLocation: projectLocation
         )
 
-        let schemeManager = XCSchemeManager()
-        let schemes = try schemeManager.listSchemes(
-            projectLocation: projectLocation,
-            includeUserSchemes: true
-        )
-
-        let sortedSchemes = loadSchemsWithPriority(schemes: schemes, targets: actualTargets)
-        let importantScheme = sortedSchemes.first
-        guard let importantScheme else {
-            throw XcodeProjectError.noSchemesFound("No schemes found in project at \(rootURL.path)")
-        }
-
         let xcodeProjectBaseInfo = XcodeProjectBaseInfo(
             rootURL: rootURL,
             projectLocation: projectLocation,
             xcodeGlobalSettings: xcodeGlobalSettings,
-            importantScheme: importantScheme,
             xcodeTargets: actualTargets,
-            schemes: schemes,
             xcodeInstallation: selectedXcodeInstallation
         )
         self.xcodeProjectBaseInfo = xcodeProjectBaseInfo

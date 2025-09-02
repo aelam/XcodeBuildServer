@@ -4,9 +4,7 @@ public struct XcodeProjectBaseInfo: Sendable, Codable {
     public let rootURL: URL
     public let projectLocation: XcodeProjectLocation
     public let xcodeGlobalSettings: XcodeGlobalSettings
-    public let importantScheme: XcodeScheme
     public let xcodeTargets: [XcodeTarget]
-    public let schemes: [XcodeScheme]
     public var configuration = "Debug"
     public let xcodeInstallation: XcodeInstallation
 }

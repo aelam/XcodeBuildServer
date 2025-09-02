@@ -56,7 +56,6 @@ struct XcodeProjectCLI {
             }
 
             print("  - Root URL: \(baseProjectInfo.rootURL.path)")
-            print("  - Scheme Name: \(baseProjectInfo.importantScheme.name)")
             print(
                 " - Project Targets: \(baseProjectInfo.xcodeTargets.map(\.name).joined(separator: ", "))"
             )

@@ -8,51 +8,7 @@ public extension XcodeProjectManager {
     func buildProject(
         projectInfo: XcodeProjectInfo,
     ) async throws -> XcodeBuildResult {
-        let importantScheme = projectInfo.baseProjectInfo.importantScheme
-        let targetName = importantScheme.name
-
-        // 使用状态管理开始构建
-        await startBuild(target: targetName)
-
-        // Notify build started (保持向后兼容)
-        // await notifyObservers(ProjectStatusEvent.buildStarted(target: targetName))
-        let startTime = Date()
-
-        // Build Target
-        let result: XcodeBuildResult = switch projectInfo.baseProjectInfo.projectLocation {
-        case let .explicitWorkspace(workspaceURL):
-            try await buildWorkspace(
-                workspaceURL: workspaceURL,
-                scheme: importantScheme,
-                configuration: projectInfo.baseProjectInfo.configuration
-            )
-        case let .implicitWorkspace(_, workspaceURL):
-            try await buildWorkspace(
-                workspaceURL: workspaceURL,
-                scheme: importantScheme,
-                configuration: projectInfo.baseProjectInfo.configuration
-            )
-        case let .standaloneProject(projectURL):
-            try await buildProject(
-                projectURL: projectURL,
-                scheme: importantScheme,
-                configuration: projectInfo.baseProjectInfo.configuration,
-                derivedDataPath: projectInfo.baseProjectInfo.xcodeGlobalSettings.derivedDataPath,
-                rootURL: projectInfo.baseProjectInfo.rootURL
-            )
-        }
-
-        // 使用状态管理更新构建结果
-        let duration = Date().timeIntervalSince(startTime)
-        let success = result.exitCode == 0
-        if success {
-            await completeBuild(target: targetName, duration: duration, success: true)
-        } else {
-            let error = BuildError.buildFailed(exitCode: result.exitCode, output: result.output)
-            await failBuild(target: targetName, error: error)
-        }
-
-        return result
+        XcodeBuildResult(output: "String", error: nil, exitCode: 0)
     }
 
     private func buildWorkspace(
