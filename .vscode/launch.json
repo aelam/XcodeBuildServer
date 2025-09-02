@@ -7,8 +7,8 @@
             "name": "Build Debug XcodeProjectCLI",
             "program": "${workspaceFolder:XcodeBuildServer}/.build/debug/XcodeProjectCLI",
             "args": [
-                // "/Users/wang.lun/Desktop/HelloWorkspace"
-                "/Users/wang.lun/Work/line-stickers-ios/"
+                "/Users/wang.lun/Desktop/HelloWorkspace"
+                // "/Users/wang.lun/Work/line-stickers-ios/"
             ],
             "preLaunchTask": "swift: Build Debug XcodeBuildServerCLI"
         },
@@ -23,7 +23,7 @@
             "type": "lldb",
             "request": "attach",
             "waitFor": true,
-            "name": "wait and attach XcodeBuildServerCLI",
+            "name": "Wait and attach XcodeBuildServerCLI",
             "program": "${workspaceFolder:XcodeBuildServer}/.build/debug/XcodeBuildServerCLI"
         },
         {

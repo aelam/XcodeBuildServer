@@ -3,29 +3,9 @@ import XcodeProj
 
 /// Target information with complete project context
 public struct XcodeTarget: Sendable, Hashable, Codable {
-    public enum Platform: String, Sendable, Codable, Hashable {
-        case iOS = "iphoneos"
-        case macOS = "macosx"
-        case tvOS = "appletvos"
-        case watchOS = "watchos"
-        case visionOS = "xros"
-
-        // "AVAILABLE_PLATFORMS" : "android appletvos appletvsimulator driverkit iphoneos iphonesimulator macosx qnx
-        // watchos watchsimulator xros xrsimulator",
-
-        func sdk(simulator: Bool) -> XcodeSDK {
-            switch self {
-            case .iOS: simulator ? .iOSSimulator : .iOS
-            case .macOS: .macOS
-            case .tvOS: simulator ? .tvSimulator : .tvOS
-            case .watchOS: simulator ? .watchSimulator : .watchOS
-            case .visionOS: simulator ? .visionSimulator : .visionOS
-            }
-        }
-    }
-
     public typealias ProductType = XcodeProductType
 
+    public let targetIdentifier: XcodeTargetIdentifier
     public let name: String
     public let projectURL: URL
     public let projectName: String
@@ -33,13 +13,13 @@ public struct XcodeTarget: Sendable, Hashable, Codable {
     public let isFromWorkspace: Bool
     public let buildForTesting: Bool
     public let buildForRunning: Bool
-    public let platform: Platform
-    public let productType: XcodeProductType
+    public let xcodeTargetPlatform: Platform
+    public let xcodeProductType: XcodeProductType
 
     public var productNameWithExtension: String? {
         guard
             let productName,
-            let fileExtension = productType.fileExtension
+            let fileExtension = xcodeProductType.fileExtension
         else {
             return productName
         }
@@ -50,15 +30,17 @@ public struct XcodeTarget: Sendable, Hashable, Codable {
     public var targetName: String { name }
 
     public init(
+        targetIdentifier: XcodeTargetIdentifier,
         name: String,
         projectURL: URL,
         productName: String?,
         isFromWorkspace: Bool = false,
         buildForTesting: Bool = true,
         buildForRunning: Bool = true,
-        platform: Platform = .iOS,
-        productType: ProductType
+        xcodeTargetPlatform: Platform = .iOS,
+        xcodeProductType: ProductType
     ) {
+        self.targetIdentifier = targetIdentifier
         self.name = name
         self.projectURL = projectURL
         self.projectName = projectURL.deletingPathExtension().lastPathComponent
@@ -66,19 +48,19 @@ public struct XcodeTarget: Sendable, Hashable, Codable {
         self.isFromWorkspace = isFromWorkspace
         self.buildForTesting = buildForTesting
         self.buildForRunning = buildForRunning
-        self.platform = platform
-        self.productType = productType
+        self.xcodeTargetPlatform = xcodeTargetPlatform
+        self.xcodeProductType = xcodeProductType
     }
 
     public var debugDescription: String {
         "XcodeTarget(name: \(name), " +
             "projectURL: \(projectURL.path), " +
             "isFromWorkspace: \(isFromWorkspace), " +
-            "platform: \(platform.rawValue))"
+            "platform: \(xcodeTargetPlatform.rawValue))"
     }
 
     var priority: Double {
-        let productTypeWeight = switch productType {
+        let productTypeWeight = switch xcodeProductType {
         case .application, .commandLineTool: 1.0
         case .watchApp, .watch2App, .watch2AppContainer, .messagesApplication: 0.9
         case .appExtension, .watchExtension, .watch2Extension, .tvExtension: 0.8
@@ -87,7 +69,7 @@ public struct XcodeTarget: Sendable, Hashable, Codable {
         default: 0.0
         }
 
-        let platformWeight = switch platform {
+        let platformWeight = switch xcodeTargetPlatform {
         case .iOS: 1.0
         case .macOS: 0.8
         case .watchOS: 0.5
@@ -104,5 +86,5 @@ public typealias XcodeSchemeTargetInfo = XcodeTarget
 
 public struct GroupedTargetsKey: Hashable, Sendable {
     let projectURL: URL
-    let platform: XcodeTarget.Platform
+    let platform: Platform
 }

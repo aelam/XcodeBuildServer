@@ -1,34 +1,14 @@
 import Foundation
 
+public enum BuildError: Error, Sendable {
+    case buildFailed(exitCode: Int32, output: String)
+}
+
 public extension XcodeProjectManager {
     func buildProject(
         projectInfo: XcodeProjectInfo,
     ) async throws -> XcodeBuildResult {
-        let importantScheme = projectInfo.importantScheme
-
-        // Build Target
-        switch projectInfo.projectLocation {
-        case let .explicitWorkspace(workspaceURL):
-            return try await buildWorkspace(
-                workspaceURL: workspaceURL,
-                scheme: importantScheme,
-                configuration: projectInfo.primaryBuildSettings.configuration
-            )
-        case let .implicitWorkspace(projectURL, workspaceURL):
-            return try await buildWorkspace(
-                workspaceURL: workspaceURL,
-                scheme: importantScheme,
-                configuration: projectInfo.primaryBuildSettings.configuration
-            )
-        case let .standaloneProject(projectURL):
-            return try await buildProject(
-                projectURL: projectURL,
-                scheme: importantScheme,
-                configuration: projectInfo.primaryBuildSettings.configuration,
-                derivedDataPath: projectInfo.primaryBuildSettings.derivedDataPath,
-                rootURL: projectInfo.rootURL
-            )
-        }
+        XcodeBuildResult(output: "String", error: nil, exitCode: 0)
     }
 
     private func buildWorkspace(

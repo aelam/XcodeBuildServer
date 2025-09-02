@@ -1,0 +1,41 @@
+//
+//  ProjectInfo+XcodeProjectInfo.swift
+//  XcodeBuildServer
+//
+//  Created by wang.lun on 2025/08/21.
+//
+
+import BuildServerProtocol
+import Foundation
+import XcodeProjectManagement
+
+extension XcodeProjectBaseInfo {
+    func asProjectInfo() -> ProjectInfo {
+        ProjectInfo(
+            rootURL: rootURL,
+            name: "",
+            targets: xcodeTargets.map { $0.asProjectTarget() },
+            derivedDataPath: xcodeGlobalSettings.derivedDataPath,
+            indexStoreURL: xcodeGlobalSettings.indexStoreURL,
+            indexDatabaseURL: xcodeGlobalSettings.indexDatabaseURL
+        )
+    }
+}
+
+extension XcodeTarget {
+    func asProjectTarget() -> ProjectTarget {
+        ProjectTarget(
+            targetIndentifier: targetIdentifier,
+            name: name,
+            isSourcesResolved: false,
+            isDependenciesResolved: false,
+            sourceFiles: [],
+            dependencies: [],
+            productType: xcodeProductType.asProductType
+        )
+    }
+
+    var targetIdentifier: String {
+        "xcode://\(projectURL.path)/\(name)"
+    }
+}

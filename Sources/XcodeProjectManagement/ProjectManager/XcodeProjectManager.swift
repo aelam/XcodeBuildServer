@@ -6,102 +6,67 @@
 
 import Foundation
 import Logger
+import PathKit
 import XcodeProj
 
-public struct XcodeProjectPrimaryBuildSettings: Sendable, Codable, Hashable {
-    public let derivedDataPath: URL
-    public let indexStoreURL: URL
-    public let indexDatabaseURL: URL
-    public let configuration: String
-    public let sdkStatCacheDir: String // SDK_STAT_CACHE_DIR
-    public let sdkStatCachePath: String // SDK_STAT_CACHE_PATH
+/// Project Level buildSettings
+public struct XcodeGlobalSettings: Sendable, Codable, Hashable {
+    public let derivedDataPath: URL // @see PathHash.derivedDataFullPath
 
-    public init(
-        derivedDataPath: URL,
-        indexStoreURL: URL,
-        indexDatabaseURL: URL,
-        configuration: String,
-        sdkStatCacheDir: String,
-        sdkStatCachePath: String
-    ) {
+    public var indexStoreURL: URL {
+        derivedDataPath.appendingPathComponent("Index.noIndex/DataStore")
+    }
+
+    public var indexDatabaseURL: URL {
+        derivedDataPath.appendingPathComponent("IndexDatabase.noIndex")
+    }
+
+    public var symRoot: URL {
+        derivedDataPath.appendingPathComponent("Build/Products")
+    }
+
+    public var objRoot: URL {
+        derivedDataPath.appendingPathComponent("Build/Intermediates.noindex")
+    }
+
+    public var sdkStatCacheDir: URL { // SDK_STAT_CACHE_DIR
+        derivedDataPath.deletingLastPathComponent()
+    }
+
+    public var sdkStatCachePath: URL { // SDK_STAT_CACHE_PATH
+        sdkStatCacheDir.appendingPathComponent("SDKStatCache")
+    }
+
+    public var moduleCachePath: URL { // parent of derivedDataPath
+        derivedDataPath.deletingLastPathComponent()
+            .appendingPathComponent("ModuleCache.noindex")
+    }
+
+    public var buildDir: URL {
+        derivedDataPath.appendingPathComponent("Build/Products")
+    }
+
+    public init(derivedDataPath: URL) {
         self.derivedDataPath = derivedDataPath
-        self.indexStoreURL = indexStoreURL
-        self.indexDatabaseURL = indexDatabaseURL
-        self.configuration = configuration
-        self.sdkStatCacheDir = sdkStatCacheDir
-        self.sdkStatCachePath = sdkStatCachePath
-    }
-
-    /// Custom flags for `xcodebuild -project {project} -target {target} SYSROOT={SYSROOT} -showBuildSettings -json`
-    public var customFlagsMap: [String: String] {
-        [
-            "SYMROOT": derivedDataPath.path,
-            // "DERIVED_DATA_PATH": derivedDataPath.path, // doesn't work
-        ]
-    }
-
-    public var customFlags: [String] {
-        customFlagsMap.map { "\($0.key)=\($0.value)" }
     }
 }
 
 public struct XcodeTargetInfo: Sendable {
+    public let targetIdentifier: String
     public let name: String
-    public let productType: String?
+    public let xcodeProductType: XcodeProductType
     public let buildSettings: [String: String]
 
-    public var xcodeProductType: XcodeProductType? {
-        guard let productType else { return nil }
-        return XcodeProductType(rawValue: productType)
-    }
-
-    public var isTestTarget: Bool {
-        xcodeProductType?.isTestType == true || name.contains("Test")
-    }
-
-    public var isUITestTarget: Bool {
-        xcodeProductType == .uiTestBundle || name.contains("UITest")
-    }
-
-    public var isRunnableTarget: Bool {
-        xcodeProductType?.isRunnableType == true
-    }
-
-    public var isApplicationTarget: Bool {
-        xcodeProductType?.isApplicationType == true
-    }
-
-    public var isLibraryTarget: Bool {
-        xcodeProductType?.isLibraryType == true
-    }
-
-    public var supportedLanguages: Set<String> {
-        var languages: Set<String> = []
-
-        if buildSettings["SWIFT_VERSION"] != nil {
-            languages.insert("swift")
-        }
-        if buildSettings["CLANG_ENABLE_OBJC_ARC"] == "YES" {
-            languages.insert("objective-c")
-        }
-        if buildSettings["GCC_VERSION"] != nil {
-            languages.insert("c")
-        }
-        if buildSettings["CLANG_CXX_LANGUAGE_STANDARD"] != nil {
-            languages.insert("cpp")
-        }
-
-        // Default for Xcode projects
-        if languages.isEmpty {
-            languages = ["swift", "objective-c"]
-        }
-
-        return languages
-    }
-
-    public init(name: String, productType: String?, buildSettings: [String: String]) {
+    public init(
+        targetIdentifier: String,
+        name: String,
+        xcodeProductType:
+        XcodeProductType,
+        buildSettings: [String: String]
+    ) {
+        self.targetIdentifier = targetIdentifier
         self.name = name
-        self.productType = productType
+        self.xcodeProductType = xcodeProductType
         self.buildSettings = buildSettings
     }
 }
@@ -112,8 +77,56 @@ public actor XcodeProjectManager {
     let toolchain: XcodeToolchain
     let settingsLoader: XcodeSettingsLoader
 
+    private var xcodeProjCache: [URL: XcodeProj] = [:]
+    private var sourceFileMapCache: [String: [SourceItem]] = [:]
+
+    func loadXcodeProjCache(projectURL: URL) -> XcodeProj? {
+        if let cachedXcodeProj = xcodeProjCache[projectURL] {
+            return cachedXcodeProj
+        }
+        let projectURLPath = Path(projectURL.path)
+        let xcodeProj = try? XcodeProj(path: projectURLPath)
+        xcodeProjCache[projectURL] = xcodeProj
+        return xcodeProj
+    }
+
+//    // MARK: - State Management
+//
+//    private var projectState = ProjectState()
+//    private var stateObservers: [WeakProjectStateObserver] = []
+//
+//    // MARK: - Project State Management
+//
+//    public func addStateObserver(_ observer: ProjectStateObserver) {
+//        stateObservers.append(WeakProjectStateObserver(observer))
+//    }
+//
+//    public func removeStateObserver(_ observer: ProjectStateObserver) {
+//        stateObservers.removeAll { $0.observer === observer || $0.observer == nil }
+//    }
+//
+//    private func notifyStateObservers(_ event: ProjectStateEvent) async {
+//        stateObservers.removeAll { $0.observer == nil }
+//
+//        await withTaskGroup(of: Void.self) { group in
+//            for weakObserver in stateObservers {
+//                if let observer = weakObserver.observer {
+//                    group.addTask {
+//                        await observer.onProjectStateChanged(event)
+//                    }
+//                }
+//            }
+//        }
+//    }
+//
+//    // MARK: - State Access Methods
+//
+//    public func getProjectState() -> ProjectState {
+//        projectState
+//    }
+
     private let xcodeProjectReference: XcodeProjectReference?
-    private(set) var currentProject: XcodeProjectInfo?
+    public private(set) var xcodeProjectBaseInfo: XcodeProjectBaseInfo?
 
     public init(
         rootURL: URL,
@@ -131,105 +144,67 @@ public actor XcodeProjectManager {
 
     public func initialize() async throws {
         try await toolchain.initialize()
-    }
+        guard let selectedXcodeInstallation = await toolchain.getSelectedInstallation() else {
+            throw XcodeProjectError.toolchainError("No Xcode installation selected")
+        }
 
-    public func resolveProjectInfo() async throws -> XcodeProjectInfo {
         let projectLocation = try locator.resolveProjectType(
             rootURL: rootURL,
             xcodeProjectReference: xcodeProjectReference
         )
-        _ = await toolchain.getSelectedInstallation()
+
+        // Get project-level buildSettings without `xcodebuild`
+        let derivedDataPath = PathHash.derivedDataFullPath(for: projectLocation.workspaceURL.path)
+        let xcodeGlobalSettings = XcodeGlobalSettings(derivedDataPath: derivedDataPath)
 
         // Load containers for workspace projects to get actual targets
         let actualTargets = try await loadActualTargets(
             projectLocation: projectLocation
         )
 
-        let schemeManager = XCSchemeManager()
-        let schemes = try schemeManager.listSchemes(
-            projectLocation: projectLocation,
-            includeUserSchemes: true
-        )
-
-        let sortedSchemes = loadSchemsWithPriority(schemes: schemes, targets: actualTargets)
-        let importantScheme = sortedSchemes.first
-        guard let importantScheme else {
-            throw XcodeProjectError.noSchemesFound("No schemes found in project at \(rootURL.path)")
-        }
-        // Load a build settings of any target to get DerivedData path
-        let buildSettingsList = try await loadBuildSettings(
+        let xcodeProjectBaseInfo = XcodeProjectBaseInfo(
             rootURL: rootURL,
             projectLocation: projectLocation,
-            scheme: importantScheme,
-            settingsLoader: settingsLoader
+            xcodeGlobalSettings: xcodeGlobalSettings,
+            xcodeTargets: actualTargets,
+            xcodeInstallation: selectedXcodeInstallation
         )
-
-        // Get index URLs using the first available scheme (shared per workspace)
-        let primaryBuildSettings = try await settingsLoader.loadPathsFromPrimayBuildSettings(
-            buildSettingsList: buildSettingsList
-        )
-
-        let buildSettingsMap = try await settingsLoader.loadBuildSettingsMap(
-            rootURL: rootURL,
-            targets: actualTargets,
-            customFlags: [
-                "SYMROOT=" + primaryBuildSettings.derivedDataPath.appendingPathComponent("Build/Products").path,
-                "OBJROOT=" + primaryBuildSettings.derivedDataPath.appendingPathComponent("Build/Intermediates.noindex")
-                    .path,
-                "SDK_STAT_CACHE_DIR=" + primaryBuildSettings.derivedDataPath.deletingLastPathComponent().path,
-                // "BUILD_DIR=/tmp/__A__/Build/Products"
-                // "BUILD_ROOT=/tmp/__A__/Build/Products"
-            ]
-        )
-
-        let buildSettingsForIndex = IndexSettingsGeneration.generate(
-            rootURL: rootURL,
-            primaryBuildSettings: primaryBuildSettings,
-            buildSettingsMap: buildSettingsMap
-        )
-
-        return XcodeProjectInfo(
-            rootURL: rootURL,
-            projectLocation: projectLocation,
-            buildSettingsList: buildSettingsList,
-            primaryBuildSettings: primaryBuildSettings,
-            importantScheme: importantScheme,
-            targets: actualTargets,
-            schemes: [],
-            derivedDataPath: primaryBuildSettings.derivedDataPath,
-            indexStoreURL: primaryBuildSettings.indexStoreURL,
-            indexDatabaseURL: primaryBuildSettings.indexDatabaseURL,
-            buildSettingsForIndex: buildSettingsForIndex
-        )
+        self.xcodeProjectBaseInfo = xcodeProjectBaseInfo
     }
 
-    /// Load build settings with correct parameters based on project type
-    private func loadBuildSettings(
-        rootURL: URL,
-        projectLocation: XcodeProjectLocation,
-        scheme: XcodeScheme,
-        configuration: String = "Debug",
-        settingsLoader: XcodeSettingsLoader
-    ) async throws -> [XcodeBuildSettings] {
-        switch projectLocation {
-        case .explicitWorkspace:
-            try await settingsLoader.loadBuildSettings(
-                rootURL: rootURL,
-                project: .workspace(
-                    workspaceURL: projectLocation.workspaceURL,
-                    scheme: scheme.name
-                ),
-            )
-        case let .implicitWorkspace(projectURL: projectURL, _), let .standaloneProject(projectURL):
-            // For project, we can use target directly
-            try await settingsLoader.loadBuildSettings(
-                rootURL: rootURL,
-                project: .project(
-                    projectURL: projectURL,
-                    buildMode: .scheme(scheme.name)
-                )
-            )
+    // MARK: - Build
+
+    public func startBuild(target: String) async {
+//        let buildTask = BuildTask(target: target)
+//        projectState.activeBuildTasks[target] = buildTask
+//        await notifyStateObservers(.buildStarted(target: target))
+    }
+
+    func completeBuild(target: String, duration: TimeInterval, success: Bool) async {
+//        guard var buildTask = projectState.activeBuildTasks[target] else { return }
+//        let duration = Date().timeIntervalSince(buildTask.startTime)
+//        buildTask.status = .completed(success: success, duration: duration)
+//        projectState.activeBuildTasks[target] = buildTask
+//
+//        await notifyStateObservers(.buildCompleted(target: target, success: success, duration: duration))
+
+        // 清理完成的构建任务
+        Task {
+            try? await Task.sleep(nanoseconds: 10_000_000_000) // 10 seconds
+            self.cleanupBuildTask(target: target)
         }
+    }
+
+    public func failBuild(target: String, error: Error) async {
+//        guard var buildTask = projectState.activeBuildTasks[target] else { return }
+//        buildTask.status = .failed(error)
+//        projectState.activeBuildTasks[target] = buildTask
+//
+//        await notifyStateObservers(.buildFailed(target: target, error: error))
+    }
+
+    private func cleanupBuildTask(target: String) {
+//        projectState.activeBuildTasks.removeValue(forKey: target)
     }
 }
 
@@ -260,6 +235,6 @@ extension XcodeProjectManager {
 
     /// Load targets from a single project using XcodeProj
     private func loadTargetsFromProject(projectURL: URL) async throws -> [XcodeTarget] {
-        try loadTargetsFromXcodeProj(projectPath: projectURL)
+        try loadTargetsFromXcodeProj(projectURL: projectURL)
     }
 }

@@ -79,7 +79,7 @@ public enum XcodeProjectLocation: Equatable, Sendable, Codable {
         switch self {
         case let .explicitWorkspace(url):
             url
-        case .implicitWorkspace(projectURL: _, workspaceURL: let url):
+        case let .implicitWorkspace(projectURL: url, workspaceURL: _):
             url
         case let .standaloneProject(url):
             url // For standalone projects, the project itself acts as the workspace

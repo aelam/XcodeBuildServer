@@ -7,8 +7,8 @@ on:
     branches: [ main ]
 
 env:
-  SWIFT_VERSION: '6.1'
-  XCODE_VERSION: '16.2'
+  SWIFT_VERSION: 6.1
+  XCODE_VERSION: 16.2
 
 jobs:
   build-and-test:
@@ -39,12 +39,16 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-spm-
     
+    - name: Resolve Dependencies
+      run: swift package resolve
+
     - name: Build
       run: swift build -v
       
     - name: Run Tests
       run: |
         echo "CI environment variable: $CI"
+        xcodebuild -version
         echo "Running tests in CI mode..."
         swift test --enable-code-coverage
       env:

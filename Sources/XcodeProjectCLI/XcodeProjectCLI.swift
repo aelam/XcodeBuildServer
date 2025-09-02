@@ -22,8 +22,6 @@ struct XcodeProjectCLI {
 
         do {
             let toolchain = XcodeToolchain()
-            try await toolchain.initialize()
-
             // Initialize the project manager
             let projectManager = XcodeProjectManager(
                 rootURL: projectURL,
@@ -36,40 +34,50 @@ struct XcodeProjectCLI {
                 )
             )
 
+            try await projectManager.initialize()
+
             // Load the project
             let timestamp = Date()
-            logger.info("Loading Xcode project at: \(timestamp)")
-            logger.info("Loading Xcode project from: \(projectPath)")
-            let project = try await projectManager.resolveProjectInfo()
-
-            logger.info("✓ Project loaded successfully")
-            logger.info("  - Root URL: \(project.rootURL.path)")
-            logger.info("  - Workspace: \(project.workspaceURL.path)")
-            // logger.info("  - Schemes: \(project.schemeInfoList.map(\.name).joined(separator: ", "))")
-            // logger.info("  - Targets: \(project.targetInfoList.map(\.name).joined(separator: ", "))")
-
-            logger.info("\n🗂️ Scheme Information:")
-            for scheme in project.schemes {
-                logger.info("  - Scheme Name: \(scheme.name)")
+            print("Loading Xcode project at: \(timestamp)")
+            print("Loading Xcode project from: \(projectPath)")
+            print("✓ Project loaded successfully")
+            guard let baseProjectInfo = await projectManager.xcodeProjectBaseInfo else {
+                return
             }
 
+            let targetIdentifiers = baseProjectInfo.xcodeTargets.map(\.targetIdentifier)
+            let sourcesItems = await projectManager
+                .getSourcesItems(targetIdentifiers: targetIdentifiers)
+            for sourcesItem in sourcesItems {
+                print("Sources for target \(sourcesItem.target):")
+                for source in sourcesItem.sources {
+                    print(" - \(source.path)")
+                }
+            }
+
+            print("  - Root URL: \(baseProjectInfo.rootURL.path)")
+            print(
+                " - Project Targets: \(baseProjectInfo.xcodeTargets.map(\.name).joined(separator: ", "))"
+            )
+
             // Targets
-            logger.info("\n🗂️ Target Information:")
-            for target in project.targets {
-                logger.info("  - Target Name: \(target.name)")
-                logger.info("\(target.debugDescription)")
+            print("\n✅🗂️ Target Information:")
+            for target in baseProjectInfo.xcodeTargets {
+                print("  - Target Name: \(target.name)")
+                print("  - xcodeProductType: \(target.xcodeProductType)")
             }
 
             // Show indexing paths
-            logger.info("\n🗂️ Indexing Information:")
-            logger.info("  - Index Store URL: \(project.indexStoreURL.path)")
-            logger.info("  - Index Database URL: \(project.indexDatabaseURL.path)")
-            logger.info("  - Derived Data Path: \(project.derivedDataPath.path)")
-
+            let xcodeGlobalSettings = baseProjectInfo.xcodeGlobalSettings
+            print("\n✅🗂️ Indexing Information:")
+            print("  - Index Store URL: \(xcodeGlobalSettings.indexStoreURL.path)")
+            print("  - Index Database URL: \(xcodeGlobalSettings.indexDatabaseURL.path)")
+            print("  - Derived Data Path: \(xcodeGlobalSettings.derivedDataPath.path)")
+            print("  - Configuration: \(baseProjectInfo.configuration)")
             let endTimestamp = Date()
-            logger.info("Loading time: \(endTimestamp.timeIntervalSince(timestamp)) seconds")
+            print("Loading time: \(endTimestamp.timeIntervalSince(timestamp)) seconds")
         } catch {
-            logger.error("❌ Error: \(error)")
+            print("❌ Error: \(error)")
         }
     }
 }
