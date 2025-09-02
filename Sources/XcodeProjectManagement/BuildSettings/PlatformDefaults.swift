@@ -9,12 +9,16 @@ public struct SDKInfo {
 enum PlatformDefaults {
     // === Host arch 检测（封装成策略） ===
     enum SimulatorArchPolicy { case hostOnly, universal }
-    private static func hostArch() -> String { // "arm64" or "x86_64"
-        var u = utsname(); uname(&u)
-        let bytes = Mirror(reflecting: u.machine).children
-            .compactMap { $0.value as? Int8 } + [0]
-        let s = String(decoding: bytes.map { UInt8(bitPattern: $0) }, as: UTF8.self)
-        return s.contains("x86") ? "x86_64" : "arm64"
+    private static func hostArch() -> String {
+        var u = utsname()
+        uname(&u)
+        let mirror = Mirror(reflecting: u.machine)
+        let bytes = mirror.children.compactMap { $0.value as? UInt8 }
+        let validBytes = bytes.prefix { $0 != 0 } // to null
+        if let s = String(data: Data(validBytes), encoding: .utf8) {
+            return s.contains("x86") ? "x86_64" : "arm64"
+        }
+        return "arm64"
     }
 
     private static func simARCHS(policy: SimulatorArchPolicy) -> String {

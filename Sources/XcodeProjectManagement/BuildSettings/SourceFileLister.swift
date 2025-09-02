@@ -93,7 +93,8 @@ enum SourceFileLister {
                         return nil
                     }
                 }
-            }.map { fullPath in
+            }
+            .map { fullPath in
                 SourceItem(path: URL(filePath: fullPath), itemKind: .file)
             }
     }

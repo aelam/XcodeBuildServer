@@ -25,7 +25,8 @@ struct SwiftFilesProvider: CompileArgProvider, Sendable {
                 )) ?? []
                 filePaths.filter { url in
                     url.pathExtension == "swift"
-                }.forEach { file in
+                }
+                .forEach { file in
                     fileList.append(file.path)
                 }
             }
