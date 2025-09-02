@@ -111,6 +111,10 @@ struct CompilerArgsGeneratorTests {
 
     @Test
     func resolvePodProject() async throws {
+        guard ProcessInfo.processInfo.environment["CI"] == nil else {
+            return
+        }
+
         let targetName = "UserStickersNotificationService"
         let fileSubPath = "UserStickersNotificationService/NotificationService.swift"
         let projectFolder = URL(fileURLWithPath: "/Users/wang.lun/Work/line-stickers-ios")

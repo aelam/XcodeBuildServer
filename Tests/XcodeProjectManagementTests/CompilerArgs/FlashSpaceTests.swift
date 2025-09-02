@@ -7,6 +7,9 @@ import XcodeProj
 struct FlashSpaceTests {
     @Test
     func resolveMacProject() async throws {
+        guard ProcessInfo.processInfo.environment["CI"] == nil else {
+            return
+        }
         let projectRoot = "/Users/wang.lun/Work/FlashSpace"
         let projectFile = "FlashSpace.xcodeproj"
         let targetName = "FlashSpace"
