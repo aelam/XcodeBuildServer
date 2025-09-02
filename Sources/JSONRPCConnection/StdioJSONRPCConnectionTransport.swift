@@ -18,6 +18,8 @@ public final class StdioJSONRPCConnectionTransport: JSONRPCServerTransport, @unc
         return encoder
     }()
 
+    private let jsonRPCParser = JSONPRCParser()
+
     // Stream continuations for async streams
     private var messageContinuation: AsyncStream<JSONRPCMessage>.Continuation?
     private var errorContinuation: AsyncStream<JSONRPCTransportError>.Continuation?
@@ -82,6 +84,15 @@ public final class StdioJSONRPCConnectionTransport: JSONRPCServerTransport, @unc
         }
 
         isListening = true
+
+        jsonRPCParser.handler = { [weak self] result in
+            switch result {
+            case let .success(message):
+                self?.messageContinuation?.yield(message)
+            case let .failure(error):
+                self?.errorContinuation?.yield(error)
+            }
+        }
 
         // Set up file handle reading
         input.readabilityHandler = { [weak self] handle in
@@ -176,59 +187,10 @@ public final class StdioJSONRPCConnectionTransport: JSONRPCServerTransport, @unc
             return
         }
 
-        // Parse the message first
-        do {
-            let message = try parseJSONRPCMessage(from: data)
-
-            // Log with pretty JSON using existing encoder
-            if let prettyData = try? jsonEncoder.encode(message.request),
-               let prettyJson = String(data: prettyData, encoding: .utf8) {
-                logger.debug("Received (\(message.rawData.count) bytes):\n\(prettyJson)")
-            } else {
-                let rawString = String(data: message.rawData, encoding: .utf8) ?? "[Invalid UTF-8]"
-                logger.debug("Received (\(message.rawData.count) bytes):\n\(rawString)")
-            }
-
-            messageContinuation?.yield(message)
-        } catch {
-            // Log raw data if parsing fails
-            let rawString = String(data: data, encoding: .utf8) ?? "[Invalid UTF-8]"
-            logger.debug("Received invalid data (\(data.count) bytes):\n\(rawString)")
-
-            if let transportError = error as? JSONRPCTransportError {
-                errorContinuation?.yield(transportError)
-            } else {
-                errorContinuation?.yield(.invalidMessage)
-            }
+        Task {
+            await jsonRPCParser.feed(chunk: data)
         }
-
         // Continue waiting for more data
         fileHandle.waitForDataInBackgroundAndNotify()
-    }
-
-    private func parseJSONRPCMessage(from data: Data) throws -> JSONRPCMessage {
-        guard let content = String(data: data, encoding: .utf8) else {
-            throw JSONRPCTransportError.invalidMessage
-        }
-
-        // Parse HTTP-like headers (Content-Length:N\r\n\r\n)
-        let components = content.split(separator: "\r\n", omittingEmptySubsequences: true)
-        guard components.count >= 2 else {
-            throw JSONRPCTransportError.invalidMessage
-        }
-
-        // Extract JSON content (skip headers)
-        let jsonContent = components[1].replacing("\\/", with: "/")
-        guard let rawData = jsonContent.data(using: .utf8) else {
-            throw JSONRPCTransportError.invalidMessage
-        }
-
-        // Decode JSON-RPC request
-        do {
-            let request = try jsonDecoder.decode(JSONRPCRequest.self, from: rawData)
-            return JSONRPCMessage(request: request, rawData: rawData)
-        } catch {
-            throw JSONRPCTransportError.invalidMessage
-        }
     }
 }
