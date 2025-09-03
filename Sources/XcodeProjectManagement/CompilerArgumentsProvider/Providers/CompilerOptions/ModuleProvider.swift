@@ -35,7 +35,7 @@ struct ModuleProvider: CompileArgProvider, Sendable {
 
         var flags: [String] = []
         flags.append("-fmodules")
-        flags.append(contentsOf: ["-Xclang", "-fmodules-cache-path", "-Xclang", moduleCachePath.path])
+        flags.append(contentsOf: ["-fmodules-cache-path=\(moduleCachePath.path)"])
         flags.append(contentsOf: ["-Xclang", "-fmodule-format=raw"])
         flags.append("-fmodules-validate-system-headers")
         flags.append("-fretain-comments-from-system-headers")
@@ -49,8 +49,9 @@ struct ModuleProvider: CompileArgProvider, Sendable {
         }
 
         // Warning
-        flags.append("-Wnon-modular-include-in-framework-module")
-        flags.append("-Werror=non-modular-include-in-framework-module")
+        // flags.append("-Wnon-modular-include-in-framework-module")
+        // flags.append("-Werror=non-modular-include-in-framework-module")
+        flags.append("-Wno-error=non-modular-include-in-framework-module")
 
         return flags
     }
