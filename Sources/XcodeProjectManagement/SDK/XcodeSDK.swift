@@ -1,5 +1,5 @@
 // TODO: update Platform/SDK to improve the relationship
-public enum XcodeSDK: String, Sendable {
+public enum Platform: String, Sendable, Codable, Hashable {
     case macOS = "macosx"
     case iOS = "iphoneos"
     case iOSSimulator = "iphonesimulator"
@@ -11,75 +11,89 @@ public enum XcodeSDK: String, Sendable {
     case visionSimulator = "xrsimulator"
 }
 
-public enum Platform: String, Sendable, Codable, Hashable {
-    case iOS = "iphoneos"
-    case macOS = "macosx"
-    case tvOS = "appletvos"
-    case watchOS = "watchos"
-    case visionOS = "xros"
+public typealias XcodeSDK = Platform
 
+extension Platform {
     // "AVAILABLE_PLATFORMS" : "android appletvos appletvsimulator driverkit iphoneos iphonesimulator macosx qnx
     // watchos watchsimulator xros xrsimulator",
-
-    func sdk(simulator: Bool) -> XcodeSDK {
+    var isSimulator: Bool {
         switch self {
-        case .iOS: simulator ? .iOSSimulator : .iOS
-        case .macOS: .macOS
-        case .tvOS: simulator ? .tvSimulator : .tvOS
-        case .watchOS: simulator ? .watchSimulator : .watchOS
-        case .visionOS: simulator ? .visionSimulator : .visionOS
+        case .iOSSimulator, .watchSimulator, .tvSimulator, .visionSimulator:
+            true
+        default:
+            false
+        }
+    }
+
+    var simulatorVariant: Platform {
+        switch self {
+        case .iOS: .iOSSimulator
+        case .watchOS: .watchSimulator
+        case .tvOS: .tvSimulator
+        case .visionOS: .visionSimulator
+        default: self
+        }
+    }
+
+    var platformPathName: String {
+        switch self {
+        case .iOS: "iPhoneOS"
+        case .iOSSimulator: "iPhoneSimulator"
+        case .macOS: "MacOSX"
+        case .watchOS: "WatchOS"
+        case .watchSimulator: "WatchSimulator"
+        case .tvOS: "AppleTVOS"
+        case .tvSimulator: "AppleTVSimulator"
+        case .visionOS: "XROS"
+        case .visionSimulator: "XROS Simulator"
+        }
+    }
+
+    var buildSettingsKey: String {
+        switch self {
+        case .iOS: "IPHONEOS_DEPLOYMENT_TARGET"
+        case .iOSSimulator: "IPHONEOS_DEPLOYMENT_TARGET"
+        case .macOS: "MACOSX_DEPLOYMENT_TARGET"
+        case .watchOS: "WATCHOS_DEPLOYMENT_TARGET"
+        case .watchSimulator: "WATCHOS_DEPLOYMENT_TARGET"
+        case .tvOS: "TVOS_DEPLOYMENT_TARGET"
+        case .tvSimulator: "TVOS_DEPLOYMENT_TARGET"
+        case .visionOS: "XROS_DEPLOYMENT_TARGET"
+        case .visionSimulator: "XROS_DEPLOYMENT_TARGET"
+        }
+    }
+
+    // EFFECTIVE_PLATFORM_NAME
+    var effectiveSuffix: String {
+        switch self {
+        case .iOS: "-iphoneos"
+        case .iOSSimulator: "-iphonesimulator"
+        case .macOS: ""
+        case .watchOS: "-watchos"
+        case .watchSimulator: "-watchsimulator"
+        case .tvOS: "-tvos"
+        case .tvSimulator: "-tvossimulator"
+        case .visionOS: "-xros"
+        case .visionSimulator: "-xrsimulator"
+        }
+    }
+
+    var osNameForTargetTriple: String {
+        switch self {
+        case .iOS: "ios"
+        case .iOSSimulator: "ios"
+        case .macOS: "macosx"
+        case .watchOS: "watchos"
+        case .watchSimulator: "watchos"
+        case .tvOS: "tvos"
+        case .tvSimulator: "tvos"
+        case .visionOS: "xros"
+        case .visionSimulator: "xros"
         }
     }
 }
 
 public struct SDK {
-    public enum Platform: String, Sendable {
-        case iOS = "iphoneos"
-        case iOSSimulator = "iphonesimulator"
-        case macOS = "macosx"
-        case watchOS = "watchos"
-        case watchOSSimulator = "watchsimulator"
-        case tvOS = "tvos"
-        case tvOSSimulator = "tvossimulator"
-
-        init(platformPathName: String) {
-            switch platformPathName {
-            case "iPhoneOS": self = .iOS
-            case "iPhoneSimulator": self = .iOSSimulator
-            case "MacOS": self = .macOS
-            case "watchOS": self = .watchOS
-            case "watchOSSimulator": self = .watchOSSimulator
-            case "tvOS": self = .tvOS
-            case "tvOSSimulator": self = .tvOSSimulator
-            default: self = .iOSSimulator // 默认值
-            }
-        }
-
-        var platformPathName: String {
-            switch self {
-            case .iOS: "iPhoneOS"
-            case .iOSSimulator: "iPhoneSimulator"
-            case .macOS: "MacOSX"
-            case .watchOS: "WatchOS"
-            case .watchOSSimulator: "WatchOSSimulator"
-            case .tvOS: "AppleTVOS"
-            case .tvOSSimulator: "AppleTVSimulator"
-            }
-        }
-
-        var buildSettingsKey: String {
-            switch self {
-            case .iOS: "IPHONEOS_DEPLOYMENT_TARGET"
-            case .iOSSimulator: "IPHONEOS_DEPLOYMENT_TARGET"
-            case .macOS: "MACOSX_DEPLOYMENT_TARGET"
-            case .watchOS: "WATCHOS_DEPLOYMENT_TARGET"
-            case .watchOSSimulator: "WATCHOS_DEPLOYMENT_TARGET"
-            case .tvOS: "TVOS_DEPLOYMENT_TARGET"
-            case .tvOSSimulator: "TVOS_DEPLOYMENT_TARGET"
-            }
-        }
-    }
-
     let name: String
     let version: String
     let path: String

@@ -110,7 +110,7 @@ struct CompilerArgsGeneratorTests {
     }
 
     @Test
-    func resolvePodProject() async throws {
+    func resolveUserStickersPodProject() async throws {
         guard ProcessInfo.processInfo.environment["CI"] == nil else {
             return
         }

@@ -116,7 +116,7 @@ struct BuildSettingResolver: @unchecked Sendable {
         let projectBuildConfiguration = project.buildConfigurationList?
             .buildConfigurations
             .first { $0.name == configuration }
-        let projectBuildSettings = projectBuildConfiguration?.buildSettings
+        var projectBuildSettings = projectBuildConfiguration?.buildSettings
 
         let targetBuildConfiguration = target.buildConfigurationList?
             .buildConfigurations
@@ -129,7 +129,7 @@ struct BuildSettingResolver: @unchecked Sendable {
             xcconfigSettings = (try? XCConfigParser.parse(at: xcconfigPath.url.path)) ?? [:]
         }
 
-        let targetBuildSettings = targetBuildConfiguration?.buildSettings
+        var targetBuildSettings = targetBuildConfiguration?.buildSettings
 
         // determine SDK
         let sdk: String = targetBuildSettings?["SDKROOT"] as? String
@@ -146,10 +146,15 @@ struct BuildSettingResolver: @unchecked Sendable {
         let buildDir = xcodeGlobalSettings.derivedDataPath
             .appendingPathComponent("Build/Products")
 
+        let moduleName: String = target.name.asRFC1034Identifier()
+        defaultBuildSettings["SRCROOT"] = sourceRoot.string
         defaultBuildSettings["CONFIGURATION"] = configuration
         defaultBuildSettings["BUILD_DIR"] = buildDir.path
-        defaultBuildSettings["PROJECT_GUID"] = project.uuid
-        defaultBuildSettings["SRCROOT"] = sourceRoot.string
+        projectBuildSettings?["PROJECT_GUID"] = project.uuid
+        projectBuildSettings?["PROJECT_DIR"] = sourceRoot.string
+        targetBuildSettings?["TARGET_NAME"] = target.name
+        targetBuildSettings?["PRODUCT_NAME"] = target.name
+        targetBuildSettings?["PRODUCT_MODULE_NAME"] = moduleName
 
         let autoFix: [String: String] = [:]
 
@@ -170,11 +175,7 @@ struct BuildSettingResolver: @unchecked Sendable {
         )
 
         let effectivePlatformName = result["EFFECTIVE_PLATFORM_NAME"] ?? ""
-        result["SDKROOT"] = result["SDKROOT_PATH"]
-
-        let moduleName = target.name.asRFC1034Identifier()
-        result["PRODUCT_NAME"] = target.name
-        result["PRODUCT_MODULE_NAME"] = moduleName
+        // result["SDKROOT"] = result["SDKROOT_PATH"]
 
         result["SYMROOT"] = xcodeGlobalSettings.symRoot.path
         result["CONFIGURATION_BUILD_DIR"] = buildDir
@@ -187,7 +188,28 @@ struct BuildSettingResolver: @unchecked Sendable {
             .appendingPathComponent(moduleName + ".build")
             .path
 
+        result["TARGET_TRIPLE"] = getTargetTriple(settings: result)
+
         return result
+    }
+
+    private static func getTargetTriple(settings: [String: String]) -> String {
+        guard
+            let nativeArch = settings["NATIVE_ARCH"],
+            let versionKey = settings["DEPLOYMENT_TARGET_SETTING_NAME"],
+            let deploymentVersion = settings[versionKey],
+            let platformName = settings["PLATFORM_NAME"],
+            let platform = Platform(rawValue: platformName)
+        else {
+            return "arm64-apple-ios18.5-simulator"
+        }
+
+        return [
+            nativeArch,
+            "apple",
+            platform.osNameForTargetTriple + deploymentVersion,
+            platform.isSimulator ? "simulator" : ""
+        ].filter { !$0.isEmpty }.joined(separator: "-")
     }
 
     private static func normalizeSettings(_ settings: [String: Any])

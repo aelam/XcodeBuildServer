@@ -70,11 +70,13 @@ public struct XcodeTarget: Sendable, Hashable, Codable {
         }
 
         let platformWeight = switch xcodeTargetPlatform {
+        case .iOSSimulator: 1.1
         case .iOS: 1.0
         case .macOS: 0.8
         case .watchOS: 0.5
         case .tvOS: 0.4
         case .visionOS: 0.3
+        default: 0.0
         }
 
         let runningBonus: Double = buildForRunning ? 0.1 : 0.0

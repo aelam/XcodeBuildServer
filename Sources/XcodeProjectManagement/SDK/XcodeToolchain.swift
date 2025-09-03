@@ -56,7 +56,7 @@ public extension XcodeInstallation {
         for platformName: String,
         forSimulator: Bool = false
     ) throws -> SDK {
-        let platform = SDK.Platform(rawValue: platformName) ?? .iOSSimulator
+        let platform = Platform(rawValue: platformName) ?? .iOSSimulator
 
         let sdkDir = developerDir
             .appendingPathComponent("Platforms")

@@ -19,7 +19,7 @@ struct TestSearchPathProvider: CompileArgProvider, Sendable {
     private func buildFlags(settings: [String: String]) -> [String] {
         guard
             isTestTarget(settings: settings),
-            let sdkRoot = settings["SDKROOT"],
+            let sdkRoot = settings["SDKROOT_PATH"],
             let sdkURL = URL(string: sdkRoot)
         else { return [] }
 
