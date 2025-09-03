@@ -17,9 +17,9 @@ struct ClangProvider: CompileArgProvider, Sendable {
     ) -> [String] {
         var flags: [String] = []
 
+        flags.append(contentsOf: buildLangFlag(for: languageDialect))
         flags.append(fileURL.path)
         flags.append(contentsOf: ["-Xclang", "-fallow-pch-with-compiler-errors"])
-        flags.append(contentsOf: buildLangFlag(for: languageDialect))
         flags.append(contentsOf: buildPrecompiledHeaderFlags(settings: settings))
         flags.append(contentsOf: buildPreprocessorFlags(settings: settings))
         flags.append(contentsOf: buildOtherFlags(settings: settings))
