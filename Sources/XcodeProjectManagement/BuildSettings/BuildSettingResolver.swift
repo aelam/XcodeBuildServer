@@ -146,7 +146,7 @@ struct BuildSettingResolver: @unchecked Sendable {
         let buildDir = xcodeGlobalSettings.derivedDataPath
             .appendingPathComponent("Build/Products")
 
-        let moduleName: String = target.name.asRFC1034Identifier()
+        let moduleName: String = target.name.asC99ExtIdentifier()
         defaultBuildSettings["SRCROOT"] = sourceRoot.string
         defaultBuildSettings["CONFIGURATION"] = configuration
         defaultBuildSettings["BUILD_DIR"] = buildDir.path
