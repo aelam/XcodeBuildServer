@@ -2,13 +2,22 @@ import Foundation
 
 struct ClangProvider: CompileArgProvider, Sendable {
     func arguments(for context: ArgContext) -> [String] {
-        guard context.compiler == .clang else { return [] }
-        return buildFlags(settings: context.buildSettings, languageDialect: context.languageDialect)
+        guard context.compiler == .clang, let fileURL = context.fileURL else { return [] }
+        return buildFlags(
+            settings: context.buildSettings,
+            fileURL: fileURL,
+            languageDialect: context.languageDialect
+        )
     }
 
-    private func buildFlags(settings: [String: String], languageDialect: XcodeLanguageDialect) -> [String] {
+    private func buildFlags(
+        settings: [String: String],
+        fileURL: URL,
+        languageDialect: XcodeLanguageDialect
+    ) -> [String] {
         var flags: [String] = []
 
+        flags.append(fileURL.path)
         flags.append(contentsOf: ["-Xclang", "-fallow-pch-with-compiler-errors"])
         flags.append(contentsOf: buildLangFlag(for: languageDialect))
         flags.append(contentsOf: buildPrecompiledHeaderFlags(settings: settings))
