@@ -146,13 +146,6 @@ enum PlatformDefaults {
         m["SDKROOT"] = sdkName // 平台名（语义型）
         m["SDKROOT_PATH"] = sdkInfo.path
         m["SDK_VERSION"] = sdkInfo.version
-        let targetTriple = [
-            hostArch(),
-            "apple",
-            spec.family + sdkInfo.version,
-            isSim ? "simulator" : ""
-        ].filter { !$0.isEmpty }.joined(separator: "-")
-        m["TARGET_TRIPLE"] = targetTriple
         m["SDK_BUILD_VERSION"] = sdkInfo.buildVersion
 
         m["PLATFORM_NAME"] = sdkName

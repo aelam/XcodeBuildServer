@@ -2,22 +2,28 @@ import Foundation
 
 struct ClangProvider: CompileArgProvider, Sendable {
     func arguments(for context: ArgContext) -> [String] {
-        guard context.compiler == .clang else { return [] }
-        return buildFlags(settings: context.buildSettings, languageDialect: context.languageDialect)
+        guard context.compiler == .clang, let fileURL = context.fileURL else { return [] }
+        return buildFlags(
+            settings: context.buildSettings,
+            fileURL: fileURL,
+            languageDialect: context.languageDialect
+        )
     }
 
-    private func buildFlags(settings: [String: String], languageDialect: XcodeLanguageDialect) -> [String] {
+    private func buildFlags(
+        settings: [String: String],
+        fileURL: URL,
+        languageDialect: XcodeLanguageDialect
+    ) -> [String] {
         var flags: [String] = []
 
-        flags.append(contentsOf: ["-Xclang", "-fallow-pch-with-compiler-errors"])
         flags.append(contentsOf: buildLangFlag(for: languageDialect))
+        flags.append(fileURL.path)
+        flags.append(contentsOf: ["-Xclang", "-fallow-pch-with-compiler-errors"])
         flags.append(contentsOf: buildPrecompiledHeaderFlags(settings: settings))
         flags.append(contentsOf: buildPreprocessorFlags(settings: settings))
         flags.append(contentsOf: buildOtherFlags(settings: settings))
-
-        if let optimizationLevel = settings["GCC_OPTIMIZATION_LEVEL"] {
-            flags.append(optimizationLevel)
-        }
+        flags.append(contentsOf: buildOptimizationFlags(settings: settings))
 
         return flags
     }
@@ -55,6 +61,25 @@ struct ClangProvider: CompileArgProvider, Sendable {
             for def in defs.split(separator: " ") {
                 flags.append("-D\(def)")
             }
+        }
+
+        return flags
+    }
+
+    private func buildOptimizationFlags(settings: [String: String]) -> [String] {
+        let optimizationMapFlags = [
+            "0": "-O0",
+            "1": "-O1",
+            "2": "-O2",
+            "3": "-O3",
+            "s": "-Os",
+            "fast": "-Ofast"
+        ]
+
+        var flags: [String] = []
+
+        if let optimizationLevel = settings["GCC_OPTIMIZATION_LEVEL"] {
+            flags.append(optimizationMapFlags[optimizationLevel] ?? optimizationLevel)
         }
 
         return flags

@@ -19,6 +19,9 @@ struct VFSOverlayProvider: CompileArgProvider, Sendable {
         let vfsoverlayPath = configurationBuildDirURL
             .appendingPathComponent("\(moduleName)-\(projectGUID)-VFS-\(platformName)")
             .appendingPathComponent("all-product-headers.yaml")
+        if !FileManager.default.fileExists(atPath: vfsoverlayPath.path) {
+            return []
+        }
 
         return [
             "-Xcc", "-ivfsoverlay", "-Xcc", vfsoverlayPath.path

@@ -12,14 +12,18 @@ struct TestSearchPathProvider: CompileArgProvider, Sendable {
     }
 
     private func isTestTarget(settings: [String: String]) -> Bool {
-        settings["TEST_TARGET_NAME"] != nil || // Debug
-            settings["TEST_HOST"] != nil || settings["BUNDLE_LOADER"] != nil // Release
+        guard
+            let productType = settings["PRODUCT_TYPE"],
+            let xcodeProductType = XcodeProductType(rawValue: productType)
+        else { return false }
+
+        return xcodeProductType.isTestBundle
     }
 
     private func buildFlags(settings: [String: String]) -> [String] {
         guard
             isTestTarget(settings: settings),
-            let sdkRoot = settings["SDKROOT"],
+            let sdkRoot = settings["SDKROOT_PATH"],
             let sdkURL = URL(string: sdkRoot)
         else { return [] }
 

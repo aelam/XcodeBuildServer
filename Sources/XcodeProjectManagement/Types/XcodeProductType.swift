@@ -73,4 +73,13 @@ public enum XcodeProductType: String, Codable, Sendable, Hashable {
             nil
         }
     }
+
+    var isTestBundle: Bool {
+        switch self {
+        case .unitTestBundle, .uiTestBundle, .ocUnitTestBundle:
+            true
+        default:
+            false
+        }
+    }
 }

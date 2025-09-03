@@ -56,7 +56,7 @@ public extension XcodeSettingsLoader {
 
             for (groupedTargetsKey, targets) in groupedTargets {
                 let projectURL = groupedTargetsKey.projectURL
-                let sdk = groupedTargetsKey.platform.sdk(simulator: true)
+                let sdk = groupedTargetsKey.platform.simulatorVariant
                 taskGroup.addTask {
                     let buildSettings = try await self.loadBuildSettings(
                         rootURL: rootURL,

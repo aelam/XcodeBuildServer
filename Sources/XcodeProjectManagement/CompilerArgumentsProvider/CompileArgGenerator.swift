@@ -74,6 +74,7 @@ extension CompileArgGenerator {
             ClangWarningProvider(),
             GCCWarningProvider(),
             ModuleProvider(),
+            ModuleMapFilesProvider(),
             ObjectiveCFeaturesProvider(),
             SwiftProvider(),
             SwiftFilesProvider(),
