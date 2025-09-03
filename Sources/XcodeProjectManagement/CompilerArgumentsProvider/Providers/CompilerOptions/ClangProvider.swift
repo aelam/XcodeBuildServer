@@ -14,10 +14,7 @@ struct ClangProvider: CompileArgProvider, Sendable {
         flags.append(contentsOf: buildPrecompiledHeaderFlags(settings: settings))
         flags.append(contentsOf: buildPreprocessorFlags(settings: settings))
         flags.append(contentsOf: buildOtherFlags(settings: settings))
-
-        if let optimizationLevel = settings["GCC_OPTIMIZATION_LEVEL"] {
-            flags.append(optimizationLevel)
-        }
+        flags.append(contentsOf: buildOptimizationFlags(settings: settings))
 
         return flags
     }
@@ -55,6 +52,25 @@ struct ClangProvider: CompileArgProvider, Sendable {
             for def in defs.split(separator: " ") {
                 flags.append("-D\(def)")
             }
+        }
+
+        return flags
+    }
+
+    private func buildOptimizationFlags(settings: [String: String]) -> [String] {
+        let optimizationMapFlags = [
+            "0": "-O0",
+            "1": "-O1",
+            "2": "-O2",
+            "3": "-O3",
+            "s": "-Os",
+            "fast": "-Ofast"
+        ]
+
+        var flags: [String] = []
+
+        if let optimizationLevel = settings["GCC_OPTIMIZATION_LEVEL"] {
+            flags.append(optimizationMapFlags[optimizationLevel] ?? optimizationLevel)
         }
 
         return flags

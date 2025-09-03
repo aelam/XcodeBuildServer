@@ -35,8 +35,8 @@ struct ModuleProvider: CompileArgProvider, Sendable {
 
         var flags: [String] = []
         flags.append("-fmodules")
-        flags.append(contentsOf: ["-fmodule-cache-path", moduleCachePath.path])
-        flags.append("-fmodule-format=raw")
+        flags.append(contentsOf: ["-Xclang", "-fmodule-cache-path", "-Xclang", moduleCachePath.path])
+        flags.append(contentsOf: ["-Xclang", "-fmodule-format=raw"])
         flags.append("-fmodules-validate-system-headers")
         flags.append("-fretain-comments-from-system-headers")
         flags.append(contentsOf: [
