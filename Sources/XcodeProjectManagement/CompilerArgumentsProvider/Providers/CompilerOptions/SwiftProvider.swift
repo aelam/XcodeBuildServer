@@ -35,7 +35,44 @@ struct SwiftProvider: CompileArgProvider, Sendable {
             flags.append("-enable-testing")
         }
 
-        flags.append("-emit-const-values")
+        flags.append(contentsOf: buildEmitConstValueFlags(settings: settings))
+        flags.append(contentsOf: buildProtocolFileFlags(settings: settings))
+
+        // OTHER_SWIFT_FLAGS
+        if let otherSwiftFlags = settings["OTHER_SWIFT_FLAGS"] {
+            let otherFlags = otherSwiftFlags
+                .components(separatedBy: " ")
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+            flags.append(contentsOf: otherFlags)
+        }
+
+        return flags
+    }
+
+    private func buildEmitConstValueFlags(settings: [String: String]) -> [String] {
+        var flags: [String] = []
+        // -emit-const-values-path <DerivedData>/Build/Products/<config>-<platform>/<Target>.swiftconstvalues
+        guard
+            let configurationTempDir = settings["CONFIGURATION_TEMP_DIR"],
+            let targetName = settings["TARGET_NAME"],
+            let arch = settings["NATIVE_ARCH"] else {
+            return []
+        }
+        let fileURL = URL(fileURLWithPath: configurationTempDir)
+            .appendingPathComponent("Objects-normal")
+            .appendingPathComponent(arch)
+            .appendingPathComponent("\(targetName).swiftconstvalues")
+        flags.append(contentsOf: [
+            "-emit-const-values",
+            "-emit-const-values-path",
+            fileURL.path
+        ])
+        return flags
+    }
+
+    private func buildProtocolFileFlags(settings: [String: String]) -> [String] {
+        var flags: [String] = []
 
         if
             let configurationTempDir = settings["CONFIGURATION_TEMP_DIR"],
@@ -51,15 +88,6 @@ struct SwiftProvider: CompileArgProvider, Sendable {
                 "-Xfrontend",
                 fileURL.path
             ])
-        }
-
-        // OTHER_SWIFT_FLAGS
-        if let otherSwiftFlags = settings["OTHER_SWIFT_FLAGS"] {
-            let otherFlags = otherSwiftFlags
-                .components(separatedBy: " ")
-                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { !$0.isEmpty }
-            flags.append(contentsOf: otherFlags)
         }
 
         return flags

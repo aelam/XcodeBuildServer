@@ -11,51 +11,14 @@ struct UserStickersCompilerArgsGeneratorTests {
             return
         }
 
-        let targetName = "UserStickersNotificationService"
-        let fileSubPath = "UserStickersNotificationService/NotificationService.swift"
-        let projectFolder = URL(fileURLWithPath: "/Users/wang.lun/Work/line-stickers-ios")
-        let projectFilePath = projectFolder
-            .appendingPathComponent("UserStickers/UserStickers.xcodeproj").path
-        let derivedDataPath = PathHash.derivedDataFullPath(for: projectFilePath)
-        let xcodeGlobalSettings =
-            XcodeGlobalSettings(derivedDataPath: derivedDataPath)
-
-        let xcodeToolchain = XcodeToolchain()
-        try await xcodeToolchain.initialize()
-        guard let xcodeInstallation = await xcodeToolchain
-            .getSelectedInstallation() else {
-            return
-        }
-        try await xcodeToolchain.initialize()
-        let xcodeProj = try XcodeProj(path: Path(projectFilePath))
-
-        let file = projectFolder
-            .appendingPathComponent(fileSubPath)
-
-        let targetIdentifier = XcodeTargetIdentifier(
-            projectFilePath: projectFilePath,
-            targetName: targetName
+        let fileInfo = SourceFileInfo(
+            projectFolder: URL(fileURLWithPath: "/Users/wang.lun/Work/line-stickers-ios"),
+            filePath: "UserStickersNotificationService/NotificationService.swift",
+            projectFilePath: "UserStickers/UserStickers.xcodeproj",
+            targetName: "UserStickersNotificationService"
         )
-        let sourceItems = SourceFileLister.loadSourceFiles(
-            for: xcodeProj,
-            targets: [targetName]
-        )[targetIdentifier.rawValue] ?? []
 
-        let generator = try CompileArgGenerator.create(
-            xcodeInstallation: xcodeInstallation,
-            xcodeGlobalSettings: xcodeGlobalSettings,
-            xcodeProj: xcodeProj,
-            target: targetName,
-            configurationName: "Debug",
-            fileURL: file,
-            sourceItems: sourceItems
-        )
-        print("=============================")
-        let flags = generator.compileArguments()
-        for flag in flags {
-            print(flag)
-        }
-        print("=============================")
+        try await processFileCompileArguments(fileInfo)
     }
 
     @Test
@@ -64,50 +27,27 @@ struct UserStickersCompilerArgsGeneratorTests {
             return
         }
 
-        let targetName = "StudioFoundation-Unit-Tests"
-        let fileSubPath = "UserStickers/StudioFoundation/Sources/StudioFoundation/Apple/CoreGraphics/CGAffineTransform+Extension.swift"
-        let projectFolder = URL(fileURLWithPath: "/Users/wang.lun/Work/line-stickers-ios")
-        let projectFilePath = projectFolder
-            .appendingPathComponent("Pods/Pods.xcodeproj").path
-        let derivedDataPath = PathHash.derivedDataFullPath(for: projectFilePath)
-        let xcodeGlobalSettings =
-            XcodeGlobalSettings(derivedDataPath: derivedDataPath)
+        let fileInfo = SourceFileInfo(
+            projectFolder: URL(fileURLWithPath: "/Users/wang.lun/Work/line-stickers-ios"),
+            filePath: "UserStickers/StudioFoundation/Sources/StudioFoundation/Apple/CoreGraphics/CGAffineTransform+Extension.swift",
+            projectFilePath: "Pods/Pods.xcodeproj",
+            targetName: "StudioFoundation-Unit-Tests"
+        )
+        try await processFileCompileArguments(fileInfo)
+    }
 
-        let xcodeToolchain = XcodeToolchain()
-        try await xcodeToolchain.initialize()
-        guard let xcodeInstallation = await xcodeToolchain
-            .getSelectedInstallation() else {
+    @Test
+    func resolveUserStickers() async throws {
+        guard ProcessInfo.processInfo.environment["CI"] == nil else {
             return
         }
-        try await xcodeToolchain.initialize()
-        let xcodeProj = try XcodeProj(path: Path(projectFilePath))
 
-        let file = projectFolder
-            .appendingPathComponent(fileSubPath)
-
-        let targetIdentifier = XcodeTargetIdentifier(
-            projectFilePath: projectFilePath,
-            targetName: targetName
+        let fileInfo = SourceFileInfo(
+            projectFolder: URL(fileURLWithPath: "/Users/wang.lun/Work/line-stickers-ios"),
+            filePath: "UserStickers/Editor/Tests/BrushCoreTests/AngleUtilTests.swift",
+            projectFilePath: "Pods/Pods.xcodeproj",
+            targetName: "Editor-Unit-Tests"
         )
-        let sourceItems = SourceFileLister.loadSourceFiles(
-            for: xcodeProj,
-            targets: [targetName]
-        )[targetIdentifier.rawValue] ?? []
-
-        let generator = try CompileArgGenerator.create(
-            xcodeInstallation: xcodeInstallation,
-            xcodeGlobalSettings: xcodeGlobalSettings,
-            xcodeProj: xcodeProj,
-            target: targetName,
-            configurationName: "Debug",
-            fileURL: file,
-            sourceItems: sourceItems
-        )
-        print("=============================")
-        let flags = generator.compileArguments()
-        for flag in flags {
-            print(flag)
-        }
-        print("=============================")
+        try await processFileCompileArguments(fileInfo)
     }
 }

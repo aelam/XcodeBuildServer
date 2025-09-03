@@ -155,6 +155,7 @@ struct BuildSettingResolver: @unchecked Sendable {
         targetBuildSettings?["TARGET_NAME"] = target.name
         targetBuildSettings?["PRODUCT_NAME"] = target.name
         targetBuildSettings?["PRODUCT_MODULE_NAME"] = moduleName
+        targetBuildSettings?["PRODUCT_TYPE"] = target.productType?.rawValue
 
         let autoFix: [String: String] = [:]
 
