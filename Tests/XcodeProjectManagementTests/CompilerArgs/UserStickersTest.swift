@@ -29,6 +29,7 @@ struct UserStickersCompilerArgsGeneratorTests {
 
         let fileInfo = SourceFileInfo(
             projectFolder: URL(fileURLWithPath: "/Users/wang.lun/Work/line-stickers-ios"),
+            // swiftlint:disable:next line_length
             filePath: "UserStickers/StudioFoundation/Sources/StudioFoundation/Apple/CoreGraphics/CGAffineTransform+Extension.swift",
             projectFilePath: "Pods/Pods.xcodeproj",
             targetName: "StudioFoundation-Unit-Tests"
