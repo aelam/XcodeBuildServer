@@ -34,7 +34,7 @@ struct TestSearchPathProvider: CompileArgProvider, Sendable {
             // TEST_FRAMEWORK_SEARCH_PATHS
             "-F", platformPath.appendingPathComponent("Developer/Library/Frameworks").path,
             // TEST_LIBRARY_SEARCH_PATHS
-            "-L", platformPath.appendingPathComponent("Developer/usr/lib").path
+            "-I", platformPath.appendingPathComponent("Developer/usr/lib").path
         ]
     }
 
