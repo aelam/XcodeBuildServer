@@ -5,10 +5,6 @@ on:
     tags:
       - 'v*.*.*'
 
-permissions:
-  contents: write
-  packages: write
-
 env:
   SWIFT_VERSION: '6.1'
   XCODE_VERSION: '16.2'
