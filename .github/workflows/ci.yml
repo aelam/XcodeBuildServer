@@ -163,39 +163,3 @@ jobs:
         if [ "$SECRETS_FOUND" = false ]; then
           echo "✅ No obvious secrets found"
         fi
-
-  build-release:
-    name: Build Release
-    runs-on: macos-latest
-    if: github.ref == 'refs/heads/main'
-    needs: [build-and-test, lint, security-scan]
-
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      
-    - name: Setup Xcode
-      uses: maxim-lobanov/setup-xcode@v1
-      with:
-        xcode-version: ${{ env.XCODE_VERSION }}
-        
-    - name: Setup Swift
-      uses: swift-actions/setup-swift@v2
-      with:
-        swift-version: ${{ env.SWIFT_VERSION }}
-      
-    - name: Build Release
-      run: swift build -c release --arch arm64 --arch x86_64
-      
-    - name: Archive Binary
-      run: |
-        mkdir -p artifacts
-        cp .build/apple/Products/Release/XcodeBuildServerCLI artifacts/
-        tar -czf artifacts/xcode-build-server-macos.tar.gz -C artifacts XcodeBuildServerCLI
-        
-    - name: Upload Build Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: xcode-build-server-macos
-        path: artifacts/xcode-build-server-macos.tar.gz
-        retention-days: 30
