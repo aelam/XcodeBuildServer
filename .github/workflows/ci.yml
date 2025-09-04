@@ -119,7 +119,7 @@ jobs:
 
     - name: Check Swift Format
       run: |
-        mint run nicklockwood/SwiftFormat@${{ env.SWIFTFORMAT_VERSION }} --lint-only
+        mint run nicklockwood/SwiftFormat@${{ env.SWIFTFORMAT_VERSION }} . --lint-only
 
   security-scan:
     name: Security Scan
