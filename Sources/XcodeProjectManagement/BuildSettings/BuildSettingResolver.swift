@@ -190,6 +190,8 @@ struct BuildSettingResolver: @unchecked Sendable {
             .path
 
         result["TARGET_TRIPLE"] = getTargetTriple(settings: result)
+        result["TOOLCHAIN_DIR"] = xcodeInstallation.toolchainDir.path
+        result["TOOLCHAINS"] = "com.apple.dt.toolchain.XcodeDefault"
 
         return result
     }

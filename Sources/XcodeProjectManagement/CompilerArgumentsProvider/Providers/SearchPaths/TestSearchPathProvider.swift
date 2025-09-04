@@ -8,7 +8,8 @@ import Foundation
 
 struct TestSearchPathProvider: CompileArgProvider, Sendable {
     func arguments(for context: ArgContext) -> [String] {
-        buildFlags(settings: context.buildSettings)
+        buildFrameworkFlags(settings: context.buildSettings) +
+            buildPluginFlags(settings: context.buildSettings)
     }
 
     private func isTestTarget(settings: [String: String]) -> Bool {
@@ -20,7 +21,7 @@ struct TestSearchPathProvider: CompileArgProvider, Sendable {
         return xcodeProductType.isTestBundle
     }
 
-    private func buildFlags(settings: [String: String]) -> [String] {
+    private func buildFrameworkFlags(settings: [String: String]) -> [String] {
         guard
             isTestTarget(settings: settings),
             let sdkRoot = settings["SDKROOT_PATH"],
@@ -33,7 +34,27 @@ struct TestSearchPathProvider: CompileArgProvider, Sendable {
             // TEST_FRAMEWORK_SEARCH_PATHS
             "-F", platformPath.appendingPathComponent("Developer/Library/Frameworks").path,
             // TEST_LIBRARY_SEARCH_PATHS
-            "-L", platformPath.appendingPathComponent("Developer/usr/lib").path
+            "-I", platformPath.appendingPathComponent("Developer/usr/lib").path
+        ]
+    }
+
+    private func buildPluginFlags(settings: [String: String]) -> [String] {
+        guard
+            isTestTarget(settings: settings),
+            let toolchainDir = settings["TOOLCHAIN_DIR"],
+            let toolchainURL = URL(string: toolchainDir)
+        else { return [] }
+
+        // "-plugin-path",
+        // "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+        let pluginPath = toolchainURL
+            .appendingPathComponent("usr/lib/swift/host/plugins/testing")
+        guard FileManager.default.fileExists(atPath: pluginPath.path) else {
+            return []
+        }
+
+        return [
+            "-plugin-path", pluginPath.path
         ]
     }
 }

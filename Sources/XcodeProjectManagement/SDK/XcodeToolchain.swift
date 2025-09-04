@@ -49,6 +49,10 @@ public struct XcodeInstallation: Sendable, Codable {
     public var isValid: Bool {
         FileManager.default.fileExists(atPath: xcodebuildPath.path)
     }
+
+    public var toolchainDir: URL {
+        developerDir.appendingPathComponent("Toolchains/XcodeDefault.xctoolchain")
+    }
 }
 
 public extension XcodeInstallation {
