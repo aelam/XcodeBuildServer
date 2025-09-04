@@ -16,7 +16,7 @@ A Build Server Protocol (BSP) implementation for Xcode projects, enabling better
 - 📁 **Multi-target Support**: Support for complex Xcode project structures
 - 🔍 **SourceKit Integration**: Native Swift language server capabilities with complete `textDocument/sourceKitOptions` implementation
 - 🛡️ **Thread-safe**: Robust concurrent operations with Swift actors
-- 📊 **Comprehensive Build Settings**: Full support for per-file, per-target compiler arguments via `buildSettingsForIndex`
+- 📊 **Comprehensive Build Settings**: Full support for per-file compiler arguments via `XcodeProj`
 
 ## Demo
 
@@ -31,7 +31,7 @@ See XcodeBuildServer in action with seamless code navigation and jump-to-definit
 2. Extract and move to your PATH:
    ```bash
    tar -xzf xcode-build-server-macos-universal.tar.gz
-   sudo mv xcode-build-server /usr/local/bin/
+   sudo mv release/XcodeBuildServerCLI /usr/local/bin/
    chmod +x /usr/local/bin/XcodeBuildServerCLI
    ```
 
@@ -180,10 +180,14 @@ swift test
 
 ### Key Components
 
-- **BSPServer**: Core BSP protocol implementation
-- **BuildServerContext**: Manages project state and configuration  
+- **BSPServerService**: Core BSP protocol implementation
 - **JSONRPCConnection**: JSON-RPC transport layer
+- **ProjectManagerProvider** : Provides access to the ProjectManager
+- **ProjectManager**: Manages Xcode project/workspace parsing and build settings extraction
+- **XcodeProjectManager**: Handles Xcode-specific project operations
 - **XcodeBuild Integration**: Interface with xcodebuild tool
+- **SwiftPMProjectManager**: (TODO)Handles SwiftPM-specific project operations
+
 
 ### BSP Method Support
 
@@ -194,9 +198,9 @@ swift test
 | `workspace/buildTargets` | ✅ Complete | List all build targets |
 | `buildTarget/sources` | ✅ Complete | Get source files for targets |
 | `textDocument/sourceKitOptions` | ✅ **Complete** | **Per-file compiler arguments from buildSettingsForIndex** |
-| `buildTarget/prepare` | ✅ Complete | Background indexing preparation |
-| `buildTarget/didChange` | ✅ Complete | Build target change notifications |
-| `workspace/didChangeWatchedFiles` | ✅ Complete | File system change handling |
+| `buildTarget/prepare` | [ ] | Background indexing preparation |
+| `buildTarget/didChange` | [ ] | Build target change notifications, need a BSP client with full feature |
+| `workspace/didChangeWatchedFiles` | [] | File system change handling |
 
 ## Troubleshooting
 
