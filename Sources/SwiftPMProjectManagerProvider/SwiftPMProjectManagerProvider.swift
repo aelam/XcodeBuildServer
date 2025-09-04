@@ -18,8 +18,9 @@ public struct SwiftPMProjectManagerProvider: ProjectManagerProvider {
     public init() {}
 
     public func canHandle(projectURL: URL) async -> Bool {
-        let packageSwiftPath = projectURL.appendingPathComponent("Package.swift")
-        return FileManager.default.fileExists(atPath: packageSwiftPath.path)
+        false
+        // let packageSwiftPath = projectURL.appendingPathComponent("Package.swift")
+        // return FileManager.default.fileExists(atPath: packageSwiftPath.path)
     }
 
     public func createProjectManager(
