@@ -40,14 +40,14 @@ jobs:
     - name: Create Release Archive
       run: |
         mkdir -p release
-        cp .build/apple/Products/Release/XcodeBuildServerCLI release/xcode-build-server
-        chmod +x release/xcode-build-server
+        cp .build/apple/Products/Release/XcodeBuildServerCLI release/XcodeBuildServerCLI
+        chmod +x release/XcodeBuildServerCLI
         
         # Create tar.gz
-        tar -czf xcode-build-server-macos-universal.tar.gz -C release xcode-build-server
-        
+        tar -czf xcode-build-server-macos-universal.tar.gz -C release XcodeBuildServerCLI
+
         # Create zip
-        cd release && zip ../xcode-build-server-macos-universal.zip xcode-build-server && cd ..
+        cd release && zip ../xcode-build-server-macos-universal.zip XcodeBuildServerCLI && cd ..
         
     - name: Generate Checksums
       run: |
@@ -71,18 +71,18 @@ jobs:
           #### Homebrew (Recommended)
           ```bash
           # Coming soon
-          brew install xcode-build-server
+          brew install XcodeBuildServerCLI
           ```
           
           #### Manual Installation
           1. Download the appropriate archive for your platform
           2. Extract the binary: `tar -xzf xcode-build-server-macos-universal.tar.gz`
-          3. Move to PATH: `mv xcode-build-server /usr/local/bin/`
-          4. Make executable: `chmod +x /usr/local/bin/xcode-build-server`
+          3. Move to PATH: `mv XcodeBuildServerCLI /usr/local/bin/`
+          4. Make executable: `chmod +x /usr/local/bin/XcodeBuildServerCLI`
           
           ### Usage
           ```bash
-          xcode-build-server --help
+          XcodeBuildServerCLI --help
           ```
           
           ### Checksums
