@@ -2,12 +2,12 @@ import Foundation
 import PathKit
 import XcodeProj
 
-enum SourceFileLister {
+public enum SourceFileLister {
     // MARK: - SourceFiles
 
-    typealias SourceMap = [String: [SourceItem]]
+    public typealias SourceMap = [String: [SourceItem]]
 
-    static func loadSourceFiles(
+    public static func loadSourceFiles(
         for xcodeProj: XcodeProj,
         targets: Set<String>
     ) -> SourceMap {

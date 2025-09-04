@@ -107,6 +107,7 @@ public final class XcodeProjectLocator {
         logger.debug("Resolving Xcode project type at \(rootURL.path)")
         logger.debug("Using reference: \(String(describing: xcodeProjectReference))")
         if let workspace = xcodeProjectReference?.workspace {
+            let workspace = (workspace as NSString).expandingTildeInPath
             let workspaceURL: URL = if workspace.hasPrefix("/"), let workspaceURL = URL(string: workspace) {
                 workspaceURL
             } else {
@@ -119,6 +120,7 @@ public final class XcodeProjectLocator {
             logger.debug("Resolved explicit workspace: \(workspaceURL.path)")
             return .explicitWorkspace(workspaceURL)
         } else if let project = xcodeProjectReference?.project {
+            let project = (project as NSString).expandingTildeInPath
             let projectURL: URL = if project.hasPrefix("/"), let projectURL = URL(string: project) {
                 projectURL
             } else {
