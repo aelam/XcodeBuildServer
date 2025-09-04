@@ -5,15 +5,6 @@
 //  Created by ST22956 on 2024/11/17.
 //
 
-/**
- {
- "method": "build\/initialized",
- "jsonrpc": "2.0",
- "params": {
-
- }
- }
- */
 import JSONRPCConnection
 import Logger
 

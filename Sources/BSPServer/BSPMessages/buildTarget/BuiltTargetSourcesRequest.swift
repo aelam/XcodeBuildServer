@@ -4,23 +4,6 @@
 //  Copyright © 2024 Wang Lun.
 //
 
-/// Example request:
-/// ```json
-/// {
-///   "params": {
-///     "targets": [
-///       {"uri": "xcode:///path/to/Hello.xcodeproj/Hello/Hello"},
-///       {"uri": "xcode:///path/to/Hello.xcodeproj/Hello/HelloTests"},
-///       {"uri": "xcode:///path/to/Hello.xcodeproj/Hello/HelloUITests"},
-///       {"uri": "xcode:///path/to/Hello.xcodeproj/Hello/World"}
-///     ]
-///   },
-///   "jsonrpc": "2.0",
-///   "method": "buildTarget/sources",
-///   "id": 3
-/// }
-/// ```
-
 import BuildServerProtocol
 import Foundation
 import JSONRPCConnection
