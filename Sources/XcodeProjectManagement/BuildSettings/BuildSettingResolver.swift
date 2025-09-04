@@ -116,7 +116,7 @@ struct BuildSettingResolver: @unchecked Sendable {
         let projectBuildConfiguration = project.buildConfigurationList?
             .buildConfigurations
             .first { $0.name == configuration }
-        var projectBuildSettings = projectBuildConfiguration?.buildSettings
+        let projectBuildSettings = projectBuildConfiguration?.buildSettings
 
         let targetBuildConfiguration = target.buildConfigurationList?
             .buildConfigurations
@@ -129,7 +129,7 @@ struct BuildSettingResolver: @unchecked Sendable {
             xcconfigSettings = (try? XCConfigParser.parse(at: xcconfigPath.url.path)) ?? [:]
         }
 
-        var targetBuildSettings = targetBuildConfiguration?.buildSettings
+        let targetBuildSettings = targetBuildConfiguration?.buildSettings
 
         // determine SDK
         let sdk: String = targetBuildSettings?["SDKROOT"] as? String
@@ -150,12 +150,13 @@ struct BuildSettingResolver: @unchecked Sendable {
         defaultBuildSettings["SRCROOT"] = sourceRoot.string
         defaultBuildSettings["CONFIGURATION"] = configuration
         defaultBuildSettings["BUILD_DIR"] = buildDir.path
-        projectBuildSettings?["PROJECT_GUID"] = project.uuid
-        projectBuildSettings?["PROJECT_DIR"] = sourceRoot.string
-        targetBuildSettings?["TARGET_NAME"] = target.name
-        targetBuildSettings?["PRODUCT_NAME"] = target.name
-        targetBuildSettings?["PRODUCT_MODULE_NAME"] = moduleName
-        targetBuildSettings?["PRODUCT_TYPE"] = target.productType?.rawValue
+
+        defaultBuildSettings["PROJECT_GUID"] = project.uuid
+        defaultBuildSettings["PROJECT_DIR"] = sourceRoot.string
+        defaultBuildSettings["TARGET_NAME"] = target.name
+        defaultBuildSettings["PRODUCT_NAME"] = target.name
+        defaultBuildSettings["PRODUCT_MODULE_NAME"] = moduleName
+        defaultBuildSettings["PRODUCT_TYPE"] = target.productType?.rawValue
 
         let autoFix: [String: String] = [:]
 
