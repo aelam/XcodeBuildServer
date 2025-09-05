@@ -9,6 +9,8 @@ on:
 env:
   SWIFT_VERSION: 6.1
   XCODE_VERSION: 16.2
+  SWIFTLINT_VERSION: 0.60.0
+  SWIFTFORMAT_VERSION: 0.57.2
 
 jobs:
   build-and-test:
@@ -107,21 +109,17 @@ jobs:
       with:
         swift-version: ${{ env.SWIFT_VERSION }}
       
-    - name: Install SwiftLint
+    - name: Install Mint
       run: |
-        brew install swiftlint
-        
+        brew install mint
+
     - name: Run SwiftLint
       run: |
-        swiftlint --strict --reporter github-actions-logging
-        
-    - name: Install SwiftFormat  
-      run: |
-        brew install swiftformat
-        
+        mint run realm/SwiftLint@${{ env.SWIFTLINT_VERSION }} --strict --reporter github-actions-logging
+
     - name: Check Swift Format
       run: |
-        swiftformat . --lint-only
+        mint run nicklockwood/SwiftFormat@${{ env.SWIFTFORMAT_VERSION }} . --lint-only
 
   security-scan:
     name: Security Scan

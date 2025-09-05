@@ -41,14 +41,16 @@ jobs:
       run: |
         mkdir -p release
         cp .build/apple/Products/Release/XcodeBuildServerCLI release/XcodeBuildServerCLI
+        cp .build/apple/Products/Release/XcodeProjectCLI release/XcodeProjectCLI
         chmod +x release/XcodeBuildServerCLI
-        
+        cmod +x release/XcodeProjectCLI
+
         # Create tar.gz
-        tar -czf xcode-build-server-macos-universal.tar.gz -C release XcodeBuildServerCLI
+        tar -czf xcode-build-server-macos-universal.tar.gz -C release XcodeBuildServerCLI XcodeProjectCLI
 
         # Create zip
-        cd release && zip ../xcode-build-server-macos-universal.zip XcodeBuildServerCLI && cd ..
-        
+        cd release && zip ../xcode-build-server-macos-universal.zip XcodeBuildServerCLI XcodeProjectCLI && cd ..
+
     - name: Generate Checksums
       run: |
         shasum -a 256 xcode-build-server-macos-universal.tar.gz > checksums.txt

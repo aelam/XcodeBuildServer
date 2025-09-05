@@ -147,6 +147,7 @@ Install the VSCode-Swift extension. For Swift versions lower than 6.1, configure
 
 Use with [vim-lsp](https://github.com/prabirshrestha/vim-lsp) or [coc.nvim](https://github.com/neoclide/coc.nvim).
 
+
 ## Development
 
 ### Prerequisites
@@ -213,6 +214,28 @@ swift test
 ### Logging
 
 Logs are written to `/tmp/xcode-build-server.log`
+
+### Verify if XcodeBuildServer can resolve your project
+
+```sh
+# See if project can be resolved
+XcodeProjectCLI resolveProject --workspace-folder /path/to/projectFolder
+
+# See if buildSettings of project can be resolved
+XcodeProjectCLI buildSettings \
+--workspace-folder /path/to/projectFolder \
+--xcodeproj relative/path/of/workspace-folder/to/{project}.xcodeproj \
+--target targetNameInXcodeProj
+
+# See if a source file compile arguments can be generated
+XcodeProjectCLI compileArguments \
+--workspace-folder /path/to/projectFolder \ 
+--xcodeproj relative/path/of/workspace-folder/to/{project}.xcodeproj \
+--target targetNameInXcodeProj \
+--sourcefile relative/path/of/workspace-folder/to/source-file
+
+```
+
 
 ## Contributing
 

@@ -48,7 +48,7 @@ func processFileCompileArguments(_ fileInfo: SourceFileInfo) async throws {
         xcodeGlobalSettings: xcodeGlobalSettings,
         xcodeProj: xcodeProj,
         target: fileInfo.targetName,
-        configurationName: "Debug",
+        configurationName: fileInfo.configurationName,
         fileURL: file,
         sourceItems: sourceItems
     )

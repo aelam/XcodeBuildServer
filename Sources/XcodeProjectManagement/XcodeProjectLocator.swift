@@ -49,21 +49,26 @@ public struct XcodeProjectReference: Codable, Sendable {
     public let workspace: String?
     public let project: String?
     public let scheme: String?
-    public let target: String?
     public let configuration: String?
 
     public init(
         workspace: String? = nil,
         project: String? = nil,
         scheme: String? = nil,
-        target: String? = nil,
-        configuration: String? = nil
+        configuration: String? = "Debug"
     ) {
         self.workspace = workspace
         self.project = project
         self.scheme = scheme
-        self.target = target
         self.configuration = configuration
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        workspace = try container.decodeIfPresent(String.self, forKey: .workspace)
+        project = try container.decodeIfPresent(String.self, forKey: .project)
+        scheme = try container.decodeIfPresent(String.self, forKey: .scheme)
+        configuration = try container.decodeIfPresent(String.self, forKey: .configuration) ?? "Debug"
     }
 }
 
@@ -107,10 +112,10 @@ public final class XcodeProjectLocator {
         logger.debug("Resolving Xcode project type at \(rootURL.path)")
         logger.debug("Using reference: \(String(describing: xcodeProjectReference))")
         if let workspace = xcodeProjectReference?.workspace {
-            let workspaceURL: URL = if workspace.hasPrefix("/"), let workspaceURL = URL(string: workspace) {
-                workspaceURL
-            } else {
+            let workspaceURL: URL = if workspace.isRelativePath {
                 rootURL.appendingPathComponent(workspace)
+            } else {
+                URL(fileURLWithPath: workspace)
             }
 
             guard FileManager.default.fileExists(atPath: workspaceURL.path) else {
@@ -119,10 +124,10 @@ public final class XcodeProjectLocator {
             logger.debug("Resolved explicit workspace: \(workspaceURL.path)")
             return .explicitWorkspace(workspaceURL)
         } else if let project = xcodeProjectReference?.project {
-            let projectURL: URL = if project.hasPrefix("/"), let projectURL = URL(string: project) {
-                projectURL
-            } else {
+            let projectURL: URL = if project.isRelativePath {
                 rootURL.appendingPathComponent(project)
+            } else {
+                URL(fileURLWithPath: project)
             }
 
             guard FileManager.default.fileExists(atPath: projectURL.path) else {

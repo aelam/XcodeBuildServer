@@ -43,12 +43,13 @@ let package = Package(
             url: "https://github.com/tuist/XcodeProj.git",
             .upToNextMajor(from: "8.12.0")
         ),
+        .package(
+            url: "https://github.com/apple/swift-argument-parser",
+            from: "1.6.1"
+        ),
+
     ],
     targets: [
-        // .target(
-        //     name: "Core",
-        //     dependencies: ["Logger"]
-        // ),
         .target(
             name: "JSONRPCConnection",
             dependencies: ["Logger"]
@@ -136,8 +137,9 @@ let package = Package(
         .executableTarget(
             name: "XcodeProjectCLI",
             dependencies: [
-                "XcodeProjectManagerProvider",
                 "Logger",
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+                "XcodeProjectManagement",
             ],
             swiftSettings: [
                 .define("MACOS_ONLY", .when(platforms: [.macOS]))

@@ -20,7 +20,7 @@ import PathKit
 import XcodeProj
 
 /// 通用 Xcode Build Setting 解析器。支持递归查找、$(inherited) 合并、自定义默认值。
-struct BuildSettingResolver: @unchecked Sendable {
+public struct BuildSettingResolver: @unchecked Sendable {
     enum ResolverError: Error {
         case invalidXcodeProj
         case targetNotFound(String)
@@ -38,9 +38,9 @@ struct BuildSettingResolver: @unchecked Sendable {
     private let sourceRoot: Path
     private let project: PBXProject
     private let xcodeProjTarget: PBXNativeTarget
-    let resolvedBuildSettings: [String: String]
+    public let resolvedBuildSettings: [String: String]
 
-    init(
+    public init(
         xcodeInstallation: XcodeInstallation,
         xcodeGlobalSettings: XcodeGlobalSettings,
         xcodeProj: XcodeProj,
@@ -158,7 +158,7 @@ struct BuildSettingResolver: @unchecked Sendable {
         defaultBuildSettings["PRODUCT_MODULE_NAME"] = moduleName
         defaultBuildSettings["PRODUCT_TYPE"] = target.productType?.rawValue
 
-        let autoFix: [String: String] = [:]
+        // let autoFix: [String: String] = [:]
 
         // 1. project-level
         // 2. target-level
@@ -171,7 +171,7 @@ struct BuildSettingResolver: @unchecked Sendable {
                 normalizeSettings(projectBuildSettings ?? [:]),
                 xcconfigSettings,
                 normalizeSettings(targetBuildSettings ?? [:]),
-                autoFix,
+                // autoFix,
                 overrides
             ]
         )

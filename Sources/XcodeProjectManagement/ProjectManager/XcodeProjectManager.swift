@@ -167,6 +167,7 @@ public actor XcodeProjectManager {
             projectLocation: projectLocation,
             xcodeGlobalSettings: xcodeGlobalSettings,
             xcodeTargets: actualTargets,
+            configuration: xcodeProjectReference?.configuration ?? "Debug",
             xcodeInstallation: selectedXcodeInstallation
         )
         self.xcodeProjectBaseInfo = xcodeProjectBaseInfo

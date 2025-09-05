@@ -22,11 +22,11 @@ protocol BuildSettingResolvable: Sendable {
     func resolveFileCompilerFlags(for fileURL: URL) -> [String]?
 }
 
-struct CompileArgGenerator: Sendable {
+public struct CompileArgGenerator: Sendable {
     let argContext: ArgContext
     let providers: [CompileArgProvider]
 
-    func compileArguments() -> [String] {
+    public func compileArguments() -> [String] {
         var args: [String] = []
         for provider in providers {
             args += provider.arguments(for: argContext)
@@ -35,7 +35,7 @@ struct CompileArgGenerator: Sendable {
     }
 }
 
-extension CompileArgGenerator {
+public extension CompileArgGenerator {
     static func create(
         xcodeInstallation: XcodeInstallation,
         xcodeGlobalSettings: XcodeGlobalSettings,
