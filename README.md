@@ -232,7 +232,7 @@ XcodeProjectCLI compileArguments \
 --workspace-folder /path/to/projectFolder \ 
 --xcodeproj relative/path/of/workspace-folder/to/{project}.xcodeproj \
 --target targetNameInXcodeProj \
---sourcefile relative/path/of/workspace-folder/to/source-file
+--source-file relative/path/of/workspace-folder/to/source-file
 
 ```
 

@@ -7,7 +7,7 @@ import XcodeProjectManagement
 struct CompileArgumentsCommand: AsyncParsableCommand {
     @OptionGroup var options: SharedOptions
     @Option(name: .shortAndLong, help: "source file path to get compile arguments, relative to project folder")
-    var sourceFilePath: String
+    var sourceFile: String
 
     static let configuration = CommandConfiguration(
         commandName: "compileArguments",
@@ -16,7 +16,7 @@ struct CompileArgumentsCommand: AsyncParsableCommand {
 
     mutating func run() async throws {
         let targetInfo = TargetInfo(sharedOptions: options)
-        let fileInfo = SourceFileInfo(targetInfo: targetInfo, filePath: sourceFilePath)
+        let fileInfo = SourceFileInfo(targetInfo: targetInfo, filePath: sourceFile)
 
         try await printCompileArguments(fileInfo: fileInfo)
     }
