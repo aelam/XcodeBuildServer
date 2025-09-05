@@ -13,17 +13,17 @@ import XcodeProjectManagement
 /// - `workspace`: Optional workspace path
 /// - `project`: Optional project path
 /// - `scheme`: Optional single scheme name
-/// - `schemes`: Optional array of scheme names
 /// - `configuration`: Optional build configuration (defaults to "Debug")
 ///
 /// When schemes are specified, only those schemes and their targets will be loaded,
 /// significantly reducing initialization time for large projects.
 ///
-/// Example .bsp/xcode.json:
+/// Example .XcodeBuildServer/project.json:
 /// ```json
 /// {
+///   "workspace": "MyApp.xcworkspace",
 ///   "project": "MyApp.xcodeproj",
-///   "schemes": ["MyApp", "MyAppTests"],
+///   "scheme": "MyApp",
 ///   "configuration": "Debug"
 /// }
 /// ```
@@ -31,45 +31,18 @@ public struct XcodeBSPConfiguration: Codable, Sendable {
     public let workspace: String?
     public let project: String?
     public let scheme: String?
-    public let schemes: [String]?
     public let configuration: String?
-
-    public static let defaultConfiguration = "Debug"
 
     public init(
         workspace: String? = nil,
         project: String? = nil,
         scheme: String? = nil,
-        schemes: [String]? = nil,
-        configuration: String? = nil
+        configuration: String? = "Debug"
     ) {
         self.workspace = workspace
         self.project = project
         self.scheme = scheme
-        self.schemes = schemes
         self.configuration = configuration
-    }
-
-    /// Get all scheme names to load (combining single scheme and schemes array)
-    public var allSchemes: [String] {
-        var result: [String] = []
-        if let scheme {
-            result.append(scheme)
-        }
-        if let schemes {
-            result.append(contentsOf: schemes)
-        }
-        return Array(Set(result)) // Remove duplicates
-    }
-
-    // Convert to XcodeProjectReference for project management
-    public var projectReference: XcodeProjectReference {
-        XcodeProjectReference(
-            workspace: workspace,
-            project: project,
-            scheme: scheme,
-            configuration: configuration
-        )
     }
 }
 
@@ -85,11 +58,7 @@ public final class BSPServerConfigurationLoader: Sendable {
     public func findConfiguration() -> URL? {
         let configSearchPaths = [
             // Standard BSP config location for xcode.json
-            rootURL.appendingPathComponent(".bsp/xcode.json"),
-            // General BSP directory - find first JSON file
-            rootURL.appendingPathComponent(".bsp"),
-            // Legacy location
-            rootURL.appendingPathComponent("buildServer.json")
+            rootURL.appendingPathComponent(".XcodeBuildServer/project.json"),
         ]
 
         // First try specific xcode.json path
@@ -97,8 +66,8 @@ public final class BSPServerConfigurationLoader: Sendable {
             return configSearchPaths[0]
         }
 
-        // Check .bsp directory for any JSON files
-        let bspDir = configSearchPaths[1]
+        // Check .XcodeBuildServer directory for any JSON files
+        let bspDir = rootURL.appendingPathComponent(".XcodeBuildServer")
         if FileManager.default.fileExists(atPath: bspDir.path) {
             do {
                 let jsonFiles = try FileManager.default
@@ -125,7 +94,7 @@ public final class BSPServerConfigurationLoader: Sendable {
     public func loadConfiguration() throws -> XcodeBSPConfiguration? {
         let configFileURL: URL
 
-        if configurationPath == ".bsp/xcode.json" {
+        if configurationPath == ".XcodeBuildServer/project.json" {
             // Use findConfiguration for default path
             guard let foundURL = findConfiguration() else {
                 return nil

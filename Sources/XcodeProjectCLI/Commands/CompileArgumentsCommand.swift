@@ -48,7 +48,7 @@ struct CompileArgumentsCommand: AsyncParsableCommand {
             xcodeGlobalSettings: xcodeGlobalSettings,
             xcodeProj: xcodeProj,
             target: fileInfo.targetInfo.targetName,
-            configurationName: "Debug",
+            configurationName: fileInfo.targetInfo.configurationName,
             fileURL: fileInfo.fileFullPath,
             sourceItems: sourceItems
         )

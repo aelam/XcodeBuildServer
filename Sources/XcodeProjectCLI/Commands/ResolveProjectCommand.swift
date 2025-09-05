@@ -23,13 +23,20 @@ struct ResolveProjectCommand: AsyncParsableCommand {
     }
 
     private func resolveProject() async throws {
-        let workspaceFolder = (workspaceFolder as NSString).expandingTildeInPath
-        let projectURL = URL(fileURLWithPath: workspaceFolder)
+        let workspaceFolder = workspaceFolder.absolutePath
+        let rootURL = URL(fileURLWithPath: workspaceFolder)
+
+        let preferredProjectInfoURL = rootURL.appendingPathComponent(".XcodeBuildServer/project.json")
+        let xcodeProjectReference: XcodeProjectReference? =
+            try? JSONDecoder().decode(
+                XcodeProjectReference.self,
+                from: Data(contentsOf: preferredProjectInfoURL)
+            )
 
         let toolchain = XcodeToolchain()
         let projectManager = XcodeProjectManager(
-            rootURL: projectURL,
-            xcodeProjectReference: nil,
+            rootURL: rootURL,
+            xcodeProjectReference: xcodeProjectReference,
             toolchain: toolchain,
             locator: XcodeProjectLocator(),
             settingsLoader: XcodeSettingsLoader(
@@ -51,6 +58,7 @@ struct ResolveProjectCommand: AsyncParsableCommand {
         print("✅ Project loaded successfully")
 
         print("  - Root URL: \(baseProjectInfo.rootURL.path)")
+        print("  - Project Configuration: \(baseProjectInfo.configuration)")
         print(
             " - Project Targets: \(baseProjectInfo.xcodeTargets.map(\.name).joined(separator: ", "))"
         )

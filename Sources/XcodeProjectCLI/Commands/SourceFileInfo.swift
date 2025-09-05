@@ -18,11 +18,10 @@ struct TargetInfo: Sendable {
     }
 
     var projectFileFullPath: URL {
-        let projectFilePath = (projectFilePath as NSString).expandingTildeInPath
-        if projectFilePath.hasPrefix("/") {
-            return URL(fileURLWithPath: projectFilePath)
+        if projectFilePath.isRelativePath {
+            return projectFolder.appendingPathComponent(projectFilePath)
         }
-        return projectFolder.appendingPathComponent(projectFilePath)
+        return URL(fileURLWithPath: projectFilePath)
     }
 }
 
@@ -31,11 +30,10 @@ struct SourceFileInfo: Sendable {
     let filePath: String // relative to projectFolder
 
     var fileFullPath: URL {
-        let filePath = (filePath as NSString).expandingTildeInPath
-        if filePath.hasPrefix("/") {
-            return URL(fileURLWithPath: filePath)
+        if filePath.isRelativePath {
+            return targetInfo.projectFolder.appendingPathComponent(filePath)
         }
-        return targetInfo.projectFolder.appendingPathComponent(filePath)
+        return URL(fileURLWithPath: filePath)
     }
 }
 
