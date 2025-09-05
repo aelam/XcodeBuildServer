@@ -43,7 +43,7 @@ jobs:
         cp .build/apple/Products/Release/XcodeBuildServerCLI release/XcodeBuildServerCLI
         cp .build/apple/Products/Release/XcodeProjectCLI release/XcodeProjectCLI
         chmod +x release/XcodeBuildServerCLI
-        cmod +x release/XcodeProjectCLI
+        chmod +x release/XcodeProjectCLI
 
         # Create tar.gz
         tar -czf xcode-build-server-macos-universal.tar.gz -C release XcodeBuildServerCLI XcodeProjectCLI
