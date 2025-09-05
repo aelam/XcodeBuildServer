@@ -12,7 +12,7 @@ struct TargetInfo: Sendable {
     let projectFolder: URL
     let projectFilePath: String // relative to projectFolder
     let targetName: String
-    let configurationName: String = "Debug"
+    var configurationName: String = "Debug"
     var derivedDataPath: URL {
         PathHash.derivedDataFullPath(for: projectFolder.appendingPathComponent(projectFilePath).path)
     }
@@ -40,9 +40,10 @@ struct SourceFileInfo: Sendable {
 extension TargetInfo {
     init(sharedOptions: SharedOptions) {
         self.init(
-            projectFolder: URL(fileURLWithPath: sharedOptions.workspaceFolder),
-            projectFilePath: sharedOptions.projectFilePath,
-            targetName: sharedOptions.targetName
+            projectFolder: URL(fileURLWithPath: sharedOptions.workspaceFolder.absolutePath),
+            projectFilePath: sharedOptions.xcodeproj,
+            targetName: sharedOptions.target,
+            configurationName: sharedOptions.configuration
         )
     }
 }

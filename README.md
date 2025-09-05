@@ -224,15 +224,15 @@ XcodeProjectCLI resolveProject --workspace-folder /path/to/projectFolder
 # See if buildSettings of project can be resolved
 XcodeProjectCLI buildSettings \
 --workspace-folder /path/to/projectFolder \
---project-file-path relative/path/of/workspace-folder/to/{project}.xcodeproj \
---target-name targetNameInXcodeProj
+--xcodeproj relative/path/of/workspace-folder/to/{project}.xcodeproj \
+--target targetNameInXcodeProj
 
 # See if a source file compile arguments can be generated
 XcodeProjectCLI compileArguments \
 --workspace-folder /path/to/projectFolder \ 
---project-file-path relative/path/of/workspace-folder/to/{project}.xcodeproj \
---target-name targetNameInXcodeProj \
---source-file-path relative/path/of/workspace-folder/to/source-file
+--xcodeproj relative/path/of/workspace-folder/to/{project}.xcodeproj \
+--target targetNameInXcodeProj \
+--sourcefile relative/path/of/workspace-folder/to/source-file
 
 ```
 

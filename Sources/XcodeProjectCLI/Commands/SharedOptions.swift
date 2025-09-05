@@ -15,10 +15,10 @@ struct SharedOptions: ParsableArguments {
         name: .shortAndLong,
         help: "Xcode project file path relative to the workspace folder, e.g., MyApp.xcodeproj"
     )
-    var projectFilePath: String
+    var xcodeproj: String
 
     @Option(name: .shortAndLong, help: "Xcode target name")
-    var targetName: String
+    var target: String
 
     @Option(name: .shortAndLong, help: "Build configuration, e.g., Debug or Release")
     var configuration: String = "Debug"
