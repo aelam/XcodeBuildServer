@@ -65,11 +65,9 @@ public final class XcodeBuildGraphResolver {
     private func findTarget(by identifier: XcodeTargetIdentifier)
         -> (proj: XcodeProj, target: PBXNativeTarget)? {
         let allProjects = [primary] + extras
-        for proj in allProjects {
-            if proj.path?.string == identifier.projectFilePath {
-                if let t = proj.pbxproj.nativeTargets.first(where: { $0.name == identifier.targetName }) {
-                    return (proj, t)
-                }
+        for proj in allProjects where proj.path?.string == identifier.projectFilePath {
+            if let t = proj.pbxproj.nativeTargets.first(where: { $0.name == identifier.targetName }) {
+                return (proj, t)
             }
         }
         return nil
@@ -86,54 +84,60 @@ public final class XcodeBuildGraphResolver {
         var result: [XcodeTargetIdentifier] = []
         var tempMark = Set<String>()
 
-        func visit(_ entry: (proj: XcodeProj, target: PBXNativeTarget)) {
-            let uuid = entry.target.uuid
-            if visited.contains(uuid) { return }
-            if tempMark.contains(uuid) {
-                print("⚠️ Cycle at \(entry.target.name)")
-                return
-            }
-            tempMark.insert(uuid)
+        visit(start, result: &result, visited: &visited, tempMark: &tempMark)
+        return result
+    }
 
-            let isAggregateLike = entry.target.name.hasPrefix("Pods-")
+    // swiftlint:disable:next cyclomatic_complexity
+    private func visit(
+        _ entry: (proj: XcodeProj, target: PBXNativeTarget),
+        result: inout [XcodeTargetIdentifier],
+        visited: inout Set<String>,
+        tempMark: inout Set<String>
+    ) {
+        let uuid = entry.target.uuid
+        if visited.contains(uuid) { return }
+        if tempMark.contains(uuid) {
+            print("⚠️ Cycle at \(entry.target.name)")
+            return
+        }
+        tempMark.insert(uuid)
 
-            if mode == .full || !isAggregateLike {
-                // 显式依赖
-                for dep in entry.target.dependencies {
-                    if let depTarget = dep.target as? PBXNativeTarget {
-                        if let depEntry = nameToTarget[depTarget.name] {
-                            visit(depEntry)
-                        }
-                    } else if let depName = dep.name,
-                              let depEntry = nameToTarget[depName] {
-                        visit(depEntry)
+        let isAggregateLike = entry.target.name.hasPrefix("Pods-")
+
+        if mode == .full || !isAggregateLike {
+            // 显式依赖
+            for dep in entry.target.dependencies {
+                if let depTarget = dep.target as? PBXNativeTarget {
+                    if let depEntry = nameToTarget[depTarget.name] {
+                        visit(depEntry, result: &result, visited: &visited, tempMark: &tempMark)
                     }
-                }
-
-                // 隐式依赖
-                if let linkPhase = entry.target.buildPhases.compactMap({ $0 as? PBXFrameworksBuildPhase }).first {
-                    for file in linkPhase.files ?? [] {
-                        if let rawName = file.file?.name ?? file.file?.path {
-                            let key = normalizeTargetOrProductName(rawName)
-                            if let depEntry = productToTarget[key] {
-                                visit(depEntry)
-                            }
-                        }
-                    }
+                } else if let depName = dep.name,
+                          let depEntry = nameToTarget[depName] {
+                    visit(depEntry, result: &result, visited: &visited, tempMark: &tempMark)
                 }
             }
 
-            tempMark.remove(uuid)
-            visited.insert(uuid)
-
-            let id = XcodeTargetIdentifier(
-                projectFilePath: entry.proj.path?.string ?? "<unknown>",
-                targetName: entry.target.name
-            )
-            result.append(id)
+            // 隐式依赖
+            if let linkPhase = entry.target.buildPhases.compactMap({ $0 as? PBXFrameworksBuildPhase }).first {
+                for file in linkPhase.files ?? [] {
+                    if let rawName = file.file?.name ?? file.file?.path {
+                        let key = normalizeTargetOrProductName(rawName)
+                        if let depEntry = productToTarget[key] {
+                            visit(depEntry, result: &result, visited: &visited, tempMark: &tempMark)
+                        }
+                    }
+                }
+            }
         }
 
-        visit(start)
-        return result
+        tempMark.remove(uuid)
+        visited.insert(uuid)
+
+        let id = XcodeTargetIdentifier(
+            projectFilePath: entry.proj.path?.string ?? "<unknown>",
+            targetName: entry.target.name
+        )
+        result.append(id)
     }
 }
