@@ -147,7 +147,8 @@ public actor XcodeToolchain {
 
     public func executeXcodeBuild(
         arguments: [String],
-        workingDirectory: URL? = nil
+        workingDirectory: URL? = nil,
+        xcodeBuildEnvironments: [String: String] = [:]
     ) async throws -> XcodeBuildResult {
         guard let installation = selectedInstallation else {
             throw XcodeToolchainError.xcodeNotFound
@@ -156,7 +157,8 @@ public actor XcodeToolchain {
         let result = try await processExecutor.executeXcodeBuild(
             arguments: arguments,
             workingDirectory: workingDirectory,
-            xcodeInstallationPath: installation.path
+            xcodeInstallationPath: installation.path,
+            xcodeBuildEnvironments: xcodeBuildEnvironments
         )
 
         return XcodeBuildResult(

@@ -22,7 +22,7 @@ struct XcodeProjectLocatorTests {
             .appendingPathComponent(root)
         let locator = XcodeProjectLocator()
         let projectLocation = try locator.resolveProjectType(rootURL: projectFolder)
-        #expect(projectLocation.workspaceURL.path.hasSuffix(suffix))
+        #expect(projectLocation.workspaceOrProjectFileURL.path.hasSuffix(suffix))
     }
 
     @Test

@@ -1,0 +1,76 @@
+//
+//  CompileTargetCommand.swift
+//  XcodeBuildServer
+//
+//  Created by wang.lun on 2025/09/07.
+//
+
+import ArgumentParser
+import Foundation
+import XcodeProjectManagement
+
+struct CompileTargetCommand: AsyncParsableCommand {
+    @Option(name: .shortAndLong, help: "Xcode project/workspace folder path")
+    var workspaceFolder: String
+
+    @Option(name: .shortAndLong, help: "compile target name")
+    var target: String
+
+    static let configuration = CommandConfiguration(
+        commandName: "compileTarget",
+        abstract: "compileTarget: Compile Xcode Project/Workspace"
+    )
+
+    mutating func run() async throws {
+        try await compileTarget()
+    }
+
+    private func compileTarget() async throws {
+        let timestamp = Date()
+        // Load the project
+        print("Loading Xcode project at: \(timestamp)")
+        print("Loading Xcode project from: \(workspaceFolder)")
+
+        let workspaceFolder = workspaceFolder.absolutePath
+        let rootURL = URL(fileURLWithPath: workspaceFolder)
+
+        let preferredProjectInfoURL = rootURL.appendingPathComponent(".XcodeBuildServer/project.json")
+        let xcodeProjectReference: XcodeProjectReference? =
+            try? JSONDecoder().decode(
+                XcodeProjectReference.self,
+                from: Data(contentsOf: preferredProjectInfoURL)
+            )
+
+        let toolchain = XcodeToolchain()
+        let projectManager = XcodeProjectManager(
+            rootURL: rootURL,
+            xcodeProjectReference: xcodeProjectReference,
+            toolchain: toolchain,
+            locator: XcodeProjectLocator(),
+            settingsLoader: XcodeSettingsLoader(
+                commandBuilder: XcodeBuildCommandBuilder(),
+                toolchain: toolchain
+            )
+        )
+
+        try await projectManager.initialize()
+
+        guard let baseProjectInfo = await projectManager.xcodeProjectBaseInfo else {
+            print("❌ Project loaded Failed")
+            return
+        }
+
+        guard let target = baseProjectInfo.xcodeTargets.first(where: { $0.name == target }) else {
+            print("target not found")
+            return
+        }
+
+        print("Compiling: \(workspaceFolder)")
+
+        let result = try await projectManager.compileTarget(targetIdentifier: target.targetIdentifier)
+        print(result)
+
+        let endTimestamp = Date()
+        print("Loading time: \(endTimestamp.timeIntervalSince(timestamp)) seconds")
+    }
+}

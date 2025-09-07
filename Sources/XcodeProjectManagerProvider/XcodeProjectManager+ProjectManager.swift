@@ -18,11 +18,28 @@ extension XcodeProjectManager: @preconcurrency ProjectManager {
 
     public func updateBuildGraph() async {}
 
-    public func buildIndex(for targets: [String]) async {
-        await startBuild(targets: targets)
+    public func buildIndex(for targets: [BSPBuildTargetIdentifier]) async {
+        // TODO: await startBuild(targetIdentifiers: targets)
     }
 
-    public func startBuild(targets: [String]) async {}
+    public func startBuild(targetIdentifiers: [BSPBuildTargetIdentifier]) async throws -> BSPStatusCode {
+        var results: [XcodeBuildResult] = []
+        for identifier in targetIdentifiers {
+            let xcodeTargetIdentifier = XcodeTargetIdentifier(rawValue: identifier.uri.stringValue)
+            let xcodeBuildResult = try await compileTarget(targetIdentifier: xcodeTargetIdentifier)
+            results.append(xcodeBuildResult)
+        }
+
+        for result in results where result.exitCode != 0 {
+            logger.error("Build failed with exit code \(result.exitCode)")
+            if let errorOutput = result.error, !errorOutput.isEmpty {
+                logger.error("Build failed: \(errorOutput)")
+            }
+            return .error
+        }
+
+        return .ok
+    }
 
     public var projectInfo: ProjectInfo? {
         xcodeProjectBaseInfo?.asProjectInfo()

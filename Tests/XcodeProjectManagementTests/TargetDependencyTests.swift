@@ -19,7 +19,7 @@ struct TargetDependencyTests {
         let primayXcodeProj = try XcodeProj(path: Path(xcodeProjPath))
         let podXcodeProj = try XcodeProj(path: Path(podProjPath))
 
-        let resolver = XcodeBuildGraph(
+        let resolver = XcodeBuildGraphResolver(
             primaryXcodeProj: primayXcodeProj,
             additionalXcodeProjs: [podXcodeProj]
         )

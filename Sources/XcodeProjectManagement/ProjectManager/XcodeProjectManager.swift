@@ -154,7 +154,7 @@ public actor XcodeProjectManager {
         )
 
         // Get project-level buildSettings without `xcodebuild`
-        let derivedDataPath = PathHash.derivedDataFullPath(for: projectLocation.workspaceURL.path)
+        let derivedDataPath = PathHash.derivedDataFullPath(for: projectLocation.workspaceOrProjectFileURL.path)
         let xcodeGlobalSettings = XcodeGlobalSettings(derivedDataPath: derivedDataPath)
 
         // Load containers for workspace projects to get actual targets

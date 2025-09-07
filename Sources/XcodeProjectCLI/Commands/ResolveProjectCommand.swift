@@ -23,6 +23,11 @@ struct ResolveProjectCommand: AsyncParsableCommand {
     }
 
     private func resolveProject() async throws {
+        let timestamp = Date()
+        // Load the project
+        print("Loading Xcode project at: \(timestamp)")
+        print("Loading Xcode project from: \(workspaceFolder)")
+
         let workspaceFolder = workspaceFolder.absolutePath
         let rootURL = URL(fileURLWithPath: workspaceFolder)
 
@@ -47,10 +52,6 @@ struct ResolveProjectCommand: AsyncParsableCommand {
 
         try await projectManager.initialize()
 
-        // Load the project
-        let timestamp = Date()
-        print("Loading Xcode project at: \(timestamp)")
-        print("Loading Xcode project from: \(workspaceFolder)")
         guard let baseProjectInfo = await projectManager.xcodeProjectBaseInfo else {
             print("❌ Project loaded Failed")
             return

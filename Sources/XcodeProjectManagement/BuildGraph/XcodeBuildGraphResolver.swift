@@ -12,7 +12,7 @@ func normalizeTargetOrProductName(_ raw: String) -> String {
     raw.droppingExtension().asC99ExtIdentifier()
 }
 
-public final class XcodeBuildGraph {
+public final class XcodeBuildGraphResolver {
     public enum DependencyResolutionMode {
         case full
         case topLevel

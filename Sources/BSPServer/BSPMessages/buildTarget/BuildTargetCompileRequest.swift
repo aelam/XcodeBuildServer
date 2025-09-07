@@ -41,15 +41,25 @@ public struct BuildTargetCompileRequest: ContextualRequestType, Sendable {
         contextualHandler: Handler,
         id: RequestID
     ) async -> ResponseType? where Handler.Context == BSPServerService {
-        await contextualHandler.withContext { _ in
-            let targetURIs = params.targets.map(\.uri.stringValue)
-            logger.debug("Compile targets: \(targetURIs)")
-            // TODO: compile targets here
-            return BuildTargetCompileResponse(
-                jsonrpc: jsonrpc,
-                id: id,
-                result: BuildTargetCompileResult(originId: params.originId, statusCode: 0)
-            )
+        await contextualHandler.withContext { context in
+            logger.debug("Compile targets: \(params.targets)")
+
+            do {
+                let status = try await context.compileTargets(params.targets)
+                return BuildTargetCompileResponse(
+                    jsonrpc: jsonrpc,
+                    id: id,
+                    result: BuildTargetCompileResult(originId: params.originId, statusCode: status)
+                )
+
+            } catch {
+                logger.error("Failed to compile targets: \(error)")
+                return BuildTargetCompileResponse(
+                    jsonrpc: jsonrpc,
+                    id: id,
+                    result: BuildTargetCompileResult(originId: params.originId, statusCode: .error)
+                )
+            }
         }
     }
 }
@@ -70,7 +80,7 @@ public struct BuildTargetCompileResult: Codable, Hashable, Sendable {
     /** An optional request id to know the origin of this report. */
     public let originId: String?
     /** A status code for the execution. */
-    public let statusCode: Int?
+    public let statusCode: BSPStatusCode?
 
     /** Kind of data to expect in the `data` field. If this field is not set, the kind of data is not specified. */
     // public let dataKind: CompileResultDataKind?
@@ -79,7 +89,7 @@ public struct BuildTargetCompileResult: Codable, Hashable, Sendable {
      * of compilation or compiler-specific metadata the client needs to know. */
     // data?: CompileResultData
 
-    public init(originId: String? = nil, statusCode: Int? = nil) {
+    public init(originId: String? = nil, statusCode: BSPStatusCode? = nil) {
         self.originId = originId
         self.statusCode = statusCode
     }

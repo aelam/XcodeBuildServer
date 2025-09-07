@@ -19,7 +19,8 @@ struct XcodeProjectCLI: AsyncParsableCommand {
         subcommands: [
             ResolveProjectCommand.self,
             BuildSettingsCommand.self,
-            CompileArgumentsCommand.self
+            CompileArgumentsCommand.self,
+            CompileTargetCommand.self
         ]
     )
 }

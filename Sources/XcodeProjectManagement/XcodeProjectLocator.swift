@@ -80,7 +80,7 @@ public enum XcodeProjectLocation: Equatable, Sendable, Codable {
     ) // Converted from .xcodeproj
     case standaloneProject(URL) // .xcodeproj without project.xcworkspace
 
-    var workspaceURL: URL {
+    var workspaceOrProjectFileURL: URL {
         switch self {
         case let .explicitWorkspace(url):
             url
