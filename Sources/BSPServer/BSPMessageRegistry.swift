@@ -14,6 +14,7 @@ private let requestTypes: [any RequestType.Type] = [
     // buildTarget
     BuildTargetPrepareRequest.self,
     BuiltTargetSourcesRequest.self,
+    BuildTargetCompileRequest.self,
 
     // textDocument
     TextDocumentRegisterForChangeRequest.self,

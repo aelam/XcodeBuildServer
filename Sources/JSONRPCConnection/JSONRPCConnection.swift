@@ -113,6 +113,21 @@ public final actor JSONRPCConnection {
             let typedRequest = try jsonDecoder.decode(requestType, from: message.rawData)
             logger.debug("Successfully decoded request for method: \(message.request.method)")
 
+            let prettyJSON: String = if let jsonObject = try? JSONSerialization.jsonObject(
+                with: message.rawData,
+                options: []
+            ),
+                let prettyData = try? JSONSerialization.data(
+                    withJSONObject: jsonObject,
+                    options: [.prettyPrinted, .sortedKeys]
+                ),
+                let prettyString = String(data: prettyData, encoding: .utf8) {
+                prettyString
+            } else {
+                "<invalid JSON>"
+            }
+            logger.debug("requestBody: \n\(prettyJSON)")
+
             if let response = await typedRequest.handle(handler: messageHandler, id: requestID) {
                 do {
                     logger.debug(
