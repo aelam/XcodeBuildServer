@@ -153,9 +153,15 @@ public struct BuildSettingResolver: @unchecked Sendable {
 
         defaultBuildSettings["PROJECT_GUID"] = project.uuid
         defaultBuildSettings["PROJECT_DIR"] = sourceRoot.string
-        defaultBuildSettings["TARGET_NAME"] = target.name
-        defaultBuildSettings["PRODUCT_NAME"] = target.name
-        defaultBuildSettings["PRODUCT_MODULE_NAME"] = moduleName
+        if targetBuildSettings?["TARGET_NAME"] == nil || projectBuildSettings?["TARGET_NAME"] == nil {
+            defaultBuildSettings["TARGET_NAME"] = target.name
+        }
+        if targetBuildSettings?["PRODUCT_NAME"] == nil || projectBuildSettings?["PRODUCT_NAME"] == nil {
+            defaultBuildSettings["PRODUCT_NAME"] = target.name
+        }
+        if targetBuildSettings?["PRODUCT_MODULE_NAME"] == nil || projectBuildSettings?["PRODUCT_MODULE_NAME"] == nil {
+            defaultBuildSettings["PRODUCT_MODULE_NAME"] = moduleName
+        }
         defaultBuildSettings["PRODUCT_TYPE"] = target.productType?.rawValue
 
         // let autoFix: [String: String] = [:]
@@ -180,9 +186,11 @@ public struct BuildSettingResolver: @unchecked Sendable {
         // result["SDKROOT"] = result["SDKROOT_PATH"]
 
         result["SYMROOT"] = xcodeGlobalSettings.symRoot.path
-        result["CONFIGURATION_BUILD_DIR"] = buildDir
-            .appendingPathComponent(configuration + effectivePlatformName)
-            .path
+        if result["CONFIGURATION_BUILD_DIR"] == nil {
+            result["CONFIGURATION_BUILD_DIR"] = buildDir
+                .appendingPathComponent(configuration + effectivePlatformName)
+                .path
+        }
         result["CONFIGURATION_TEMP_DIR"] = xcodeGlobalSettings.derivedDataPath
             .appendingPathComponent("Build/Intermediates.noindex")
             .appendingPathComponent(project.name + ".build")
