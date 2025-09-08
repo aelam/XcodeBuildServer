@@ -190,7 +190,7 @@ public final actor JSONRPCConnection {
     }
 
     /// Send a notification proactively to the client
-    public func send(notification: NotificationType) async throws {
+    public func send(notification: any ServerJSONRPCNotificationType) async throws {
         try await transport.send(notification: notification)
     }
 }

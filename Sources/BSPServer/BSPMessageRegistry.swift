@@ -37,9 +37,6 @@ private let notificationTypes: [NotificationType.Type] = [
     // build
     BuildSourceKitOptionsChangedNotification.self,
 
-    // window
-    WindowShowMessageNotification.self,
-
     // $
     CancelRequestNotification.self,
 ]

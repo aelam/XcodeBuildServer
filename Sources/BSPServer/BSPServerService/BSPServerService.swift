@@ -113,7 +113,7 @@ public final class BSPServerService: ProjectStateObserver, @unchecked Sendable {
 public extension BSPServerService {
     // MARK: - Notification Sending
 
-    func sendNotification(_ notification: NotificationType) async throws {
+    func sendNotificationToClient(_ notification: any ServerJSONRPCNotificationType) async throws {
         try await jsonrpcConnection.send(notification: notification)
     }
 }
@@ -228,13 +228,12 @@ public extension BSPServerService {
 
     private func sendShowMessageNotification(
         _ message: String,
-        type: MessageType
+        type: LogMessageType
     ) async throws {
-        try await sendNotification(
-            WindowShowMessageNotification(
-                type: type,
-                message: message
-            )
+        try await sendNotificationToClient(WindowShowMessageNotification(
+            type: type,
+            message: message
+        )
         )
     }
 

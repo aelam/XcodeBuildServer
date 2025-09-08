@@ -9,7 +9,7 @@ struct ProcessExecutorTests {
             executable: "/bin/ls",
             arguments: ["-l"],
             workingDirectory: nil,
-            environment: nil,
+            environment: [:],
             timeout: 5.0
         )
         #expect(result.exitCode == 0)
@@ -23,7 +23,7 @@ struct ProcessExecutorTests {
                 executable: "/usr/bin/yes",
                 arguments: [],
                 workingDirectory: nil,
-                environment: nil,
+                environment: [:],
                 timeout: 0.1
             )
         }
