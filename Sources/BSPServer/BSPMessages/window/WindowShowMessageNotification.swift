@@ -27,13 +27,9 @@ public struct WindowShowMessageNotification: ServerJSONRPCNotificationType {
         }
     }
 
-    public let jsonrpc: String
-    public let method: String
     public let params: Params
 
     public init(params: Params) {
-        self.jsonrpc = "2.0"
-        self.method = Self.method()
         self.params = params
     }
 
