@@ -1,4 +1,4 @@
-public enum BSPStatusCode: Int, Codable, Sendable {
+public enum StatusCode: Int, Codable, Sendable {
     /** Execution was successful. */
     case ok = 1
 

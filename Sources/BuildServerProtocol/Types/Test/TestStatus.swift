@@ -1,4 +1,4 @@
-enum BSPTestStatus: Int, Codable, Sendable {
+enum TestStatus: Int, Codable, Sendable {
     /** The test passed successfully. */
     case passed = 1
 

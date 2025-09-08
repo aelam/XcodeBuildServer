@@ -22,7 +22,7 @@ extension XcodeProjectManager: @preconcurrency ProjectManager {
         // TODO: await startBuild(targetIdentifiers: targets)
     }
 
-    public func startBuild(targetIdentifiers: [BSPBuildTargetIdentifier]) async throws -> BSPStatusCode {
+    public func startBuild(targetIdentifiers: [BSPBuildTargetIdentifier]) async throws -> StatusCode {
         var results: [XcodeBuildResult] = []
         for identifier in targetIdentifiers {
             let xcodeTargetIdentifier = XcodeTargetIdentifier(rawValue: identifier.uri.stringValue)
