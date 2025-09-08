@@ -69,19 +69,18 @@ public struct BuildTargetCompileRequest: ContextualRequestType, Sendable {
 
     private func sendStartNotification(context: BSPServerService) async {
         do {
-            for target in params.targets {
-                try await context.sendNotificationToClient(
-                    ServerJSONRPCNotification(
-                        method: TaskStartParams.method,
-                        params: TaskStartParams(
-                            taskId: "task-1",
-                            originId: params.originId,
-                            eventTime: Date().timeIntervalSince1970,
-                            message: "start compiling target \(target.uri.stringValue)",
-                        )
+            let targetNames = params.targets.map(\.uri.stringValue).joined(separator: ", ")
+            try await context.sendNotificationToClient(
+                ServerJSONRPCNotification(
+                    method: TaskStartParams.method,
+                    params: TaskStartParams(
+                        taskId: "task-1",
+                        originId: params.originId,
+                        eventTime: Date().timeIntervalSince1970,
+                        message: "start compiling target \(targetNames)",
                     )
                 )
-            }
+            )
         } catch {
             logger.debug("Failed to send build task start notification: \(error)")
         }
@@ -89,6 +88,7 @@ public struct BuildTargetCompileRequest: ContextualRequestType, Sendable {
 
     private func sendFinishNotification(context: BSPServerService) async {
         do {
+            let targetNames = params.targets.map(\.uri.stringValue).joined(separator: ", ")
             try await context.sendNotificationToClient(
                 ServerJSONRPCNotification(
                     method: TaskFinishParams.method,
@@ -96,7 +96,7 @@ public struct BuildTargetCompileRequest: ContextualRequestType, Sendable {
                         taskId: "task-2",
                         originId: params.originId,
                         eventTime: Date().timeIntervalSince1970,
-                        message: "finished compiling target \(params.targets.first?.uri.stringValue ?? "")",
+                        message: "finished compiling target \(targetNames)",
                         status: .ok
                     )
                 )
