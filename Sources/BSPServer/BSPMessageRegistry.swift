@@ -8,17 +8,19 @@ import JSONRPCConnection
 
 private let requestTypes: [any RequestType.Type] = [
     // build
-    BuildInitializeRequest.self,
-    BuildShutdownRequest.self,
+    BuildInitializeRequest.self, // build/initialize
+    BuildShutdownRequest.self, // build/shutdown
 
     // buildTarget
-    BuildTargetPrepareRequest.self,
-    BuiltTargetSourcesRequest.self,
-    BuildTargetCompileRequest.self,
+    BuildTargetPrepareRequest.self, // buildTarget/prepare
+    BuiltTargetSourcesRequest.self, // buildTarget/sources
+    BuildTargetCompileRequest.self, // buildTarget/compile
+    BuildTargetTestRequest.self, // buildTarget/test
+    BuildTargetOutputPathsRequest.self, // buildTarget/outputPaths
 
     // textDocument
-    TextDocumentRegisterForChangeRequest.self,
-    TextDocumentSourceKitOptionsRequest.self,
+    TextDocumentRegisterForChangeRequest.self, // textDocument/registerForChange
+    TextDocumentSourceKitOptionsRequest.self, // textDocument/sourceKitOptions
 
     // window
     // ...
@@ -29,16 +31,17 @@ private let requestTypes: [any RequestType.Type] = [
 ]
 
 private let notificationTypes: [NotificationType.Type] = [
-    OnBuildInitializedNotification.self,
-    OnBuildExitNotification.self,
+    OnBuildInitializedNotification.self, // build/initialized
+    OnBuildExitNotification.self, // build/exit
     // workspace
-    WorkspaceDidChangeWatchedFilesNotification.self,
+    WorkspaceDidChangeWatchedFilesNotification.self, // workspace/didChangeWatchedFiles
+    WorkspaceReloadNotification.self, // workspace/reload
 
     // build
-    BuildSourceKitOptionsChangedNotification.self,
+    BuildSourceKitOptionsChangedNotification.self, // build/sourceKitOptionsChanged
 
     // $
-    CancelRequestNotification.self,
+    CancelRequestNotification.self, // $/cancelRequest
 ]
 
 public let bspRegistry = MessageRegistry(
