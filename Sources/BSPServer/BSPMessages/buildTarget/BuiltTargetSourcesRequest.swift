@@ -8,6 +8,8 @@ import BuildServerProtocol
 import Foundation
 import JSONRPCConnection
 
+/// https://build-server-protocol.github.io/docs/specification.html
+/// https://github.com/microsoft/build-server-for-gradle
 struct BuiltTargetSourcesRequest: ContextualRequestType, Sendable {
     typealias RequiredContext = BSPServerService
 
