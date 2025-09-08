@@ -41,22 +41,23 @@ public actor ProcessExecutor {
         executable: String,
         arguments: [String] = [],
         workingDirectory: URL? = nil,
-        environment: [String: String]? = nil,
+        environment: [String: String] = [:],
         timeout: TimeInterval? = nil
     ) async throws -> ProcessExecutionResult {
         logger.debug("\(executable) \(arguments.joined(separator: " "))")
 
         let process = Process()
+
+        var envrionmentOverrides = ProcessInfo.processInfo.environment
+        // Set environment
+        if !environment.isEmpty {
+            envrionmentOverrides.merge(environment) { _, new in new }
+        }
+        process.environment = envrionmentOverrides
+
         process.executableURL = URL(fileURLWithPath: executable)
         process.arguments = arguments
         process.standardInput = FileHandle.nullDevice
-
-        // Set environment
-        if let environment {
-            var env = ProcessInfo.processInfo.environment
-            env.merge(environment) { _, new in new }
-            process.environment = env
-        }
 
         // Set working directory
         if let workingDirectory {
@@ -154,10 +155,12 @@ public actor ProcessExecutor {
 
 extension ProcessExecutor {
     /// Execute xcodebuild with the given arguments
+    /// environments: will set to both Process and xcodebuild
     func executeXcodeBuild(
         arguments: [String],
         workingDirectory: URL? = nil,
         xcodeInstallationPath: URL,
+        xcodeBuildEnvironments: [String: String] = [:],
         timeout: TimeInterval? = nil
     ) async throws -> ProcessExecutionResult {
         // Use the system xcodebuild (which might be managed by xcenv)
@@ -166,20 +169,21 @@ extension ProcessExecutor {
         let xcrunArgs = ["xcodebuild"] + arguments
 
         // Set up Xcode environment - but keep it minimal to avoid conflicts
-        var environment: [String: String] = [:]
+        var environmentOverrides: [String: String] = [:]
 
         // Only set DEVELOPER_DIR if it's not already set in the environment
         // This allows xcenv and other tools to work properly
         if ProcessInfo.processInfo.environment["DEVELOPER_DIR"] == nil {
-            environment["DEVELOPER_DIR"] = xcodeInstallationPath
+            environmentOverrides["DEVELOPER_DIR"] = xcodeInstallationPath
                 .appendingPathComponent("Contents/Developer").path
         }
+        environmentOverrides.merge(xcodeBuildEnvironments) { current, _ in current }
 
         return try await execute(
             executable: xcodebuildPath,
             arguments: xcrunArgs,
             workingDirectory: workingDirectory,
-            environment: environment,
+            environment: environmentOverrides,
             timeout: timeout
         )
     }

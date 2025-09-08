@@ -1,6 +1,6 @@
 import Foundation
 
-public struct XcodeTargetIdentifier: Hashable, Sendable, Codable, RawRepresentable {
+public struct XcodeTargetIdentifier: Hashable, Sendable, Codable, RawRepresentable, CustomStringConvertible {
     public var rawValue: String
 
     public let projectFilePath: String
@@ -31,5 +31,9 @@ public struct XcodeTargetIdentifier: Hashable, Sendable, Codable, RawRepresentab
 
     public var projectFolderURL: URL {
         URL(fileURLWithPath: projectFilePath).deletingLastPathComponent()
+    }
+
+    public var description: String {
+        "XcodeTargetIdentifier -- Path: \(projectFilePath)/ targetName: \(targetName)\n"
     }
 }

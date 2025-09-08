@@ -34,8 +34,15 @@ extension BSPServerService {
             throw BuildServerError.invalidConfiguration("Project not initialized")
         }
 
-        let targetIdentifiers = targets.map(\.uri.stringValue)
+        await projectManager.buildIndex(for: targets)
+    }
 
-        await projectManager.buildIndex(for: targetIdentifiers)
+    func compileTargets(_ targetIdentifiers: [BSPBuildTargetIdentifier]) async throws -> StatusCode {
+        guard let projectManager else {
+            logger.error("Project not initialized")
+            return .error
+        }
+
+        return try await projectManager.startBuild(targetIdentifiers: targetIdentifiers)
     }
 }

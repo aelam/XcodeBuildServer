@@ -14,6 +14,7 @@ private let requestTypes: [any RequestType.Type] = [
     // buildTarget
     BuildTargetPrepareRequest.self,
     BuiltTargetSourcesRequest.self,
+    BuildTargetCompileRequest.self,
 
     // textDocument
     TextDocumentRegisterForChangeRequest.self,
@@ -35,9 +36,6 @@ private let notificationTypes: [NotificationType.Type] = [
 
     // build
     BuildSourceKitOptionsChangedNotification.self,
-
-    // window
-    WindowShowMessageNotification.self,
 
     // $
     CancelRequestNotification.self,

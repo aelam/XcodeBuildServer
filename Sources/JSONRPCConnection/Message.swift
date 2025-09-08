@@ -94,3 +94,22 @@ public struct JSONRPCErrorResponse: ResponseType {
         self.error = error
     }
 }
+
+// MARK: - JSONRPC Server to Client Notification
+
+public typealias ServerJSONRPCNotificationParamsType = Codable & Sendable
+
+public protocol ServerJSONRPCNotificationType<ParamsType>: Codable, Sendable {
+    associatedtype ParamsType: ServerJSONRPCNotificationParamsType
+
+    static func method() -> String
+
+    var jsonrpc: String { get }
+    var method: String { get }
+    var params: ParamsType { get }
+}
+
+public extension ServerJSONRPCNotificationType {
+    var jsonrpc: String { "2.0" }
+    var method: String { Self.method() }
+}

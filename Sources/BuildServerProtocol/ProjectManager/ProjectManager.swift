@@ -35,9 +35,9 @@ public protocol ProjectManager: AnyObject, Sendable {
 
     func updateBuildGraph() async
 
-    func buildIndex(for targets: [String]) async
+    func buildIndex(for targetIdentifiers: [BSPBuildTargetIdentifier]) async
 
-    func startBuild(targets: [String]) async
+    func startBuild(targetIdentifiers: [BSPBuildTargetIdentifier]) async throws -> StatusCode
 
     /// 添加项目状态观察者
     func addStateObserver(_ observer: ProjectStateObserver) async
