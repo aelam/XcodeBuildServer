@@ -7,34 +7,18 @@
 import JSONRPCConnection
 import Logger
 
-/// Notification sent by SourceKit-LSP to show a message to the user.
-/// This is part of the LSP/BSP protocol for user communication.
-public struct WindowShowMessageNotification: ServerJSONRPCNotificationType {
-    public static func method() -> String {
-        "window/showMessage"
-    }
+/// Parameters for window/showMessage notification
+public struct WindowShowMessageParams: Codable, Sendable {
+    public static let method = "window/showMessage"
+    /// The message type. See MessageType.
+    public let type: LogMessageType
 
-    public struct Params: ServerJSONRPCNotificationParamsType {
-        /// The message type. See MessageType.
-        public let type: LogMessageType
-
-        /// The actual message.
-        public let message: String
-
-        public init(type: LogMessageType, message: String) {
-            self.type = type
-            self.message = message
-        }
-    }
-
-    public let params: Params
-
-    public init(params: Params) {
-        self.params = params
-    }
+    /// The actual message.
+    public let message: String
 
     public init(type: LogMessageType, message: String) {
-        self.init(params: Params(type: type, message: message))
+        self.type = type
+        self.message = message
     }
 }
 

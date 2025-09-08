@@ -54,5 +54,5 @@ public protocol JSONRPCServerTransport: Sendable {
     func send(response: ResponseType) async throws
 
     /// Send a notification to the client
-    func send(notification: any ServerJSONRPCNotificationType) async throws
+    func send(notification: ServerJSONRPCNotification<some Codable & Sendable>) async throws
 }

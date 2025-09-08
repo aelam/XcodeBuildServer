@@ -137,7 +137,7 @@ public final class StdioJSONRPCConnectionTransport: JSONRPCServerTransport, @unc
         try await sendMessage(response)
     }
 
-    public func send(notification: any ServerJSONRPCNotificationType) async throws {
+    public func send(notification: ServerJSONRPCNotification<some Codable & Sendable>) async throws {
         try await sendMessage(notification)
     }
 

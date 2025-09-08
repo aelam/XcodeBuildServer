@@ -1,5 +1,5 @@
 // //
-// //  BuildTaskStartNotification.swift
+// //  BuildTaskFinishNotification.swift
 // //  XcodeBuildServer
 // //
 // //  Created by ST22956 on 2024/11/17.
@@ -9,13 +9,13 @@
 // import JSONRPCConnection
 // import Logger
 
-// public struct BuildTaskStartNotification: ServerJSONRPCNotificationType {
+// public struct BuildTaskFinishNotification: ServerJSONRPCNotificationType {
 //     public static func method() -> String {
-//         "build/taskStart"
+//         "build/finish"
 //     }
 
-//     public let params: TaskStartParams
-//     public init(params: TaskStartParams) {
+//     public let params: TaskFinishParams
+//     public init(params: TaskFinishParams) {
 //         self.params = params
 //     }
 // }

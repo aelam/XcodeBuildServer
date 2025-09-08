@@ -39,8 +39,17 @@ public struct BuildTargetCompileRequest: ContextualRequestType, Sendable {
         await contextualHandler.withContext { context in
             logger.debug("Compile targets: \(params.targets)")
 
+            Task {
+                await sendStartNotification(context: context)
+            }
+
             do {
                 let status = try await context.compileTargets(params.targets)
+
+                Task {
+                    await sendFinishNotification(context: context)
+                }
+
                 return BuildTargetCompileResponse(
                     jsonrpc: jsonrpc,
                     id: id,
@@ -55,6 +64,45 @@ public struct BuildTargetCompileRequest: ContextualRequestType, Sendable {
                     result: BuildTargetCompileResult(originId: params.originId, statusCode: .error)
                 )
             }
+        }
+    }
+
+    private func sendStartNotification(context: BSPServerService) async {
+        do {
+            for target in params.targets {
+                try await context.sendNotificationToClient(
+                    ServerJSONRPCNotification(
+                        method: TaskStartParams.method,
+                        params: TaskStartParams(
+                            taskId: "task-1",
+                            originId: params.originId,
+                            eventTime: Date().timeIntervalSince1970,
+                            message: "start compiling target \(target.uri.stringValue)",
+                        )
+                    )
+                )
+            }
+        } catch {
+            logger.debug("Failed to send build task start notification: \(error)")
+        }
+    }
+
+    private func sendFinishNotification(context: BSPServerService) async {
+        do {
+            try await context.sendNotificationToClient(
+                ServerJSONRPCNotification(
+                    method: TaskFinishParams.method,
+                    params: TaskFinishParams(
+                        taskId: "task-2",
+                        originId: params.originId,
+                        eventTime: Date().timeIntervalSince1970,
+                        message: "finished compiling target \(params.targets.first?.uri.stringValue ?? "")",
+                        status: .ok
+                    )
+                )
+            )
+        } catch {
+            logger.debug("Failed to send build task finish notification: \(error)")
         }
     }
 }
