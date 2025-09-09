@@ -61,21 +61,24 @@ public struct XcodeBuildLogParser {
             return nil
         }
 
-        let filePath = String(line[Range(match.range(at: 1), in: line)!])
+        // let filePath = String(line[Range(match.range(at: 1), in: line)!])
         let lineNumber = Int(String(line[Range(match.range(at: 2), in: line)!])) ?? 1
         let column = Int(String(line[Range(match.range(at: 3), in: line)!])) ?? 1
         let severityString = String(line[Range(match.range(at: 4), in: line)!])
         let message = String(line[Range(match.range(at: 5), in: line)!])
 
-        let severity: DiagnosticSeverity = switch severityString {
+        let severity: Diagnostic.DiagnosticSeverity = switch severityString {
         case "error": .error
         case "warning": .warning
         case "note": .information
         default: .information
         }
 
-        let position = Position(line: max(0, lineNumber - 1), character: max(0, column - 1)) // LSP is 0-based
-        let range = LSPRange(start: position, end: position)
+        let position = Diagnostic.Position(line: max(0, lineNumber - 1), character: max(
+            0,
+            column - 1
+        )) // LSP is 0-based
+        let range = Diagnostic.Range(start: position, end: position)
 
         return Diagnostic(
             range: range,
