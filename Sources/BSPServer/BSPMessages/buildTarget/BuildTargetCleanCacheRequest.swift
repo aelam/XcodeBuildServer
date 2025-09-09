@@ -8,13 +8,9 @@ import BuildServerProtocol
 import Foundation
 import JSONRPCConnection
 
-/// The build target prepare request is sent from the client to the server to
-/// prepare build targets for background indexing. This method is typically
-/// used to ensure that all necessary build artifacts are available for
-/// language servers to provide accurate semantic information.
-///
-/// - Important: This method is used to support background indexing.
-///   See https://forums.swift.org/t/extending-functionality-of-build-server-protocol-with-sourcekit-lsp/74400
+/// https://build-server-protocol.github.io/docs/specification.html
+/// https://github.com/microsoft/build-server-for-gradle
+
 public struct BuildTargetCleanCacheRequest: ContextualRequestType, Sendable {
     public typealias RequiredContext = BSPServerService
 
@@ -69,12 +65,12 @@ public struct BuildTargetCleanCacheResponse: ResponseType, Hashable {
 
 public struct BuildTargetCleanCacheResult: Codable, Hashable, Sendable {
     /** An optional request id to know the origin of this report. */
-    public let originId: String?
+    public let message: String?
     /** A status code for the execution. */
-    public let statusCode: StatusCode?
+    public let cleaned: Bool
 
-    public init(originId: String? = nil, statusCode: StatusCode? = nil) {
-        self.originId = originId
-        self.statusCode = statusCode
+    public init(message: String? = nil, cleaned: Bool = false) {
+        self.message = message
+        self.cleaned = cleaned
     }
 }

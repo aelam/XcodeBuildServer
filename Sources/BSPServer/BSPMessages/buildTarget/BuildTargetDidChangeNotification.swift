@@ -53,6 +53,8 @@ struct BuildTargetDidChangeNotification: ContextualNotificationType, Sendable {
 }
 
 public struct BuildTargetEvent: Codable, Hashable, Sendable {
+    public typealias BuildTargetEventData = LSPAny
+
     /// The identifier for the changed build target.
     public let target: BSPBuildTargetIdentifier
 
@@ -63,7 +65,7 @@ public struct BuildTargetEvent: Codable, Hashable, Sendable {
     public let dataKind: BuildTargetEventDataKind?
 
     /// Any additional metadata about what information changed.
-    public let data: LSPAny?
+    public let data: BuildTargetEventData?
 }
 
 public enum BuildTargetEventKind: Int, Codable, Hashable, Sendable {

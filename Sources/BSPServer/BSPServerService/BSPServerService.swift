@@ -9,57 +9,36 @@ import Foundation
 import JSONRPCConnection
 import Logger
 import os
+import XcodeProjectManagement
 
 /// BSP 服务层 - 连接 BSP 协议和项目管理
 /// 这是整个系统的核心服务，负责协调各个层次
-public final class BSPServerService: ProjectStateObserver, @unchecked Sendable {
-    // MARK: - Components
-
-    /// JSON-RPC 连接（协议层）
+public actor BSPServerService: ProjectStateObserver {
+    public let projectManagerProvider: ProjectManagerFactory
     private let jsonrpcConnection: JSONRPCConnection
-
-    /// BSP 消息处理器
-    private let messageHandler: BSPMessageHandler
-
-    /// 项目管理器
+    let taskManager: BSPTaskManager
+    private let notificationSender: BSPNotificationSenderImpl
     var projectManager: (any ProjectManager)?
 
-    // MARK: - State
-
-    public enum ServiceState: Sendable {
+    /// Service state tracking
+    public enum ServiceState {
         case stopped
         case starting
         case running
         case stopping
     }
 
-    private let serviceState = OSAllocatedUnfairLock(initialState: ServiceState.stopped)
-
-    public var currentState: ServiceState {
-        serviceState.withLock { $0 }
-    }
-
-    private var isRunning: Bool {
-        serviceState.withLock { $0 == .running }
-    }
-
-    // MARK: - Initialization
+    private var serviceState: ServiceState = .stopped
+    private let logger = Logger(subsystem: "BSPServerService", category: "BSPServer")
 
     public init(
-        transport: JSONRPCServerTransport,
-        messageRegistry: MessageRegistry
+        projectManagerProvider: ProjectManagerFactory,
+        jsonrpcConnection: JSONRPCConnection
     ) {
-        self.messageHandler = BSPMessageHandler()
-
-        // 创建 JSON-RPC 连接（协议层）
-        self.jsonrpcConnection = JSONRPCConnection(
-            transport: transport,
-            messageRegistry: messageRegistry,
-            messageHandler: messageHandler
-        )
-
-        // 设置消息处理器的服务引用
-        messageHandler.setBSPServerService(self)
+        self.projectManagerProvider = projectManagerProvider
+        self.jsonrpcConnection = jsonrpcConnection
+        self.notificationSender = BSPNotificationSenderImpl(connection: jsonrpcConnection)
+        self.taskManager = BSPTaskManager(notificationSender: notificationSender)
     }
 
     // MARK: - Service Lifecycle
@@ -67,13 +46,12 @@ public final class BSPServerService: ProjectStateObserver, @unchecked Sendable {
     /// 启动 BSP 服务
     /// 只启动网络服务，项目初始化由 build/initialize 请求触发
     public func start() async throws {
-        serviceState.withLock { state in
-            guard state == .stopped else {
-                logger.warning("Service already started or starting, current state: \(state)")
-                return
-            }
-            state = .starting
+        guard serviceState == .stopped else {
+            logger
+                .warning("Service already started or starting, current state: \(String(describing: self.serviceState))")
+            return
         }
+        serviceState = .starting
 
         logger.info("Starting BSP Server Service for project")
 
@@ -82,10 +60,10 @@ public final class BSPServerService: ProjectStateObserver, @unchecked Sendable {
             logger.info("Starting network service...")
             try await jsonrpcConnection.listen()
 
-            serviceState.withLock { $0 = .running }
+            serviceState = .running
             logger.info("BSP Server Service started successfully")
         } catch {
-            serviceState.withLock { $0 = .stopped }
+            serviceState = .stopped
             logger.error("Failed to start BSP Server Service: \(error)")
             throw error
         }
@@ -93,27 +71,32 @@ public final class BSPServerService: ProjectStateObserver, @unchecked Sendable {
 
     /// 停止 BSP 服务
     public func stop() async {
-        serviceState.withLock { state in
-            guard state == .running else {
-                logger.warning("Service not running, current state: \(state)")
-                return
-            }
-            state = .stopping
+        guard serviceState == .running else {
+            logger.warning("Service not running, current state: \(String(describing: self.serviceState))")
+            return
         }
+        serviceState = .stopping
 
         logger.info("Stopping BSP Server Service...")
 
         await jsonrpcConnection.close()
 
-        serviceState.withLock { $0 = .stopped }
+        serviceState = .stopped
         logger.info("BSP Server Service stopped")
     }
 }
 
 public extension BSPServerService {
+    // MARK: - Task Management
+
+    /// Get the task manager for this service
+    func getTaskManager() -> BSPTaskManager {
+        taskManager
+    }
+
     // MARK: - Notification Sending
 
-    func sendNotificationToClient(_ notification: any ServerJSONRPCNotificationType) async throws {
+    func sendNotificationToClient(_ notification: ServerJSONRPCNotification<some Codable & Sendable>) async throws {
         try await jsonrpcConnection.send(notification: notification)
     }
 }
@@ -122,14 +105,24 @@ public extension BSPServerService {
 
 public extension BSPServerService {
     /// 创建标准的 stdio BSP 服务
-    static func createStdioService() -> BSPServerService {
+    static func createStdioService(projectManagerProvider: ProjectManagerFactory) -> BSPServerService {
         let transport = StdioJSONRPCConnectionTransport()
-        let registry = bspRegistry
-
-        return BSPServerService(
+        let messageHandler = BSPMessageHandler()
+        let connection = JSONRPCConnection(
             transport: transport,
-            messageRegistry: registry
+            messageRegistry: bspRegistry,
+            messageHandler: messageHandler
         )
+
+        let service = BSPServerService(
+            projectManagerProvider: projectManagerProvider,
+            jsonrpcConnection: connection
+        )
+
+        // Set the service reference in the message handler
+        messageHandler.setBSPServerService(service)
+
+        return service
     }
 
     /// 订阅项目管理器的状态变化
@@ -222,7 +215,10 @@ public extension BSPServerService {
                 }
             }
         } catch {
-            logger.warning("Failed to send notification for project state event \(event): \(error)")
+            logger
+                .warning(
+                    "Failed to send notification for project state event \(String(describing: event)): \(String(describing: error))"
+                )
         }
     }
 
@@ -230,11 +226,13 @@ public extension BSPServerService {
         _ message: String,
         type: LogMessageType
     ) async throws {
-        try await sendNotificationToClient(WindowShowMessageNotification(
-            type: type,
-            message: message
-        )
-        )
+        try await sendNotificationToClient(ServerJSONRPCNotification(
+            method: WindowShowMessageParams.method,
+            params: WindowShowMessageParams(
+                type: type,
+                message: message
+            )
+        ))
     }
 
     // MARK: - Service Context API

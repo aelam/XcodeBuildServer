@@ -37,7 +37,11 @@ public protocol ProjectManager: AnyObject, Sendable {
 
     func buildIndex(for targetIdentifiers: [BSPBuildTargetIdentifier]) async
 
-    func startBuild(targetIdentifiers: [BSPBuildTargetIdentifier]) async throws -> StatusCode
+    /// Start build with progress callback support
+    func startBuild(
+        targetIdentifiers: [BSPBuildTargetIdentifier],
+        progress: (@Sendable (String, Double?) -> Void)?
+    ) async throws -> StatusCode
 
     /// 添加项目状态观察者
     func addStateObserver(_ observer: ProjectStateObserver) async

@@ -235,10 +235,10 @@ public struct Result: Codable, Hashable, Sendable {
 - **实现状态**：❌ 未实现
 
 ### 2. 任务进度通知
-- `build/taskStart`: 任务开始
-- `build/taskProgress`: 任务进度更新  
-- `build/taskFinish`: 任务完成
-- **实现状态**：❌ 未实现
+- `build/taskStart`: 任务开始 ✅ 已实现
+- `build/taskProgress`: 任务进度更新  ✅ 已实现 ❌ 不准确
+- `build/taskFinish`: 任务完成 ✅ 已实现
+- **实现状态**：✅ 已实现
 
 ### 3. `workspace/didChangeWatchedFiles`
 - **用途**：文件系统变化通知
@@ -304,9 +304,10 @@ let toolchainURI = URI(string: "file://\(toolchainPath)")
 - [x] `build/exit`
 - [x] `workspace/buildTargets`
 - [x] `buildTarget/sources`
-- [x] `textDocument/sourceKitOptions` - ✅ **完整实现，使用buildSettingsForIndex数据源**
-- [x] `buildTarget/didChange`
-- [x] `workspace/waitForBuildSystemUpdates`
+- [x] `buildTarget/compile`
+- [x] `textDocument/sourceKitOptions` - ✅ Implement with parsing project files
+- [ ] `buildTarget/didChange`
+- [ ] `workspace/waitForBuildSystemUpdates`
 
 ### 背景索引
 - [x] `buildTarget/prepare` (基础实现)

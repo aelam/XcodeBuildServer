@@ -8,13 +8,8 @@ import BuildServerProtocol
 import Foundation
 import JSONRPCConnection
 
-/// The build target prepare request is sent from the client to the server to
-/// prepare build targets for background indexing. This method is typically
-/// used to ensure that all necessary build artifacts are available for
-/// language servers to provide accurate semantic information.
-///
-/// - Important: This method is used to support background indexing.
-///   See https://forums.swift.org/t/extending-functionality-of-build-server-protocol-with-sourcekit-lsp/74400
+/// https://build-server-protocol.github.io/docs/specification.html
+/// https://github.com/microsoft/build-server-for-gradle
 public struct BuildTargetOutputPathsRequest: ContextualRequestType, Sendable {
     public typealias RequiredContext = BSPServerService
 
@@ -41,25 +36,13 @@ public struct BuildTargetOutputPathsRequest: ContextualRequestType, Sendable {
         contextualHandler: Handler,
         id: RequestID
     ) async -> ResponseType? where Handler.Context == BSPServerService {
-        await contextualHandler.withContext { context in
+        await contextualHandler.withContext { _ in
             logger.debug("get outputs of targets: \(params.targets)")
-
-            do {
-                let status = try await context.compileTargets(params.targets)
-                return BuildTargetOutputPathsResponse(
-                    jsonrpc: jsonrpc,
-                    id: id,
-                    result: BuildTargetOutputPathsResult(originId: params.originId, statusCode: status)
-                )
-
-            } catch {
-                logger.error("Failed to compile targets: \(error)")
-                return BuildTargetOutputPathsResponse(
-                    jsonrpc: jsonrpc,
-                    id: id,
-                    result: BuildTargetOutputPathsResult(originId: params.originId, statusCode: .error)
-                )
-            }
+            return BuildTargetOutputPathsResponse(
+                jsonrpc: jsonrpc,
+                id: id,
+                result: BuildTargetOutputPathsResult(items: [])
+            )
         }
     }
 }
@@ -77,13 +60,24 @@ public struct BuildTargetOutputPathsResponse: ResponseType, Hashable {
 }
 
 public struct BuildTargetOutputPathsResult: Codable, Hashable, Sendable {
-    /** An optional request id to know the origin of this report. */
-    public let originId: String?
-    /** A status code for the execution. */
-    public let statusCode: StatusCode?
+    public let items: [OutputPathsItem]
 
-    public init(originId: String? = nil, statusCode: StatusCode? = nil) {
-        self.originId = originId
-        self.statusCode = statusCode
+    public init(items: [OutputPathsItem] = []) {
+        self.items = items
+    }
+
+    public struct OutputPathsItem: Codable, Hashable, Sendable {
+        public enum OutputPathItemKind: Int, Codable, Hashable, Sendable {
+            case file = 1
+            case directory = 2
+        }
+
+        public struct OutputPathItem: Codable, Hashable, Sendable {
+            public let uri: URI
+            public let kind: OutputPathItemKind
+        }
+
+        public let target: BSPBuildTargetIdentifier
+        public let outputPaths: [OutputPathItem]
     }
 }

@@ -4,10 +4,15 @@
 //  Copyright © 2024 Wang Lun.
 
 import BSPServer
+import BuildServerProtocol
 import Foundation
 import JSONRPCConnection
 import Logger
 import SwiftyBeaver
+#if os(macOS)
+import XcodeProjectManagerProvider
+#endif
+import SwiftPMProjectManagerProvider
 
 @main
 struct XcodeBuildServerCLI {
@@ -41,7 +46,9 @@ struct XcodeBuildServerCLI {
         }
 
         // 使用清晰的分层架构 - BSPServerService 作为服务层
-        let bspService = BSPServerService.createStdioService()
+        // 使用工厂来管理多个项目管理器提供者
+        let factory = await ProjectManagerProviderRegistry.createFactory()
+        let bspService = BSPServerService.createStdioService(projectManagerProvider: factory)
 
         // Monitor parent process at a reasonable interval using Task
         Task {

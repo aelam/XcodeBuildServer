@@ -5,6 +5,7 @@
 //
 
 import Foundation
+import Support
 
 public enum XcodeToolchainError: Error, LocalizedError {
     case xcodeNotFound
@@ -148,7 +149,8 @@ public actor XcodeToolchain {
     public func executeXcodeBuild(
         arguments: [String],
         workingDirectory: URL? = nil,
-        xcodeBuildEnvironments: [String: String] = [:]
+        xcodeBuildEnvironments: [String: String] = [:],
+        progress: ProcessProgress? = nil
     ) async throws -> XcodeBuildResult {
         guard let installation = selectedInstallation else {
             throw XcodeToolchainError.xcodeNotFound
@@ -158,7 +160,8 @@ public actor XcodeToolchain {
             arguments: arguments,
             workingDirectory: workingDirectory,
             xcodeInstallationPath: installation.path,
-            xcodeBuildEnvironments: xcodeBuildEnvironments
+            xcodeBuildEnvironments: xcodeBuildEnvironments,
+            progress: progress
         )
 
         return XcodeBuildResult(
