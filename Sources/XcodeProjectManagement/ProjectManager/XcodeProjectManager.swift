@@ -175,11 +175,11 @@ public actor XcodeProjectManager {
 
     // MARK: - Build
 
-    public func startBuild(target: String) async {
+    // public func startBuild(target: String) async {
 //        let buildTask = BuildTask(target: target)
 //        projectState.activeBuildTasks[target] = buildTask
 //        await notifyStateObservers(.buildStarted(target: target))
-    }
+    // }
 
     func completeBuild(target: String, duration: TimeInterval, success: Bool) async {
 //        guard var buildTask = projectState.activeBuildTasks[target] else { return }

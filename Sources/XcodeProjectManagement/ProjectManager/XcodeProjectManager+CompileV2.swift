@@ -1,4 +1,5 @@
 import Foundation
+import Support
 
 public enum BuildError: Error, Sendable {
     case buildFailed(exitCode: Int32, output: String)
@@ -7,7 +8,8 @@ public enum BuildError: Error, Sendable {
 public extension XcodeProjectManager {
     func compileTarget(
         targetIdentifier: XcodeTargetIdentifier,
-        configuration: String = "Debug"
+        configuration: String = "Debug",
+        progress: ProcessProgress? = nil
     ) async throws -> XcodeBuildResult {
         guard let xcodeProjectBaseInfo else {
             return XcodeBuildResult(output: "", error: "No Xcode project found", exitCode: 1)
@@ -48,7 +50,8 @@ public extension XcodeProjectManager {
         let result = try await toolchain.executeXcodeBuild(
             arguments: command,
             workingDirectory: rootURL,
-            xcodeBuildEnvironments: [:]
+            xcodeBuildEnvironments: [:],
+            progress: progress
         )
         return result
     }

@@ -11,7 +11,8 @@ extension ProcessExecutor {
         workingDirectory: URL? = nil,
         xcodeInstallationPath: URL,
         xcodeBuildEnvironments: [String: String] = [:],
-        timeout: TimeInterval? = nil
+        timeout: TimeInterval? = nil,
+        progress: ProcessProgress? = nil
     ) async throws -> ProcessExecutionResult {
         // Use the system xcodebuild (which might be managed by xcenv)
         // instead of forcing a specific path
@@ -34,7 +35,8 @@ extension ProcessExecutor {
             arguments: xcrunArgs,
             workingDirectory: workingDirectory,
             environment: environmentOverrides,
-            timeout: timeout
+            timeout: timeout,
+            progress: progress
         )
     }
 

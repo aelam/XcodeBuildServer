@@ -36,25 +36,13 @@ public struct BuildTargetOutputPathsRequest: ContextualRequestType, Sendable {
         contextualHandler: Handler,
         id: RequestID
     ) async -> ResponseType? where Handler.Context == BSPServerService {
-        await contextualHandler.withContext { context in
+        await contextualHandler.withContext { _ in
             logger.debug("get outputs of targets: \(params.targets)")
-
-            do {
-                let status = try await context.compileTargets(params.targets)
-                return BuildTargetOutputPathsResponse(
-                    jsonrpc: jsonrpc,
-                    id: id,
-                    result: BuildTargetOutputPathsResult(originId: params.originId, statusCode: status)
-                )
-
-            } catch {
-                logger.error("Failed to compile targets: \(error)")
-                return BuildTargetOutputPathsResponse(
-                    jsonrpc: jsonrpc,
-                    id: id,
-                    result: BuildTargetOutputPathsResult(originId: params.originId, statusCode: .error)
-                )
-            }
+            return BuildTargetOutputPathsResponse(
+                jsonrpc: jsonrpc,
+                id: id,
+                result: BuildTargetOutputPathsResult(originId: params.originId, statusCode: .error)
+            )
         }
     }
 }

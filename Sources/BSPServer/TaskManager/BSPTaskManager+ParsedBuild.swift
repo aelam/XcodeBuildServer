@@ -10,7 +10,7 @@ import Foundation
 extension BSPTaskManager {
     /// Execute build with progress parsed from xcodebuild output
     /// 这是最理想的方案 - 通过解析构建工具的输出来获得真实进度
-    public func executeBuildWithParsedProgress(
+    public func executeBuildWithProgress(
         using projectManager: any ProjectManager,
         targets: [BSPBuildTargetIdentifier],
         originId: String? = nil
@@ -34,12 +34,16 @@ extension BSPTaskManager {
             // 2. 或者在这里直接调用 xcodebuild/swift build 并解析输出
             // 3. 解析构建输出中的文件编译进度信息
 
-            let status = try await projectManager.startBuild(targetIdentifiers: targets)
+            let status = try await projectManager.startBuild(
+                targetIdentifiers: targets
+            ) { message, progress in
+                Task {
+                    let clampedProgress = min(max(progress ?? 0.0, 0.0), 1.0)
+                    try await task.updateProgress(progress: clampedProgress, message: message)
+                }
+            }
 
-            try await task.updateProgress(progress: 1.0, message: "Build completed")
-            try await task.finish(status: status, message: "Build finished")
             return status
-
         } catch {
             try await task.fail(message: "Build failed: \(error.localizedDescription)")
             throw error
@@ -48,11 +52,6 @@ extension BSPTaskManager {
 
     /// 解析 xcodebuild 输出来提取进度信息
     private func parseXcodeBuildProgress(_ output: String) -> (progress: Double, message: String)? {
-        // 解析类似这样的输出：
-        // "Building target 'MyApp' (1 of 3)"
-        // "Compiling MyFile.swift (5 of 20)"
-        // "Linking MyApp"
-
         if output.contains("Building target") {
             // 提取目标构建进度
             return (0.3, "Building target...")

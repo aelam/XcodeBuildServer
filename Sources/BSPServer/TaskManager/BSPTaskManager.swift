@@ -163,6 +163,74 @@ public actor BSPTaskManager {
 
         try await notificationSender?.sendNotification(notification)
     }
+
+    // MARK: - Direct Notification Methods (for non-blocking builds)
+
+    func sendTaskStartNotification(
+        taskId: String,
+        originId: String?,
+        message: String,
+        targets: [BSPBuildTargetIdentifier]
+    ) async throws {
+        let params = TaskStartParams(
+            taskId: taskId,
+            originId: originId,
+            eventTime: Date().timeIntervalSince1970,
+            message: message
+        )
+
+        let notification = ServerJSONRPCNotification(
+            method: "build/taskStart",
+            params: params
+        )
+
+        try await notificationSender?.sendNotification(notification)
+    }
+
+    func sendTaskProgressNotification(
+        taskId: String,
+        progress: Double,
+        message: String?
+    ) async throws {
+        let params = TaskProgressParams(
+            taskId: taskId,
+            originId: nil,
+            eventTime: Date().timeIntervalSince1970,
+            message: message,
+            progress: progress,
+            unit: nil,
+            dataKind: nil,
+            data: nil
+        )
+
+        let notification = ServerJSONRPCNotification(
+            method: "build/taskProgress",
+            params: params
+        )
+
+        try await notificationSender?.sendNotification(notification)
+    }
+
+    func sendTaskFinishNotification(
+        taskId: String,
+        status: StatusCode,
+        message: String?
+    ) async throws {
+        let params = TaskFinishParams(
+            taskId: taskId,
+            originId: nil,
+            eventTime: Date().timeIntervalSince1970,
+            message: message,
+            status: status
+        )
+
+        let notification = ServerJSONRPCNotification(
+            method: "build/taskFinish",
+            params: params
+        )
+
+        try await notificationSender?.sendNotification(notification)
+    }
 }
 
 /// Protocol for sending BSP notifications

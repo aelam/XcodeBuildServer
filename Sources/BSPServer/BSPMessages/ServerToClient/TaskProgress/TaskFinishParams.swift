@@ -9,6 +9,20 @@ public struct TaskFinishParams: Codable, Sendable {
     public let eventTime: TimeInterval?
     public let message: String?
     public let status: StatusCode
+
+    public init(
+        taskId: String,
+        originId: String? = nil,
+        eventTime: TimeInterval? = nil,
+        message: String? = nil,
+        status: StatusCode
+    ) {
+        self.taskId = taskId
+        self.originId = originId
+        self.eventTime = eventTime
+        self.message = message
+        self.status = status
+    }
 }
 
 public typealias TaskFinishDataKind = String

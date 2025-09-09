@@ -23,6 +23,16 @@ public struct ProcessExecutionResult: Sendable {
     }
 }
 
+/// Progress callback for real-time process output
+public typealias ProcessProgress = @Sendable (ProcessProgressEvent) -> Void
+
+/// Events that can be reported during process execution
+public enum ProcessProgressEvent: Sendable {
+    case outputData(String)
+    case errorData(String)
+    case progressUpdate(progress: Double, message: String?)
+}
+
 public enum ProcessExecutorError: Error, LocalizedError, Equatable {
     case processStartFailed(String) // System error message
     case invalidWorkingDirectory(String)
@@ -42,7 +52,8 @@ public actor ProcessExecutor {
         arguments: [String] = [],
         workingDirectory: URL? = nil,
         environment: [String: String] = [:],
-        timeout: TimeInterval? = nil
+        timeout: TimeInterval? = nil,
+        progress: ProcessProgress? = nil
     ) async throws -> ProcessExecutionResult {
         logger.debug("\(executable) \(arguments.joined(separator: " "))")
 
@@ -81,10 +92,20 @@ public actor ProcessExecutor {
         // Handle timeout if specified
         let result: ProcessExecutionResult = if let timeout {
             try await withTimeout(timeout) {
-                try await self.readProcessOutput(process: process, outputPipe: outputPipe, errorPipe: errorPipe)
+                try await self.readProcessOutput(
+                    process: process,
+                    outputPipe: outputPipe,
+                    errorPipe: errorPipe,
+                    progress: progress
+                )
             }
         } else {
-            try await readProcessOutput(process: process, outputPipe: outputPipe, errorPipe: errorPipe)
+            try await readProcessOutput(
+                process: process,
+                outputPipe: outputPipe,
+                errorPipe: errorPipe,
+                progress: progress
+            )
         }
 
         logger
@@ -113,21 +134,140 @@ public actor ProcessExecutor {
     private func readProcessOutput(
         process: Process,
         outputPipe: Pipe,
-        errorPipe: Pipe
+        errorPipe: Pipe,
+        progress: ProcessProgress? = nil
     ) async throws -> ProcessExecutionResult {
-        async let outputData = outputPipe.fileHandleForReading.readToEnd()
-        async let errorData = errorPipe.fileHandleForReading.readToEnd()
+        try await withThrowingTaskGroup(of: ProcessOutputChunk.self) { group in
+            var outputData = Data()
+            var errorData = Data()
+            var outputBuffer = ""
 
-        process.waitUntilExit()
+            // Read stdout incrementally
+            group.addTask {
+                await self.readOutputPipe(outputPipe, process: process, progress: progress)
+            }
 
-        let output = try await String(data: outputData ?? Data(), encoding: .utf8) ?? ""
-        let errorString = try await String(data: errorData ?? Data(), encoding: .utf8) ?? ""
+            // Read stderr incrementally
+            group.addTask {
+                await self.readErrorPipe(errorPipe, process: process, progress: progress)
+            }
 
-        return ProcessExecutionResult(
-            output: output,
-            error: errorString.isEmpty ? nil : errorString,
-            exitCode: process.terminationStatus
-        )
+            // Collect all chunks
+            for try await chunk in group {
+                switch chunk {
+                case let .output(data):
+                    outputData.append(data)
+                    if let string = String(data: data, encoding: .utf8) {
+                        outputBuffer += string
+                        if let progressInt = parseXcodeBuildProgress(from: outputBuffer) {
+                            progress?(.progressUpdate(progress: progressInt, message: nil))
+                        }
+                    }
+                case let .error(data):
+                    errorData.append(data)
+                }
+            }
+
+            // Wait for process to finish
+            process.waitUntilExit()
+
+            let output = String(data: outputData, encoding: .utf8) ?? ""
+            let errorString = String(data: errorData, encoding: .utf8)
+
+            return ProcessExecutionResult(
+                output: output,
+                error: errorString?.isEmpty == false ? errorString : nil,
+                exitCode: process.terminationStatus
+            )
+        }
+    }
+
+    private enum ProcessOutputChunk: Sendable {
+        case output(Data)
+        case error(Data)
+    }
+
+    private func readOutputPipe(
+        _ pipe: Pipe,
+        process: Process,
+        progress: ProcessProgress?
+    ) async -> ProcessOutputChunk {
+        let handle = pipe.fileHandleForReading
+        var allData = Data()
+
+        while process.isRunning {
+            let chunk = handle.availableData
+            if chunk.isEmpty {
+                try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
+                continue
+            }
+
+            allData.append(chunk)
+            if let string = String(data: chunk, encoding: .utf8) {
+                progress?(.outputData(string))
+            }
+        }
+
+        // Read any remaining data
+        if let remainingData = try? handle.readToEnd() {
+            allData.append(remainingData)
+            if let string = String(data: remainingData, encoding: .utf8) {
+                progress?(.outputData(string))
+            }
+        }
+
+        return .output(allData)
+    }
+
+    private func readErrorPipe(
+        _ pipe: Pipe,
+        process: Process,
+        progress: ProcessProgress?
+    ) async -> ProcessOutputChunk {
+        let handle = pipe.fileHandleForReading
+        var allData = Data()
+
+        while process.isRunning {
+            let chunk = handle.availableData
+            if chunk.isEmpty {
+                try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
+                continue
+            }
+
+            allData.append(chunk)
+            if let string = String(data: chunk, encoding: .utf8) {
+                progress?(.errorData(string))
+            }
+        }
+
+        // Read any remaining data
+        if let remainingData = try? handle.readToEnd() {
+            allData.append(remainingData)
+            if let string = String(data: remainingData, encoding: .utf8) {
+                progress?(.errorData(string))
+            }
+        }
+
+        return .error(allData)
+    }
+
+    /// Parse Xcode build progress from output
+    private func parseXcodeBuildProgress(from output: String) -> Double? {
+        // Simple pattern matching for Xcode build progress
+        // This can be enhanced to parse more sophisticated progress indicators
+        let lines = output.components(separatedBy: .newlines)
+        for line in lines.suffix(5) { // Check last 5 lines
+            // Look for patterns like "** BUILD SUCCEEDED **" or percentage indicators
+            if line.contains("BUILD SUCCEEDED") {
+                return 1.0
+            } else if line.contains("BUILD FAILED") {
+                return 1.0
+            } else if line.contains("Building") || line.contains("Compiling") {
+                // Estimate progress based on activity
+                return 0.5
+            }
+        }
+        return nil
     }
 
     private func withTimeout<T: Sendable>(

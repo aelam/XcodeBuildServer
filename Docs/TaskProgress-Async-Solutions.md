@@ -71,7 +71,7 @@ for (index, target) in targets.enumerated() {
 - ❌ 仍然是模拟进度，不是真实进度
 - ❌ 分别构建目标可能不如批量构建高效
 
-### 方案3: 解析构建输出 (`executeBuildWithParsedProgress`)
+### 方案3: 解析构建输出 (`executeBuildWithProgress`)
 
 **位置**: `BSPTaskManager+ParsedBuild.swift`
 
