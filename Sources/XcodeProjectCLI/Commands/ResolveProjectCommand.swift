@@ -43,7 +43,7 @@ struct ResolveProjectCommand: AsyncParsableCommand {
             rootURL: rootURL,
             xcodeProjectReference: xcodeProjectReference,
             toolchain: toolchain,
-            locator: XcodeProjectLocator(),
+            projectLocator: XcodeProjectLocator(),
             settingsLoader: XcodeSettingsLoader(
                 commandBuilder: XcodeBuildCommandBuilder(),
                 toolchain: toolchain

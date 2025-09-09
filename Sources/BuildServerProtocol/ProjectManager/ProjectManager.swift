@@ -42,12 +42,6 @@ public protocol ProjectManager: AnyObject, Sendable {
         targetIdentifiers: [BSPBuildTargetIdentifier],
         progress: (@Sendable (String, Double?) -> Void)?
     ) async throws -> StatusCode
-
-    /// 添加项目状态观察者
-    func addStateObserver(_ observer: ProjectStateObserver) async
-
-    /// 移除项目状态观察者
-    func removeStateObserver(_ observer: ProjectStateObserver) async
 }
 
 public struct ProjectInfo: Sendable {
@@ -104,30 +98,4 @@ public struct ProjectTarget: Sendable {
         self.dependencies = dependencies
         self.productType = productType
     }
-}
-
-public struct ProjectBuildSettings: Sendable {
-    public let derivedDataPath: URL
-    public let indexStoreURL: URL
-    public let indexDatabaseURL: URL
-    public let symRoot: URL // SYMROOT
-    public let objRoot: URL // OBJROOT
-    public let sdkStatCacheDir: URL // SDK_STAT_CACHE_DIR
-
-    public init(derivedDataPath: URL) {
-        self.derivedDataPath = derivedDataPath
-        self.indexStoreURL = derivedDataPath
-            .appendingPathComponent("Index.noIndex/DataStore")
-        self.indexDatabaseURL = derivedDataPath
-            .appendingPathComponent("IndexDatabase.noIndex")
-        self.symRoot = derivedDataPath.appendingPathComponent("Build/Products")
-        self.objRoot = derivedDataPath
-            .appendingPathComponent("Build/Intermediates.noindex")
-        self.sdkStatCacheDir = derivedDataPath.deletingLastPathComponent()
-    }
-}
-
-public struct FileBuildSettingInfo: Sendable {
-    public let language: Language?
-    public let outputFilePath: String?
 }

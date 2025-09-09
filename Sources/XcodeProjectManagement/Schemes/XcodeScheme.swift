@@ -6,6 +6,7 @@ public struct XcodeScheme: Sendable, Codable {
     public let path: URL
     public let isInWorkspace: Bool
     public let isUserScheme: Bool
+    public var buildConfiguration: String = "Debug"
     public let primaryBuildTargetProjectURL: URL?
     public let primaryTarget: String?
     public var primaryProductName: String?
@@ -55,6 +56,7 @@ public extension XcodeScheme {
         self.isInWorkspace = isInWorkspace
         self.isUserScheme = isUserScheme
         self.path = path
+        self.buildConfiguration = xcscheme.launchAction?.buildConfiguration ?? "Debug"
         let runnableReference = xcscheme.launchAction?.runnable?.buildableReference
         if let referencedContainer = runnableReference?.referencedContainer {
             let relativePath = referencedContainer.replacingOccurrences(of: "container:", with: "")

@@ -58,30 +58,6 @@ public struct XcodeTarget: Sendable, Hashable, Codable {
             "isFromWorkspace: \(isFromWorkspace), " +
             "platform: \(xcodeTargetPlatform.rawValue))"
     }
-
-    var priority: Double {
-        let productTypeWeight = switch xcodeProductType {
-        case .application, .commandLineTool: 1.0
-        case .watchApp, .watch2App, .watch2AppContainer, .messagesApplication: 0.9
-        case .appExtension, .watchExtension, .watch2Extension, .tvExtension: 0.8
-        case .framework, .staticLibrary, .dynamicLibrary, .staticFramework: 0.7
-        case .bundle: 0.5
-        default: 0.0
-        }
-
-        let platformWeight = switch xcodeTargetPlatform {
-        case .iOSSimulator: 1.1
-        case .iOS: 1.0
-        case .macOS: 0.8
-        case .watchOS: 0.5
-        case .tvOS: 0.4
-        case .visionOS: 0.3
-        default: 0.0
-        }
-
-        let runningBonus: Double = buildForRunning ? 0.1 : 0.0
-        return platformWeight * productTypeWeight + runningBonus
-    }
 }
 
 public typealias XcodeSchemeTargetInfo = XcodeTarget

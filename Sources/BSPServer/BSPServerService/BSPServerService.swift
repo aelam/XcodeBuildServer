@@ -124,19 +124,6 @@ public extension BSPServerService {
 
         return service
     }
-
-    /// 订阅项目管理器的状态变化
-    func subscribeToProjectManager(_ projectManager: any ProjectManager) async {
-        // 订阅项目状态
-        await projectManager.addStateObserver(self)
-        logger.debug("BSPServerService subscribed to project manager status changes")
-    }
-
-    /// 取消订阅项目管理器的状态变化
-    func unsubscribeFromProjectManager(_ projectManager: any ProjectManager) async {
-        await projectManager.removeStateObserver(self)
-        logger.debug("BSPServerService unsubscribed from project manager status changes")
-    }
 }
 
 // MARK: - ProjectStateObserver

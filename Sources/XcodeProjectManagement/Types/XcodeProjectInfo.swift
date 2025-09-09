@@ -5,6 +5,7 @@ public struct XcodeProjectBaseInfo: Sendable, Codable {
     public let projectLocation: XcodeProjectLocation
     public let xcodeGlobalSettings: XcodeGlobalSettings
     public let xcodeTargets: [XcodeTarget]
+    public let schemes: [XcodeScheme]
     public var configuration = "Debug"
     public let xcodeInstallation: XcodeInstallation
 }
