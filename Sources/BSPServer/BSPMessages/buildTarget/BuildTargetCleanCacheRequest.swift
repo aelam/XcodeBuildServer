@@ -65,12 +65,12 @@ public struct BuildTargetCleanCacheResponse: ResponseType, Hashable {
 
 public struct BuildTargetCleanCacheResult: Codable, Hashable, Sendable {
     /** An optional request id to know the origin of this report. */
-    public let originId: String?
+    public let message: String?
     /** A status code for the execution. */
-    public let statusCode: StatusCode?
+    public let cleaned: Bool
 
-    public init(originId: String? = nil, statusCode: StatusCode? = nil) {
-        self.originId = originId
-        self.statusCode = statusCode
+    public init(message: String? = nil, cleaned: Bool = false) {
+        self.message = message
+        self.cleaned = cleaned
     }
 }
