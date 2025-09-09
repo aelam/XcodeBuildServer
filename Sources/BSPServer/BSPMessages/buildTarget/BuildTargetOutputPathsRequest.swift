@@ -41,7 +41,7 @@ public struct BuildTargetOutputPathsRequest: ContextualRequestType, Sendable {
             return BuildTargetOutputPathsResponse(
                 jsonrpc: jsonrpc,
                 id: id,
-                result: BuildTargetOutputPathsResult(originId: params.originId, statusCode: .error)
+                result: BuildTargetOutputPathsResult(items: [])
             )
         }
     }
@@ -60,13 +60,24 @@ public struct BuildTargetOutputPathsResponse: ResponseType, Hashable {
 }
 
 public struct BuildTargetOutputPathsResult: Codable, Hashable, Sendable {
-    /** An optional request id to know the origin of this report. */
-    public let originId: String?
-    /** A status code for the execution. */
-    public let statusCode: StatusCode?
+    public let items: [OutputPathsItem]
 
-    public init(originId: String? = nil, statusCode: StatusCode? = nil) {
-        self.originId = originId
-        self.statusCode = statusCode
+    public init(items: [OutputPathsItem] = []) {
+        self.items = items
+    }
+
+    public struct OutputPathsItem: Codable, Hashable, Sendable {
+        public enum OutputPathItemKind: Int, Codable, Hashable, Sendable {
+            case file = 1
+            case directory = 2
+        }
+
+        public struct OutputPathItem: Codable, Hashable, Sendable {
+            public let uri: URI
+            public let kind: OutputPathItemKind
+        }
+
+        public let target: BSPBuildTargetIdentifier
+        public let outputPaths: [OutputPathItem]
     }
 }
