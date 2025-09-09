@@ -304,9 +304,10 @@ let toolchainURI = URI(string: "file://\(toolchainPath)")
 - [x] `build/exit`
 - [x] `workspace/buildTargets`
 - [x] `buildTarget/sources`
-- [x] `textDocument/sourceKitOptions` - ✅ **完整实现，使用buildSettingsForIndex数据源**
-- [x] `buildTarget/didChange`
-- [x] `workspace/waitForBuildSystemUpdates`
+- [x] `buildTarget/compile`
+- [x] `textDocument/sourceKitOptions` - ✅ Implement with parsing project files
+- [ ] `buildTarget/didChange`
+- [ ] `workspace/waitForBuildSystemUpdates`
 
 ### 背景索引
 - [x] `buildTarget/prepare` (基础实现)
