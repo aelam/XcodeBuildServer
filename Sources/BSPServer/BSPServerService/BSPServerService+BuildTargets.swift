@@ -37,12 +37,20 @@ extension BSPServerService {
         await projectManager.buildIndex(for: targets)
     }
 
-    func compileTargets(_ targetIdentifiers: [BSPBuildTargetIdentifier]) async throws -> StatusCode {
+    func compileTargets(
+        _ targetIdentifiers: [BSPBuildTargetIdentifier],
+        originId: String? = nil
+    ) async throws -> StatusCode {
         guard let projectManager else {
             logger.error("Project not initialized")
             return .error
         }
 
-        return try await projectManager.startBuild(targetIdentifiers: targetIdentifiers)
+        // 使用基础的构建方法，加上简单的进度报告
+        return try await taskManager.executeBuild(
+            using: projectManager,
+            targets: targetIdentifiers,
+            originId: originId
+        )
     }
 }

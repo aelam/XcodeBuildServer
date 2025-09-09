@@ -39,16 +39,9 @@ public struct BuildTargetCompileRequest: ContextualRequestType, Sendable {
         await contextualHandler.withContext { context in
             logger.debug("Compile targets: \(params.targets)")
 
-            Task {
-                await sendStartNotification(context: context)
-            }
-
             do {
-                let status = try await context.compileTargets(params.targets)
-
-                Task {
-                    await sendFinishNotification(context: context)
-                }
+                // 直接使用 BSPServerService.compileTargets，它会自动处理任务进度
+                let status = try await context.compileTargets(params.targets, originId: params.originId)
 
                 return BuildTargetCompileResponse(
                     jsonrpc: jsonrpc,
@@ -64,45 +57,6 @@ public struct BuildTargetCompileRequest: ContextualRequestType, Sendable {
                     result: BuildTargetCompileResult(originId: params.originId, statusCode: .error)
                 )
             }
-        }
-    }
-
-    private func sendStartNotification(context: BSPServerService) async {
-        do {
-            let targetNames = params.targets.map(\.uri.stringValue).joined(separator: ", ")
-            try await context.sendNotificationToClient(
-                ServerJSONRPCNotification(
-                    method: TaskStartParams.method,
-                    params: TaskStartParams(
-                        taskId: "task-1",
-                        originId: params.originId,
-                        eventTime: Date().timeIntervalSince1970,
-                        message: "start compiling target \(targetNames)",
-                    )
-                )
-            )
-        } catch {
-            logger.debug("Failed to send build task start notification: \(error)")
-        }
-    }
-
-    private func sendFinishNotification(context: BSPServerService) async {
-        do {
-            let targetNames = params.targets.map(\.uri.stringValue).joined(separator: ", ")
-            try await context.sendNotificationToClient(
-                ServerJSONRPCNotification(
-                    method: TaskFinishParams.method,
-                    params: TaskFinishParams(
-                        taskId: "task-2",
-                        originId: params.originId,
-                        eventTime: Date().timeIntervalSince1970,
-                        message: "finished compiling target \(targetNames)",
-                        status: .ok
-                    )
-                )
-            )
-        } catch {
-            logger.debug("Failed to send build task finish notification: \(error)")
         }
     }
 }

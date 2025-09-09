@@ -5,6 +5,7 @@
 //
 
 import Foundation
+import Support
 
 public enum XcodeToolchainError: Error, LocalizedError {
     case xcodeNotFound

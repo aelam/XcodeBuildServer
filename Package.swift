@@ -8,7 +8,8 @@ let package = Package(
     name: "XcodeBuildServer",
     platforms: [.macOS(.v13)],
     products: [
-        // Base
+        // Suppot
+        .library(name: "Support", targets: ["Logger"]),
         // .library(name: "Core", targets: ["Core"]),
         .library(name: "JSONRPCConnection", targets: ["JSONRPCConnection"]),
         .library(name: "Logger", targets: ["Logger"]),
@@ -65,6 +66,13 @@ let package = Package(
         ),
 
         .target(
+            name: "Support",
+            dependencies: [
+                "Logger"
+            ]
+        ),
+
+        .target(
             name: "BuildServerProtocol",
             dependencies: [
                 "Logger"
@@ -88,6 +96,7 @@ let package = Package(
                 // "Core",
                 "Logger",
                 "BuildServerProtocol",
+                "Support",
                 .product(
                     name: "XcodeProj",
                     package: "XcodeProj",
