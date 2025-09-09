@@ -15,9 +15,18 @@ public extension XcodeProjectManager {
             return XcodeBuildResult(output: "", error: "No Xcode project found", exitCode: 1)
         }
 
+        guard let xcodeTarget = xcodeProjectBaseInfo.xcodeTargets
+            .first(where: { $0.targetIdentifier == targetIdentifier }) else {
+            return XcodeBuildResult(output: "", error: "No Xcode target found", exitCode: 1)
+        }
+
+        let scheme = findOrCreateScheme(for: xcodeTarget, in: xcodeProjectBaseInfo.schemes)
+
+        let buildAction: XcodeBuildCommand.BuildAction = xcodeTarget.xcodeProductType.isTestBundle ?
+            .buildForTesting : .build
         let options = XcodeBuildOptions(
             command: .build(
-                action: .build,
+                action: buildAction,
                 sdk: .iOSSimulator,
                 destination: nil,
                 configuration: configuration,
@@ -32,7 +41,7 @@ public extension XcodeProjectManager {
         case let .explicitWorkspace(url):
             .workspace(
                 workspaceURL: url,
-                scheme: targetIdentifier.targetName
+                scheme: scheme.name
             )
         case let .implicitWorkspace(projectURL: url, workspaceURL: _), let .standaloneProject(url: url):
             .project(

@@ -74,6 +74,7 @@ public enum XcodeBuildCommand: Sendable {
 
     public enum BuildAction: String, CaseIterable, Sendable {
         case build
+        case buildForTesting = "build-for-testing"
         case clean
         case test
         case archive

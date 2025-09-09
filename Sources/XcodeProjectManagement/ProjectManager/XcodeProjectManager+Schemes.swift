@@ -56,7 +56,7 @@ extension XcodeProjectManager {
         buildConfiguration: String
     ) -> XcodeScheme {
         let schemeName = xcodeTarget.name
-        let xcscheme = XCScheme(name: schemeName, lastUpgradeVersion: nil, version: "1.3")
+        let xcscheme = XCScheme(name: schemeName, lastUpgradeVersion: nil, version: "1.7")
 
         // Create BuildAction with the target
         let buildableReference = XCScheme.BuildableReference(
@@ -66,18 +66,47 @@ extension XcodeProjectManager {
             blueprintName: xcodeTarget.name
         )
 
-        let buildActionEntry = XCScheme.BuildAction.Entry(
-            buildableReference: buildableReference,
-            buildFor: [.running, .testing, .profiling, .archiving, .analyzing]
-        )
+        if xcodeTarget.xcodeProductType.isTestBundle {
+            // For test targets, BuildAction is empty and TestAction contains the testable
+            xcscheme.buildAction = XCScheme.BuildAction(
+                buildActionEntries: [],
+                parallelizeBuild: true,
+                buildImplicitDependencies: true
+            )
 
-        xcscheme.buildAction = XCScheme.BuildAction(
-            buildActionEntries: [buildActionEntry],
-            parallelizeBuild: true,
-            buildImplicitDependencies: true
-        )
+            let testableReference = XCScheme.TestableReference(
+                skipped: false,
+                parallelization: .none,
+                randomExecutionOrdering: false,
+                buildableReference: buildableReference
+            )
 
-        // Create LaunchAction if it's a runnable target
+            xcscheme.testAction = XCScheme.TestAction(
+                buildConfiguration: buildConfiguration,
+                macroExpansion: nil,
+                testables: [testableReference]
+            )
+        } else {
+            // For non-test targets, BuildAction contains the entry
+            let buildActionEntry = XCScheme.BuildAction.Entry(
+                buildableReference: buildableReference,
+                buildFor: [.running, .testing, .profiling, .archiving, .analyzing]
+            )
+
+            xcscheme.buildAction = XCScheme.BuildAction(
+                buildActionEntries: [buildActionEntry],
+                parallelizeBuild: true,
+                buildImplicitDependencies: true
+            )
+
+            xcscheme.testAction = XCScheme.TestAction(
+                buildConfiguration: buildConfiguration,
+                macroExpansion: nil,
+                testables: []
+            )
+        }
+
+        // Create LaunchAction
         if xcodeTarget.xcodeProductType.isApplication {
             let runnable = XCScheme.BuildableProductRunnable(
                 buildableReference: buildableReference,
@@ -87,7 +116,38 @@ extension XcodeProjectManager {
                 runnable: runnable,
                 buildConfiguration: buildConfiguration
             )
+        } else {
+            xcscheme.launchAction = XCScheme.LaunchAction(
+                runnable: nil,
+                buildConfiguration: buildConfiguration,
+                macroExpansion: buildableReference
+            )
         }
+
+        // Create ProfileAction
+        if xcodeTarget.xcodeProductType.isApplication {
+            xcscheme.profileAction = XCScheme.ProfileAction(
+                runnable: nil,
+                buildConfiguration: "Release"
+            )
+        } else {
+            xcscheme.profileAction = XCScheme.ProfileAction(
+                runnable: nil,
+                buildConfiguration: "Release",
+                macroExpansion: buildableReference
+            )
+        }
+
+        // Create AnalyzeAction
+        xcscheme.analyzeAction = XCScheme.AnalyzeAction(
+            buildConfiguration: buildConfiguration
+        )
+
+        // Create ArchiveAction
+        xcscheme.archiveAction = XCScheme.ArchiveAction(
+            buildConfiguration: "Release",
+            revealArchiveInOrganizer: true
+        )
 
         // Write scheme to file
         let schemeURL = writeSchemeToFile(xcscheme: xcscheme, for: xcodeTarget)
