@@ -22,30 +22,40 @@ extension BSPTaskManager {
             targets: targets
         )
 
-        // 这里需要修改 ProjectManager 来支持进度回调
-        // 或者直接调用底层的构建工具并解析输出
-
         do {
-            try await task.updateProgress(progress: 0.1, message: "Starting build...")
-
-            // TODO: 实现真实的进度解析
-            // 这需要：
-            // 1. 修改 ProjectManager.startBuild 支持进度回调
-            // 2. 或者在这里直接调用 xcodebuild/swift build 并解析输出
-            // 3. 解析构建输出中的文件编译进度信息
+            let taskId = task.taskId
 
             let status = try await projectManager.startBuild(
                 targetIdentifiers: targets
             ) { message, progress in
                 Task {
-                    let clampedProgress = min(max(progress ?? 0.0, 0.0), 1.0)
-                    try await task.updateProgress(progress: clampedProgress, message: message)
+                    do {
+                        let clampedProgress = min(max(progress ?? 0.0, 0.0), 1.0)
+                        try await self.sendTaskProgressNotification(
+                            taskId: taskId,
+                            progress: clampedProgress,
+                            message: message
+                        )
+                    } catch {
+                        // 忽略进度通知错误，避免中断构建
+                    }
                 }
             }
 
+            try await finishTask(
+                taskId: task.taskId,
+                status: task.status ?? .error,
+                message: task.currentMessage ?? "Build finished"
+            )
+
             return status
         } catch {
-            try await task.fail(message: "Build failed: \(error.localizedDescription)")
+            // 通过 TaskManager 正确处理任务失败
+            try await finishTask(
+                taskId: task.taskId,
+                status: .error,
+                message: "Build failed: \(error.localizedDescription)"
+            )
             throw error
         }
     }

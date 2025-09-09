@@ -36,8 +36,7 @@ public actor BSPTaskManager {
             taskId: taskId,
             originId: originId,
             message: message,
-            targets: targets,
-            manager: self
+            targets: targets
         )
 
         activeTasks[taskId] = task
@@ -60,7 +59,8 @@ public actor BSPTaskManager {
             return
         }
 
-        try await task.updateProgress(progress: progress, message: message)
+        // Update task internal state
+        task.updateProgress(progress: progress, message: message)
 
         // Send taskProgress notification
         try await sendTaskProgressNotification(task: task)
@@ -79,7 +79,8 @@ public actor BSPTaskManager {
             return
         }
 
-        try await task.finish(status: status, message: message)
+        // Update task internal state
+        task.finish(status: status, message: message)
         activeTasks.removeValue(forKey: taskId)
 
         // Send taskFinish notification
@@ -112,75 +113,53 @@ public actor BSPTaskManager {
     // MARK: - Notification Sending
 
     private func sendTaskStartNotification(task: BSPTask) async throws {
-        let params = await TaskStartParams(
+        try await sendTaskStartNotification(
             taskId: task.taskId,
             originId: task.originId,
             eventTime: task.startTime.timeIntervalSince1970,
-            message: task.currentMessage
+            message: task.currentMessage ?? "",
+            targets: task.targets
         )
-
-        let notification = ServerJSONRPCNotification(
-            method: "build/taskStart",
-            params: params
-        )
-
-        try await notificationSender?.sendNotification(notification)
     }
 
     private func sendTaskProgressNotification(task: BSPTask) async throws {
-        let params = await TaskProgressParams(
+        try await sendTaskProgressNotification(
             taskId: task.taskId,
             originId: task.originId,
             eventTime: Date().timeIntervalSince1970,
-            message: task.currentMessage,
             progress: task.progress,
-            unit: nil,
-            dataKind: nil,
-            data: nil
+            message: task.currentMessage
         )
-
-        let notification = ServerJSONRPCNotification(
-            method: "build/taskProgress",
-            params: params
-        )
-
-        try await notificationSender?.sendNotification(notification)
     }
 
     private func sendTaskFinishNotification(task: BSPTask) async throws {
-        let params = await TaskFinishParams(
+        try await sendTaskFinishNotification(
             taskId: task.taskId,
             originId: task.originId,
             eventTime: task.finishTime?.timeIntervalSince1970 ?? Date().timeIntervalSince1970,
-            message: task.currentMessage,
-            status: task.status ?? .error
+            status: task.status ?? .error,
+            message: task.currentMessage
         )
-
-        let notification = ServerJSONRPCNotification(
-            method: "build/taskFinish",
-            params: params
-        )
-
-        try await notificationSender?.sendNotification(notification)
     }
 
-    // MARK: - Direct Notification Methods (for non-blocking builds)
+    // MARK: - Public Notification Methods
 
     func sendTaskStartNotification(
         taskId: String,
         originId: String?,
+        eventTime: TimeInterval? = nil,
         message: String,
         targets: [BSPBuildTargetIdentifier]
     ) async throws {
         let params = TaskStartParams(
             taskId: taskId,
             originId: originId,
-            eventTime: Date().timeIntervalSince1970,
+            eventTime: eventTime ?? Date().timeIntervalSince1970,
             message: message
         )
 
         let notification = ServerJSONRPCNotification(
-            method: "build/taskStart",
+            method: TaskStartParams.method,
             params: params
         )
 
@@ -189,13 +168,15 @@ public actor BSPTaskManager {
 
     func sendTaskProgressNotification(
         taskId: String,
+        originId: String? = nil,
+        eventTime: TimeInterval? = nil,
         progress: Double,
         message: String?
     ) async throws {
         let params = TaskProgressParams(
             taskId: taskId,
-            originId: nil,
-            eventTime: Date().timeIntervalSince1970,
+            originId: originId,
+            eventTime: eventTime ?? Date().timeIntervalSince1970,
             message: message,
             progress: progress,
             unit: nil,
@@ -204,7 +185,7 @@ public actor BSPTaskManager {
         )
 
         let notification = ServerJSONRPCNotification(
-            method: "build/taskProgress",
+            method: TaskProgressParams.method,
             params: params
         )
 
@@ -213,19 +194,21 @@ public actor BSPTaskManager {
 
     func sendTaskFinishNotification(
         taskId: String,
+        originId: String? = nil,
+        eventTime: TimeInterval? = nil,
         status: StatusCode,
         message: String?
     ) async throws {
         let params = TaskFinishParams(
             taskId: taskId,
-            originId: nil,
-            eventTime: Date().timeIntervalSince1970,
+            originId: originId,
+            eventTime: eventTime ?? Date().timeIntervalSince1970,
             message: message,
             status: status
         )
 
         let notification = ServerJSONRPCNotification(
-            method: "build/taskFinish",
+            method: TaskFinishParams.method,
             params: params
         )
 
