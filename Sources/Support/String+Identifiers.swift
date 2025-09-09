@@ -1,7 +1,7 @@
 import CryptoKit
 import Foundation
 
-extension String {
+public extension String {
     /// 转换为合法的 C99 扩展标识符
     /// - 保留 [A-Za-z0-9_]
     /// - 其它字符替换成 `_`

@@ -77,6 +77,9 @@ public actor XcodeProjectManager {
     let toolchain: XcodeToolchain
     let settingsLoader: XcodeSettingsLoader
 
+    private let xcodeProjectReference: XcodeProjectReference?
+    public private(set) var xcodeProjectBaseInfo: XcodeProjectBaseInfo?
+
     private var xcodeProjCache: [URL: XcodeProj] = [:]
     private var sourceFileMapCache: [String: [SourceItem]] = [:]
 
@@ -89,44 +92,6 @@ public actor XcodeProjectManager {
         xcodeProjCache[projectURL] = xcodeProj
         return xcodeProj
     }
-
-//    // MARK: - State Management
-//
-//    private var projectState = ProjectState()
-//    private var stateObservers: [WeakProjectStateObserver] = []
-//
-//    // MARK: - Project State Management
-//
-//    public func addStateObserver(_ observer: ProjectStateObserver) {
-//        stateObservers.append(WeakProjectStateObserver(observer))
-//    }
-//
-//    public func removeStateObserver(_ observer: ProjectStateObserver) {
-//        stateObservers.removeAll { $0.observer === observer || $0.observer == nil }
-//    }
-//
-//    private func notifyStateObservers(_ event: ProjectStateEvent) async {
-//        stateObservers.removeAll { $0.observer == nil }
-//
-//        await withTaskGroup(of: Void.self) { group in
-//            for weakObserver in stateObservers {
-//                if let observer = weakObserver.observer {
-//                    group.addTask {
-//                        await observer.onProjectStateChanged(event)
-//                    }
-//                }
-//            }
-//        }
-//    }
-//
-//    // MARK: - State Access Methods
-//
-//    public func getProjectState() -> ProjectState {
-//        projectState
-//    }
-
-    private let xcodeProjectReference: XcodeProjectReference?
-    public private(set) var xcodeProjectBaseInfo: XcodeProjectBaseInfo?
 
     public init(
         rootURL: URL,
@@ -171,41 +136,6 @@ public actor XcodeProjectManager {
             xcodeInstallation: selectedXcodeInstallation
         )
         self.xcodeProjectBaseInfo = xcodeProjectBaseInfo
-    }
-
-    // MARK: - Build
-
-    // public func startBuild(target: String) async {
-//        let buildTask = BuildTask(target: target)
-//        projectState.activeBuildTasks[target] = buildTask
-//        await notifyStateObservers(.buildStarted(target: target))
-    // }
-
-    func completeBuild(target: String, duration: TimeInterval, success: Bool) async {
-//        guard var buildTask = projectState.activeBuildTasks[target] else { return }
-//        let duration = Date().timeIntervalSince(buildTask.startTime)
-//        buildTask.status = .completed(success: success, duration: duration)
-//        projectState.activeBuildTasks[target] = buildTask
-//
-//        await notifyStateObservers(.buildCompleted(target: target, success: success, duration: duration))
-
-        // 清理完成的构建任务
-        Task {
-            try? await Task.sleep(nanoseconds: 10_000_000_000) // 10 seconds
-            self.cleanupBuildTask(target: target)
-        }
-    }
-
-    public func failBuild(target: String, error: Error) async {
-//        guard var buildTask = projectState.activeBuildTasks[target] else { return }
-//        buildTask.status = .failed(error)
-//        projectState.activeBuildTasks[target] = buildTask
-//
-//        await notifyStateObservers(.buildFailed(target: target, error: error))
-    }
-
-    private func cleanupBuildTask(target: String) {
-//        projectState.activeBuildTasks.removeValue(forKey: target)
     }
 }
 
