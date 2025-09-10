@@ -8,7 +8,7 @@ import BuildServerProtocol
 import Foundation
 
 /// Represents a BSP task with lifecycle management
-public final class BSPTask {
+public final class BSPTask: @unchecked Sendable {
     public let taskId: String
     public let originId: String?
     public let startTime: Date

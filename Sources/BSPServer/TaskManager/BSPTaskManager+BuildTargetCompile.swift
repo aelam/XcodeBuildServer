@@ -9,22 +9,24 @@ import Foundation
 
 public extension BSPTaskManager {
     /// Execute build with progress parsed from xcodebuild output
-    /// 这是最理想的方案 - 通过解析构建工具的输出来获得真实进度
+    /// 避免在 Actor 上下文中长时间等待，使用 Task.detached 在独立上下文中执行构建
     func executeBuildWithProgress(
         using projectManager: any ProjectManager,
         targets: [BSPBuildTargetIdentifier],
         originId: String? = nil
     ) async throws -> StatusCode {
         let targetNames = targets.map(\.uri.stringValue).joined(separator: ", ")
+
+        // 直接创建task，不需要Task.detached，因为BSPTaskManager不再是actor
         let task = try await startTask(
             originId: originId,
             message: "Building targets: \(targetNames)",
             targets: targets
         )
 
-        do {
-            let taskId = task.taskId
+        let taskId = task.taskId
 
+        do {
             let status = try await projectManager.startBuild(
                 targetIdentifiers: targets
             ) { message, progress in
@@ -43,16 +45,15 @@ public extension BSPTaskManager {
             }
 
             try await finishTask(
-                taskId: task.taskId,
-                status: task.status ?? .error,
-                message: task.currentMessage ?? "Build finished"
+                taskId: taskId,
+                status: status,
+                message: status == .ok ? "Build completed successfully" : "Build completed with errors"
             )
 
             return status
         } catch {
-            // 通过 TaskManager 正确处理任务失败
             try await finishTask(
-                taskId: task.taskId,
+                taskId: taskId,
                 status: .error,
                 message: "Build failed: \(error.localizedDescription)"
             )

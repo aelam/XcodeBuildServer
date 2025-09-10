@@ -41,7 +41,10 @@ public final actor JSONRPCConnection {
             guard let self else { return }
 
             for await message in transport.messageStream {
-                await self.processMessage(message)
+                // Process each message concurrently to avoid blocking
+                Task { [weak self] in
+                    await self?.processMessage(message)
+                }
             }
         }
 
@@ -50,7 +53,9 @@ public final actor JSONRPCConnection {
             guard let self else { return }
 
             for await error in transport.errorStream {
-                await self.handleTransportError(error)
+                Task { [weak self] in
+                    await self?.handleTransportError(error)
+                }
             }
         }
 

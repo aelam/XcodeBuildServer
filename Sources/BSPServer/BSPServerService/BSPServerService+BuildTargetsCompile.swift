@@ -14,14 +14,16 @@ extension BSPServerService {
             return .error
         }
 
-        // 使用BSPTaskManager来处理任务管理和进度报告
+        // 获取taskManager和projectManager的引用，然后在非隔离上下文中执行
         let taskManager = getTaskManager()
 
-        // 使用ParsedBuild方法来获得真实的构建进度
-        return try await taskManager.executeBuildWithProgress(
-            using: projectManager,
-            targets: targetIdentifiers,
-            originId: originId
-        )
+        // 将长时间运行的任务移到非隔离上下文
+        return try await Task.detached {
+            try await taskManager.executeBuildWithProgress(
+                using: projectManager,
+                targets: targetIdentifiers,
+                originId: originId
+            )
+        }.value
     }
 }
