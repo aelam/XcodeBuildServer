@@ -17,7 +17,6 @@ public extension BSPTaskManager {
     ) async throws -> StatusCode {
         let targetNames = targets.map(\.uri.stringValue).joined(separator: ", ")
 
-        // 直接创建task，不需要Task.detached，因为BSPTaskManager不再是actor
         let task = try await startTask(
             originId: originId,
             message: "Building targets: \(targetNames)",

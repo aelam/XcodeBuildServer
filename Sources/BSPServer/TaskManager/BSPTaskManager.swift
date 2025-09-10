@@ -13,15 +13,15 @@ import os.lock
 /// Manages BSP task lifecycle including taskStart, taskProgress, and taskFinish notifications
 public final class BSPTaskManager: @unchecked Sendable {
     private let taskState = OSAllocatedUnfairLock(initialState: TaskState())
-    private weak var notificationSender: BSPNotificationSender?
+    private weak var notificationService: BSPNotificationService?
 
     private struct TaskState {
         var activeTasks: [String: BSPTask] = [:]
         var taskCounter: Int = 0
     }
 
-    public init(notificationSender: BSPNotificationSender) {
-        self.notificationSender = notificationSender
+    public init(notificationService: BSPNotificationService) {
+        self.notificationService = notificationService
     }
 
     /// Generate a unique task ID
@@ -191,7 +191,7 @@ public final class BSPTaskManager: @unchecked Sendable {
             params: params
         )
 
-        try await notificationSender?.sendNotification(notification)
+        try await notificationService?.sendNotification(notification)
     }
 
     func sendTaskProgressNotification(
@@ -217,7 +217,7 @@ public final class BSPTaskManager: @unchecked Sendable {
             params: params
         )
 
-        try await notificationSender?.sendNotification(notification)
+        try await notificationService?.sendNotification(notification)
     }
 
     func sendTaskFinishNotification(
@@ -240,24 +240,11 @@ public final class BSPTaskManager: @unchecked Sendable {
             params: params
         )
 
-        try await notificationSender?.sendNotification(notification)
+        try await notificationService?.sendNotification(notification)
     }
 }
 
 /// Protocol for sending BSP notifications
-public protocol BSPNotificationSender: AnyObject, Sendable {
+public protocol BSPNotificationService: AnyObject, Sendable {
     func sendNotification(_ notification: ServerJSONRPCNotification<some Codable & Sendable>) async throws
-}
-
-/// Default implementation using JSONRPCConnection
-public final class BSPNotificationSenderImpl: BSPNotificationSender, @unchecked Sendable {
-    private let connection: JSONRPCConnection
-
-    public init(connection: JSONRPCConnection) {
-        self.connection = connection
-    }
-
-    public func sendNotification(_ notification: ServerJSONRPCNotification<some Codable & Sendable>) async throws {
-        try await connection.send(notification: notification)
-    }
 }
