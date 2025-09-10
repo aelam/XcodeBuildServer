@@ -1,6 +1,6 @@
 import Foundation
 
-enum XcodeDestinationPlatform: String, Sendable, Codable, CaseIterable {
+public enum XcodeDestinationPlatform: String, Sendable, Codable, CaseIterable {
     case iOS
     case macOS
     case watchOS
@@ -8,12 +8,12 @@ enum XcodeDestinationPlatform: String, Sendable, Codable, CaseIterable {
     case visionOS
 }
 
-enum XcodeDestinationType: String, Sendable, Codable {
+public enum XcodeDestinationType: String, Sendable, Codable {
     case simulator = "Simulator"
     case device = "Device"
 }
 
-enum XcodeDestinationArchitecture: String, Sendable, Codable, CaseIterable {
+public enum XcodeDestinationArchitecture: String, Sendable, Codable, CaseIterable {
     case arm64
     case x86_64 // swiftlint:disable:this identifier_name
 
@@ -27,7 +27,7 @@ enum XcodeDestinationArchitecture: String, Sendable, Codable, CaseIterable {
     }
 }
 
-struct XcodePairedDevice: Codable, Sendable, Hashable {
+public struct XcodePairedDevice: Codable, Sendable, Hashable {
     let name: String
     let platform: XcodeDestinationPlatform
     let version: String?
@@ -46,7 +46,7 @@ struct XcodePairedDevice: Codable, Sendable, Hashable {
     }
 }
 
-struct XcodeDestination: Sendable, Codable, Hashable {
+public struct XcodeDestination: Sendable, Codable, Hashable {
     let name: String
     let id: String
     let platform: XcodeDestinationPlatform
@@ -66,7 +66,7 @@ struct XcodeDestination: Sendable, Codable, Hashable {
         return platforms
     }
 
-    init(
+    public init(
         name: String,
         id: String,
         platform: XcodeDestinationPlatform,
@@ -88,7 +88,7 @@ struct XcodeDestination: Sendable, Codable, Hashable {
         self.pairedDevice = pairedDevice
     }
 
-    var displayName: String {
+    public var displayName: String {
         let baseName = switch type {
         case .simulator:
             "\(name) Simulator"
@@ -103,7 +103,7 @@ struct XcodeDestination: Sendable, Codable, Hashable {
         return baseName
     }
 
-    var fullDescription: String {
+    public var fullDescription: String {
         var components = [displayName]
         if let version {
             components.append("(\(version))")
