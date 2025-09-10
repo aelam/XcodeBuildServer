@@ -82,4 +82,14 @@ public enum XcodeProductType: String, Codable, Sendable, Hashable {
             false
         }
     }
+
+    var isApplication: Bool {
+        switch self {
+        case .application, .watchApp, .watch2App, .watch2AppContainer, .messagesApplication,
+             .onDemandInstallCapableApplication:
+            true
+        default:
+            false
+        }
+    }
 }

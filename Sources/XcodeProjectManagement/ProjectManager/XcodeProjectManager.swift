@@ -73,9 +73,10 @@ public struct XcodeTargetInfo: Sendable {
 
 public actor XcodeProjectManager {
     public let rootURL: URL
-    let locator: XcodeProjectLocator
+    let projectLocator: XcodeProjectLocator
     let toolchain: XcodeToolchain
     let settingsLoader: XcodeSettingsLoader
+    let schemeLoader: XCSchemeLoader
 
     private let xcodeProjectReference: XcodeProjectReference?
     public private(set) var xcodeProjectBaseInfo: XcodeProjectBaseInfo?
@@ -97,14 +98,16 @@ public actor XcodeProjectManager {
         rootURL: URL,
         xcodeProjectReference: XcodeProjectReference? = nil,
         toolchain: XcodeToolchain,
-        locator: XcodeProjectLocator,
-        settingsLoader: XcodeSettingsLoader
+        projectLocator: XcodeProjectLocator,
+        settingsLoader: XcodeSettingsLoader,
+        schemeLoader: XCSchemeLoader = XCSchemeLoader()
     ) {
         self.rootURL = rootURL
         self.xcodeProjectReference = xcodeProjectReference
         self.toolchain = toolchain
-        self.locator = locator
+        self.projectLocator = projectLocator
         self.settingsLoader = settingsLoader
+        self.schemeLoader = schemeLoader
     }
 
     public func initialize() async throws {
@@ -113,7 +116,7 @@ public actor XcodeProjectManager {
             throw XcodeProjectError.toolchainError("No Xcode installation selected")
         }
 
-        let projectLocation = try locator.resolveProjectType(
+        let projectLocation = try projectLocator.resolveProjectType(
             rootURL: rootURL,
             xcodeProjectReference: xcodeProjectReference
         )
@@ -127,13 +130,19 @@ public actor XcodeProjectManager {
             projectLocation: projectLocation
         )
 
+        let schemes = try schemeLoader.listSchemes(
+            projectLocation: projectLocation,
+            includeUserSchemes: true
+        )
+
         let xcodeProjectBaseInfo = XcodeProjectBaseInfo(
             rootURL: rootURL,
             projectLocation: projectLocation,
             xcodeGlobalSettings: xcodeGlobalSettings,
             xcodeTargets: actualTargets,
+            schemes: schemes,
             configuration: xcodeProjectReference?.configuration ?? "Debug",
-            xcodeInstallation: selectedXcodeInstallation
+            xcodeInstallation: selectedXcodeInstallation,
         )
         self.xcodeProjectBaseInfo = xcodeProjectBaseInfo
     }

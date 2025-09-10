@@ -13,11 +13,11 @@ import XcodeProjectManagement
 
 /// BSP 服务层 - 连接 BSP 协议和项目管理
 /// 这是整个系统的核心服务，负责协调各个层次
-public actor BSPServerService: ProjectStateObserver {
+public actor BSPServerService: ProjectStateObserver, BSPNotificationService {
     public let projectManagerProvider: ProjectManagerFactory
     private let jsonrpcConnection: JSONRPCConnection
-    let taskManager: BSPTaskManager
-    private let notificationSender: BSPNotificationSenderImpl
+    lazy var taskManager: BSPTaskManager = .init(notificationService: self)
+
     var projectManager: (any ProjectManager)?
 
     /// Service state tracking
@@ -37,8 +37,6 @@ public actor BSPServerService: ProjectStateObserver {
     ) {
         self.projectManagerProvider = projectManagerProvider
         self.jsonrpcConnection = jsonrpcConnection
-        self.notificationSender = BSPNotificationSenderImpl(connection: jsonrpcConnection)
-        self.taskManager = BSPTaskManager(notificationSender: notificationSender)
     }
 
     // MARK: - Service Lifecycle
@@ -94,9 +92,9 @@ public extension BSPServerService {
         taskManager
     }
 
-    // MARK: - Notification Sending
+    // MARK: - BSPNotificationService Implementation
 
-    func sendNotificationToClient(_ notification: ServerJSONRPCNotification<some Codable & Sendable>) async throws {
+    func sendNotification(_ notification: ServerJSONRPCNotification<some Codable & Sendable>) async throws {
         try await jsonrpcConnection.send(notification: notification)
     }
 }
@@ -123,19 +121,6 @@ public extension BSPServerService {
         messageHandler.setBSPServerService(service)
 
         return service
-    }
-
-    /// 订阅项目管理器的状态变化
-    func subscribeToProjectManager(_ projectManager: any ProjectManager) async {
-        // 订阅项目状态
-        await projectManager.addStateObserver(self)
-        logger.debug("BSPServerService subscribed to project manager status changes")
-    }
-
-    /// 取消订阅项目管理器的状态变化
-    func unsubscribeFromProjectManager(_ projectManager: any ProjectManager) async {
-        await projectManager.removeStateObserver(self)
-        logger.debug("BSPServerService unsubscribed from project manager status changes")
     }
 }
 
@@ -226,7 +211,7 @@ public extension BSPServerService {
         _ message: String,
         type: LogMessageType
     ) async throws {
-        try await sendNotificationToClient(ServerJSONRPCNotification(
+        try await sendNotification(ServerJSONRPCNotification(
             method: WindowShowMessageParams.method,
             params: WindowShowMessageParams(
                 type: type,

@@ -8,21 +8,28 @@ import BuildServerProtocol
 import Foundation
 import JSONRPCConnection
 import Logger
+import os.lock
 
 /// Manages BSP task lifecycle including taskStart, taskProgress, and taskFinish notifications
-public actor BSPTaskManager {
-    private var activeTasks: [String: BSPTask] = [:]
-    private var taskCounter: Int = 0
-    private weak var notificationSender: BSPNotificationSender?
+public final class BSPTaskManager: @unchecked Sendable {
+    private let taskState = OSAllocatedUnfairLock(initialState: TaskState())
+    private weak var notificationService: BSPNotificationService?
 
-    public init(notificationSender: BSPNotificationSender) {
-        self.notificationSender = notificationSender
+    private struct TaskState {
+        var activeTasks: [String: BSPTask] = [:]
+        var taskCounter: Int = 0
+    }
+
+    public init(notificationService: BSPNotificationService) {
+        self.notificationService = notificationService
     }
 
     /// Generate a unique task ID
     private func generateTaskId() -> String {
-        taskCounter += 1
-        return "task-\(taskCounter)-\(Date().timeIntervalSince1970)"
+        taskState.withLock { state in
+            state.taskCounter += 1
+            return "sourcekit-bsp-\(state.taskCounter)-\(Date().timeIntervalSince1970)"
+        }
     }
 
     /// Start a new task
@@ -39,7 +46,9 @@ public actor BSPTaskManager {
             targets: targets
         )
 
-        activeTasks[taskId] = task
+        taskState.withLock { state in
+            state.activeTasks[taskId] = task
+        }
 
         // Send taskStart notification
         try await sendTaskStartNotification(task: task)
@@ -54,7 +63,11 @@ public actor BSPTaskManager {
         progress: Double,
         message: String? = nil
     ) async throws {
-        guard let task = activeTasks[taskId] else {
+        let task = taskState.withLock { state in
+            state.activeTasks[taskId]
+        }
+
+        guard let task else {
             logger.warning("Attempted to update progress for unknown task: \(taskId)")
             return
         }
@@ -74,14 +87,21 @@ public actor BSPTaskManager {
         status: StatusCode,
         message: String? = nil
     ) async throws {
-        guard let task = activeTasks[taskId] else {
+        let task = taskState.withLock { state in
+            let task = state.activeTasks[taskId]
+            if task != nil {
+                state.activeTasks.removeValue(forKey: taskId)
+            }
+            return task
+        }
+
+        guard let task else {
             logger.warning("Attempted to finish unknown task: \(taskId)")
             return
         }
 
         // Update task internal state
         task.finish(status: status, message: message)
-        activeTasks.removeValue(forKey: taskId)
 
         // Send taskFinish notification
         try await sendTaskFinishNotification(task: task)
@@ -91,17 +111,25 @@ public actor BSPTaskManager {
 
     /// Get active task by ID
     public func getTask(taskId: String) -> BSPTask? {
-        activeTasks[taskId]
+        taskState.withLock { state in
+            state.activeTasks[taskId]
+        }
     }
 
     /// Get all active tasks
     public func getActiveTasks() -> [BSPTask] {
-        Array(activeTasks.values)
+        taskState.withLock { state in
+            Array(state.activeTasks.values)
+        }
     }
 
     /// Cancel all active tasks
     public func cancelAllTasks() async throws {
-        for task in activeTasks.values {
+        let tasks = taskState.withLock { state in
+            Array(state.activeTasks.values)
+        }
+
+        for task in tasks {
             try await finishTask(
                 taskId: task.taskId,
                 status: .cancelled,
@@ -163,7 +191,7 @@ public actor BSPTaskManager {
             params: params
         )
 
-        try await notificationSender?.sendNotification(notification)
+        try await notificationService?.sendNotification(notification)
     }
 
     func sendTaskProgressNotification(
@@ -189,7 +217,7 @@ public actor BSPTaskManager {
             params: params
         )
 
-        try await notificationSender?.sendNotification(notification)
+        try await notificationService?.sendNotification(notification)
     }
 
     func sendTaskFinishNotification(
@@ -212,24 +240,11 @@ public actor BSPTaskManager {
             params: params
         )
 
-        try await notificationSender?.sendNotification(notification)
+        try await notificationService?.sendNotification(notification)
     }
 }
 
 /// Protocol for sending BSP notifications
-public protocol BSPNotificationSender: AnyObject, Sendable {
+public protocol BSPNotificationService: AnyObject, Sendable {
     func sendNotification(_ notification: ServerJSONRPCNotification<some Codable & Sendable>) async throws
-}
-
-/// Default implementation using JSONRPCConnection
-public final class BSPNotificationSenderImpl: BSPNotificationSender, @unchecked Sendable {
-    private let connection: JSONRPCConnection
-
-    public init(connection: JSONRPCConnection) {
-        self.connection = connection
-    }
-
-    public func sendNotification(_ notification: ServerJSONRPCNotification<some Codable & Sendable>) async throws {
-        try await connection.send(notification: notification)
-    }
 }

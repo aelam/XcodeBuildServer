@@ -21,7 +21,7 @@ struct XcodeProjectManagerTests {
         let projectManager = XcodeProjectManager(
             rootURL: projectFolder,
             toolchain: toolchain,
-            locator: XcodeProjectLocator(),
+            projectLocator: XcodeProjectLocator(),
             settingsLoader: XcodeSettingsLoader(
                 commandBuilder: XcodeBuildCommandBuilder(),
                 toolchain: toolchain
@@ -55,7 +55,7 @@ struct XcodeProjectManagerTests {
         let projectManager = XcodeProjectManager(
             rootURL: projectFolder,
             toolchain: toolchain,
-            locator: XcodeProjectLocator(),
+            projectLocator: XcodeProjectLocator(),
             settingsLoader: XcodeSettingsLoader(
                 commandBuilder: XcodeBuildCommandBuilder(),
                 toolchain: toolchain

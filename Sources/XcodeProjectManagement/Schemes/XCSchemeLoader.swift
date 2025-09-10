@@ -2,8 +2,10 @@ import Foundation
 import PathKit
 import XcodeProj
 
-struct XCSchemeManager {
-    func listSchemes(
+public struct XCSchemeLoader {
+    public init() {}
+
+    public func listSchemes(
         projectLocation: XcodeProjectLocation,
         includeUserSchemes: Bool = true
     ) throws -> [XcodeScheme] {
