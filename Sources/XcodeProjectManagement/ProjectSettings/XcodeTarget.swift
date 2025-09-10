@@ -38,7 +38,9 @@ public struct XcodeTarget: Sendable, Hashable, Codable {
         buildForTesting: Bool = true,
         buildForRunning: Bool = true,
         xcodeTargetPlatform: Platform = .iOS,
-        xcodeProductType: ProductType
+        xcodeProductType: ProductType,
+        buildConfigurations: [String] = ["Debug", "Release"],
+        destinations: [String] = []
     ) {
         self.targetIdentifier = targetIdentifier
         self.name = name
