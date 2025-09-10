@@ -1,15 +1,23 @@
 import Foundation
 
-class XcodeDestinationLoader {
+final class XcodeDestinationLoader {
+    private var destinations: [XcodeDestination] = []
+
     enum LoaderError: Error {
         case xcrunNotFound
         case invalidJSONOutput
         case noDestinationsFound
     }
 
-    static func loadAllDestinations() async throws -> [XcodeDestination] {
+    init() {}
+
+    func loadAllDestinations(reload: Bool = false) async throws -> [XcodeDestination] {
+        if !destinations.isEmpty, !reload {
+            return destinations
+        }
+
         let destinations = try await (loadDestinationsFromXctrace())
-        return destinations + [
+        self.destinations = destinations + [
             .anyiOSDevice,
             .anyiOSSimulator,
             .anyTVOSSimulator,
@@ -20,14 +28,16 @@ class XcodeDestinationLoader {
             .anyVisionOSDevice,
             .anyMac()
         ]
+
+        return self.destinations
     }
 
-    static func loadDestinations(for platforms: [XcodeDestinationPlatform]) async throws -> [XcodeDestination] {
-        let allDestinations = try await loadDestinationsFromXctrace()
-        return allDestinations.filter { platforms.contains($0.platform) }
+    func loadDestinations(for platform: XcodeDestinationPlatform) async throws -> [XcodeDestination] {
+        destinations = try await loadAllDestinations(reload: false)
+        return destinations.filter { $0.platform == platform }
     }
 
-    private static func loadDestinationsFromXctrace() async throws -> [XcodeDestination] {
+    private func loadDestinationsFromXctrace() async throws -> [XcodeDestination] {
         let process = Process()
         process.launchPath = "/usr/bin/xcrun"
         process.arguments = ["xctrace", "list", "devices"]
@@ -73,7 +83,7 @@ class XcodeDestinationLoader {
         return destinations
     }
 
-    private static func parseXctraceDeviceLine(_ line: String, section: String) -> XcodeDestination? {
+    private func parseXctraceDeviceLine(_ line: String, section: String) -> XcodeDestination? {
         // Handle different line formats:
         // Mac: "DeviceName (UUID)"
         // Device: "iPhone 16 Pro (18.5) (00008140-001E498E0EDB001C)"
@@ -115,7 +125,7 @@ class XcodeDestinationLoader {
         return nil
     }
 
-    private static func isLikelyMacDevice(_ line: String) -> Bool {
+    private func isLikelyMacDevice(_ line: String) -> Bool {
         let lowercased = line.lowercased()
         let macIndicators = [
             "mac", "macbook", "imac", "mac pro", "mac mini", "mac studio",
@@ -126,7 +136,7 @@ class XcodeDestinationLoader {
         return macIndicators.contains { lowercased.contains($0) }
     }
 
-    private static func parseRealDevice(_ line: String, isAvailable: Bool = true) -> XcodeDestination? {
+    private func parseRealDevice(_ line: String, isAvailable: Bool = true) -> XcodeDestination? {
         let components = parseDeviceLine(line)
         guard let name = components.name,
               let version = components.version,
@@ -144,7 +154,7 @@ class XcodeDestinationLoader {
         )
     }
 
-    private static func parseSimulator(_ line: String) -> XcodeDestination? {
+    private func parseSimulator(_ line: String) -> XcodeDestination? {
         // Check if this is a paired device (contains " + ")
         if line.contains(" + ") {
             return parsePairedSimulator(line)
@@ -170,7 +180,7 @@ class XcodeDestinationLoader {
         )
     }
 
-    private static func cleanDeviceName(_ name: String) -> String {
+    private func cleanDeviceName(_ name: String) -> String {
         // Remove common suffixes and clean up device names
         var cleaned = name
 
@@ -187,7 +197,7 @@ class XcodeDestinationLoader {
         return cleaned.trimmingCharacters(in: .whitespaces)
     }
 
-    private static func determineArchitecture(from deviceName: String) -> [XcodeDestinationArchitecture] {
+    private func determineArchitecture(from deviceName: String) -> [XcodeDestinationArchitecture] {
         let lowercased = deviceName.lowercased()
 
         // Modern devices are typically arm64
@@ -207,7 +217,7 @@ class XcodeDestinationLoader {
         return [.arm64, .x86_64]
     }
 
-    private static func parsePairedSimulator(_ line: String) -> XcodeDestination? {
+    private func parsePairedSimulator(_ line: String) -> XcodeDestination? {
         // Format: "iPhone 16 Simulator (18.2) + Apple Watch Series 10 (42mm) (11.2) (UUID)"
         guard let plusIndex = line.firstIndex(of: "+") else { return nil }
 
@@ -251,7 +261,7 @@ class XcodeDestinationLoader {
         )
     }
 
-    private static func determinePlatform(from deviceName: String) -> XcodeDestinationPlatform {
+    private func determinePlatform(from deviceName: String) -> XcodeDestinationPlatform {
         let lowercased = deviceName.lowercased()
 
         // iOS devices
@@ -288,7 +298,7 @@ class XcodeDestinationLoader {
         return .iOS
     }
 
-    private static func parseDeviceLine(_ line: String) -> (name: String?, version: String?, udid: String?) {
+    private func parseDeviceLine(_ line: String) -> (name: String?, version: String?, udid: String?) {
         // Parse format: "Device Name (Version) (UDID)"
 
         // Find all parentheses positions
@@ -338,7 +348,7 @@ class XcodeDestinationLoader {
         )
     }
 
-    private static func isValidVersion(_ version: String) -> Bool {
+    private func isValidVersion(_ version: String) -> Bool {
         // Check if version looks like a system version (e.g., "18.2", "11.5")
         // Should contain digits and dots, not contain mm, generation, etc.
         let lowercased = version.lowercased()

@@ -4,7 +4,8 @@ import Testing
 struct XcodeDestinationLoaderTests {
     @Test
     func loadDestinations() async throws {
-        let destinations = try await XcodeDestinationLoader.loadAllDestinations()
+        let loader = XcodeDestinationLoader()
+        let destinations = try await loader.loadAllDestinations()
 
         // 确保至少加载了一些模拟器
         let simulators = destinations.filter { $0.type == .simulator }
@@ -16,7 +17,7 @@ struct XcodeDestinationLoaderTests {
     }
 
     func testFilterDestinations() async throws {
-        let destinations = try await XcodeDestinationLoader.loadAllDestinations()
+        let destinations = try await loader.loadAllDestinations()
 
         // 过滤出 iOS 平台的目的地
         let iosDestinations = destinations.filter { $0.platform == .iOS }
