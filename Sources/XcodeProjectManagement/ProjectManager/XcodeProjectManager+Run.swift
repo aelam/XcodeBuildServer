@@ -16,14 +16,7 @@ extension XcodeProjectManager {
         targetIdentifier: XcodeTargetIdentifier,
         isInstallRequired: Bool
     ) async throws -> XcodeRunError {
-        guard let xcodeProjectBaseInfo else {
-            throw NSError(
-                domain: "XcodeProjectManager",
-                code: 1,
-                userInfo: [NSLocalizedDescriptionKey: "Xcode project not loaded"]
-            )
-        }
-
-        return .cancelled
+        // TODO: implement this method
+        throw XcodeRunError.cancelled
     }
 }

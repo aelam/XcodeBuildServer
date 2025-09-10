@@ -94,4 +94,19 @@ extension XcodeProjectManager {
         }
         return targets
     }
+
+    private func loadDestinations(for platform: Platform) async throws -> [XcodeDestination] {
+        switch platform {
+        case .iOS, .iOSSimulator:
+            destinationLoader.iosDestinations
+        case .tvOS, .tvSimulator:
+            destinationLoader.tvosDestinations
+        case .watchOS, .watchSimulator:
+            destinationLoader.watchosDestinations
+        case .visionOS, .visionSimulator:
+            destinationLoader.visionosDestinations
+        case .macOS:
+            destinationLoader.macDestinations
+        }
+    }
 }

@@ -1,6 +1,6 @@
 import Foundation
 
-enum XcodeDestinationPlatform: String, Codable, CaseIterable {
+enum XcodeDestinationPlatform: String, Sendable, Codable, CaseIterable {
     case iOS
     case macOS
     case watchOS
@@ -8,12 +8,12 @@ enum XcodeDestinationPlatform: String, Codable, CaseIterable {
     case visionOS
 }
 
-enum XcodeDestinationType: String, Codable {
+enum XcodeDestinationType: String, Sendable, Codable {
     case simulator = "Simulator"
     case device = "Device"
 }
 
-enum XcodeDestinationArchitecture: String, Codable, CaseIterable {
+enum XcodeDestinationArchitecture: String, Sendable, Codable, CaseIterable {
     case arm64
     case x86_64 // swiftlint:disable:this identifier_name
 
@@ -27,7 +27,7 @@ enum XcodeDestinationArchitecture: String, Codable, CaseIterable {
     }
 }
 
-struct XcodePairedDevice: Codable, Hashable {
+struct XcodePairedDevice: Codable, Sendable, Hashable {
     let name: String
     let platform: XcodeDestinationPlatform
     let version: String?
@@ -46,7 +46,7 @@ struct XcodePairedDevice: Codable, Hashable {
     }
 }
 
-struct XcodeDestination: Codable, Hashable {
+struct XcodeDestination: Sendable, Codable, Hashable {
     let name: String
     let id: String
     let platform: XcodeDestinationPlatform

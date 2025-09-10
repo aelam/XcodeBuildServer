@@ -1,7 +1,12 @@
 import Foundation
 
-final class XcodeDestinationLoader {
+final class XcodeDestinationLoader: @unchecked Sendable {
     private var destinations: [XcodeDestination] = []
+    private(set) var macDestinations: [XcodeDestination] = []
+    private(set) var iosDestinations: [XcodeDestination] = []
+    private(set) var tvosDestinations: [XcodeDestination] = []
+    private(set) var watchosDestinations: [XcodeDestination] = []
+    private(set) var visionosDestinations: [XcodeDestination] = []
 
     enum LoaderError: Error {
         case xcrunNotFound
@@ -11,9 +16,9 @@ final class XcodeDestinationLoader {
 
     init() {}
 
-    func loadAllDestinations(reload: Bool = false) async throws -> [XcodeDestination] {
+    func loadDestinations(reload: Bool = false) async throws {
         if !destinations.isEmpty, !reload {
-            return destinations
+            return // Already loaded
         }
 
         let destinations = try await (loadDestinationsFromXctrace())
@@ -28,13 +33,11 @@ final class XcodeDestinationLoader {
             .anyVisionOSDevice,
             .anyMac()
         ]
-
-        return self.destinations
-    }
-
-    func loadDestinations(for platform: XcodeDestinationPlatform) async throws -> [XcodeDestination] {
-        destinations = try await loadAllDestinations(reload: false)
-        return destinations.filter { $0.platform == platform }
+        macDestinations = self.destinations.filter { $0.platform == .macOS }
+        iosDestinations = self.destinations.filter { $0.platform == .iOS }
+        tvosDestinations = self.destinations.filter { $0.platform == .tvOS }
+        watchosDestinations = self.destinations.filter { $0.platform == .watchOS }
+        visionosDestinations = self.destinations.filter { $0.platform == .visionOS }
     }
 
     private func loadDestinationsFromXctrace() async throws -> [XcodeDestination] {

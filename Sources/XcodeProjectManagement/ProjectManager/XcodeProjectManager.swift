@@ -77,6 +77,7 @@ public actor XcodeProjectManager {
     let toolchain: XcodeToolchain
     let settingsLoader: XcodeSettingsLoader
     let schemeLoader: XCSchemeLoader
+    let destinationLoader = XcodeDestinationLoader()
 
     private let xcodeProjectReference: XcodeProjectReference?
     public private(set) var xcodeProjectBaseInfo: XcodeProjectBaseInfo?
@@ -145,6 +146,8 @@ public actor XcodeProjectManager {
             xcodeInstallation: selectedXcodeInstallation,
         )
         self.xcodeProjectBaseInfo = xcodeProjectBaseInfo
+
+        try await destinationLoader.loadDestinations(reload: true)
     }
 }
 

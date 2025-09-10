@@ -19,7 +19,7 @@ extension BSPServerService {
 
         // 将长时间运行的任务移到非隔离上下文
         return try await Task.detached {
-            try await taskManager.executeBuildWithProgress(
+            try await taskManager.executeCompileWithProgress(
                 using: projectManager,
                 targets: targetIdentifiers,
                 originId: originId

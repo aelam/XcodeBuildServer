@@ -9,13 +9,8 @@ extension BSPServerService {
         targetIdentifier: BSPBuildTargetIdentifier,
         install: Bool
     ) async throws -> StatusCode {
-        guard let projectManager else {
-            throw BuildServerError.invalidConfiguration("Project manager not initialized")
-        }
-
-        let taskManager = getTaskManager()
-
-        return .cancelled
+        // not implemented yet
+        .error
     }
 
     private func install(
