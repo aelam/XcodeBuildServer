@@ -40,6 +40,7 @@ public protocol ProjectManager: AnyObject, Sendable {
     /// Start build with progress callback support
     func startBuild(
         targetIdentifiers: [BSPBuildTargetIdentifier],
+        arguments: [String]?,
         progress: (@Sendable (String, Double?) -> Void)?
     ) async throws -> StatusCode
 }

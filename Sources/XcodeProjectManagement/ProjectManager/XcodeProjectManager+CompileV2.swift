@@ -8,7 +8,8 @@ public enum BuildError: Error, Sendable {
 public extension XcodeProjectManager {
     func compileTarget(
         targetIdentifier: XcodeTargetIdentifier,
-        configuration: String = "Debug",
+        configuration: String?,
+        arguments: [String]? = nil,
         progress: ProcessProgress? = nil
     ) async throws -> XcodeBuildResult {
         guard let xcodeProjectBaseInfo else {
@@ -27,14 +28,14 @@ public extension XcodeProjectManager {
         let options = XcodeBuildOptions(
             command: .build(
                 action: buildAction,
-                sdk: .iOSSimulator,
+                sdk: nil,
                 destination: nil,
                 configuration: configuration,
                 derivedDataPath: nil,
                 resultBundlePath: nil
             ),
             flags: XcodeBuildFlags(),
-            customFlags: []
+            customFlags: arguments ?? []
         )
 
         let projectBuildConfiguration: XcodeProjectConfiguration = switch xcodeProjectBaseInfo.projectLocation {

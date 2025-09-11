@@ -25,6 +25,7 @@ extension XcodeProjectManager: @preconcurrency ProjectManager {
 
     public func startBuild(
         targetIdentifiers: [BSPBuildTargetIdentifier],
+        arguments: [String]? = nil,
         progress: (@Sendable (String, Double?) -> Void)?
     ) async throws -> StatusCode {
         var results: [XcodeBuildResult] = []
@@ -55,6 +56,8 @@ extension XcodeProjectManager: @preconcurrency ProjectManager {
 
             let xcodeBuildResult = try await compileTarget(
                 targetIdentifier: xcodeTargetIdentifier,
+                configuration: nil, // arguments has "-configuration" flag
+                arguments: arguments,
                 progress: processProgress
             )
             results.append(xcodeBuildResult)
@@ -133,10 +136,81 @@ extension XcodeTarget {
 
     private func createXcodeData() -> LSPAny {
         LSPAny.dictionary([
-            "xcode": LSPAny.dictionary([
-                "configurations": createConfigurationsArray(),
-                "destinations": createDestinationsArray()
-            ])
+            "selectors": createSelectorsArray()
+        ])
+    }
+
+    private func createSelectorsArray() -> LSPAny {
+        var selectors: [LSPAny] = []
+
+        // Configuration selector
+        selectors.append(createConfigurationSelector())
+
+        // Destination selector
+        selectors.append(createDestinationSelector())
+
+        return .array(selectors)
+    }
+
+    private func createConfigurationSelector() -> LSPAny {
+        var values: [LSPAny] = []
+        for config in buildConfigurations {
+            values.append(.dictionary([
+                "displayName": .string(config),
+                "arguments": .array([
+                    .string("-configuration"),
+                    .string(config)
+                ])
+            ]))
+        }
+
+        return .dictionary([
+            "keyName": .string("Configuration"),
+            "displayLabel": .string("Select Build Configuration..."),
+            "values": .array(values)
+        ])
+    }
+
+    private func createDestinationSelector() -> LSPAny {
+        var values: [LSPAny] = []
+        for dest in destinations {
+            values.append(createDestinationValue(destination: dest))
+        }
+
+        return .dictionary([
+            "keyName": .string("Destination"),
+            "displayLabel": .string("Select Destination..."),
+            "values": .array(values)
+        ])
+    }
+
+    private func createDestinationValue(destination: XcodeDestination) -> LSPAny {
+        var metadata: [String: LSPAny] = [
+            "platform": .string(destination.platform.rawValue),
+            "id": .string(destination.id),
+            "simulator": .bool(destination.type == .simulator),
+            "isAvailable": .bool(destination.isAvailable),
+            "isRunnable": .bool(destination.isRunnable)
+        ]
+
+        if let version = destination.version {
+            metadata["version"] = .string(version)
+        }
+
+        let destinationArgument = if destination.id.contains("generic") {
+            "platform=\(destination.platform.rawValue)"
+        } else {
+            "id=\(destination.id)"
+        }
+
+        return .dictionary([
+            "displayName": .string(destination.fullDescription),
+            "description": .string(destination.id),
+            "arguments": .array([
+                .string("-destination"),
+                .string(destinationArgument)
+            ]),
+            "metadata": .dictionary(metadata)
         ])
     }
 

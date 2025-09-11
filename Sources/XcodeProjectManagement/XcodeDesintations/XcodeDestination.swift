@@ -91,7 +91,7 @@ public struct XcodeDestination: Sendable, Codable, Hashable {
     public var displayName: String {
         let baseName = switch type {
         case .simulator:
-            "\(name) Simulator"
+            "\(name)"
         case .device:
             platform == .macOS ? "My Mac" : name
         }

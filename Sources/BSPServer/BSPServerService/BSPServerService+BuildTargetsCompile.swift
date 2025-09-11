@@ -7,7 +7,8 @@ import os
 extension BSPServerService {
     func compileTargets(
         _ targetIdentifiers: [BSPBuildTargetIdentifier],
-        originId: String? = nil
+        originId: String? = nil,
+        arguments: [String]? = nil
     ) async throws -> StatusCode {
         guard let projectManager else {
             logger.error("Project not initialized")
@@ -22,7 +23,8 @@ extension BSPServerService {
             try await taskManager.executeCompileWithProgress(
                 using: projectManager,
                 targets: targetIdentifiers,
-                originId: originId
+                originId: originId,
+                arguments: arguments
             )
         }.value
     }

@@ -13,7 +13,8 @@ public extension BSPTaskManager {
     func executeCompileWithProgress(
         using projectManager: any ProjectManager,
         targets: [BSPBuildTargetIdentifier],
-        originId: String? = nil
+        originId: String? = nil,
+        arguments: [String]? = nil
     ) async throws -> StatusCode {
         let targetNames = targets.map(\.uri.stringValue).joined(separator: ", ")
 
@@ -26,7 +27,8 @@ public extension BSPTaskManager {
 
         do {
             let status = try await projectManager.startBuild(
-                targetIdentifiers: targets
+                targetIdentifiers: targets,
+                arguments: arguments
             ) { message, progress in
                 Task {
                     do {
