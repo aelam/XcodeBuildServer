@@ -89,17 +89,10 @@ public struct XcodeDestination: Sendable, Codable, Hashable {
     }
 
     public var displayName: String {
-        let baseName = switch type {
-        case .simulator:
-            "\(name)"
-        case .device:
-            name
-        }
-
+        let baseName = name
         if let paired = pairedDevice {
-            return "\(baseName) + \(paired.displayName)"
+            return "\(name) + \(paired.displayName)"
         }
-
         return baseName
     }
 
