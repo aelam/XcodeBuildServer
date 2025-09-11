@@ -126,6 +126,8 @@ public actor XcodeProjectManager {
         let derivedDataPath = PathHash.derivedDataFullPath(for: projectLocation.workspaceOrProjectFileURL.path)
         let xcodeGlobalSettings = XcodeGlobalSettings(derivedDataPath: derivedDataPath)
 
+        try await destinationLoader.loadDestinations(reload: true)
+
         // Load containers for workspace projects to get actual targets
         let actualTargets = try await loadActualTargets(
             projectLocation: projectLocation
@@ -146,8 +148,6 @@ public actor XcodeProjectManager {
             xcodeInstallation: selectedXcodeInstallation,
         )
         self.xcodeProjectBaseInfo = xcodeProjectBaseInfo
-
-        try await destinationLoader.loadDestinations(reload: true)
     }
 }
 

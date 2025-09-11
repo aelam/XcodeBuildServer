@@ -22,7 +22,7 @@ public protocol ProjectManager: AnyObject, Sendable {
     func getTargetList(
         resolveSourceFiles: Bool,
         resolveDependencies: Bool
-    ) async -> [ProjectTarget]
+    ) async -> [BSPBuildTarget]
 
     // buildTarget/sources
     func getSourceFileList(targetIdentifiers: [BSPBuildTargetIdentifier]) async throws

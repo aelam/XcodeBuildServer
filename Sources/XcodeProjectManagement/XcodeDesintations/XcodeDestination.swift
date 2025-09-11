@@ -28,9 +28,9 @@ public enum XcodeDestinationArchitecture: String, Sendable, Codable, CaseIterabl
 }
 
 public struct XcodePairedDevice: Codable, Sendable, Hashable {
-    let name: String
-    let platform: XcodeDestinationPlatform
-    let version: String?
+    public let name: String
+    public let platform: XcodeDestinationPlatform
+    public let version: String?
 
     init(name: String, platform: XcodeDestinationPlatform, version: String? = nil) {
         self.name = name
@@ -38,7 +38,7 @@ public struct XcodePairedDevice: Codable, Sendable, Hashable {
         self.version = version
     }
 
-    var displayName: String {
+    public var displayName: String {
         if let version {
             return "\(name) (\(version))"
         }
@@ -47,15 +47,15 @@ public struct XcodePairedDevice: Codable, Sendable, Hashable {
 }
 
 public struct XcodeDestination: Sendable, Codable, Hashable {
-    let name: String
-    let id: String
-    let platform: XcodeDestinationPlatform
-    let type: XcodeDestinationType
-    let version: String?
-    let architectures: [XcodeDestinationArchitecture]
-    let isAvailable: Bool
-    let isRunnable: Bool
-    let pairedDevice: XcodePairedDevice?
+    public let name: String
+    public let id: String
+    public let platform: XcodeDestinationPlatform
+    public let type: XcodeDestinationType
+    public let version: String?
+    public let architectures: [XcodeDestinationArchitecture]
+    public let isAvailable: Bool
+    public let isRunnable: Bool
+    public let pairedDevice: XcodePairedDevice?
 
     // iPhone + Apple Watch
     var supportedPlatforms: [XcodeDestinationPlatform] {

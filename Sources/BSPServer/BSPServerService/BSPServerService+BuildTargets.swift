@@ -20,12 +20,10 @@ extension BSPServerService {
             throw BuildServerError.invalidConfiguration("Project manager not initialized")
         }
 
-        let targetList = await projectManager.getTargetList(
+        return await projectManager.getTargetList(
             resolveSourceFiles: false,
             resolveDependencies: false
         )
-
-        return targetList.map { BSPBuildTarget(projectTarget: $0) }.compactMap(\.self)
     }
 
     /// 为索引构建目标（BSP 协议适配）

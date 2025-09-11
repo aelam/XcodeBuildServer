@@ -84,8 +84,12 @@ extension XcodeProjectManager: @preconcurrency ProjectManager {
     public func getTargetList(
         resolveSourceFiles: Bool,
         resolveDependencies: Bool
-    ) async -> [ProjectTarget] {
-        projectInfo?.targets ?? []
+    ) async -> [BSPBuildTarget] {
+        guard let xcodeProjectBaseInfo else {
+            return []
+        }
+
+        return xcodeProjectBaseInfo.xcodeTargets.compactMap { $0.asBSPBuildTarget() }
     }
 
     public func getSourceFileList(targetIdentifiers: [BSPBuildTargetIdentifier]) async throws
@@ -102,5 +106,69 @@ extension XcodeProjectManager: @preconcurrency ProjectManager {
     public func getCompileArguments(targetIdentifier: String, sourceFileURL: URL) async throws -> [String] {
         let xcodeTargetIdentifier = XcodeTargetIdentifier(rawValue: targetIdentifier)
         return try await getCompileArguments(targetIdentifier: xcodeTargetIdentifier, sourceFileURL: sourceFileURL)
+    }
+}
+
+extension XcodeTarget {
+    func asBSPBuildTarget() -> BSPBuildTarget? {
+        let capabilities = BuildTargetCapabilities(
+            canCompile: true,
+            canTest: self.xcodeProductType.isTestBundle,
+            canRun: self.xcodeProductType.isApplication,
+            canDebug: self.xcodeProductType.isApplication || self.xcodeProductType.isTestBundle
+        )
+
+        return try? BSPBuildTarget(
+            id: BSPBuildTargetIdentifier(uri: URI(string: self.targetIdentifier)),
+            displayName: self.targetName,
+            baseDirectory: URI(self.projectURL.deletingLastPathComponent()),
+            tags: [],
+            languageIds: [.swift, .objective_c, .cpp, .c],
+            dependencies: [],
+            capabilities: capabilities,
+            dataKind: BuildTargetDataKind(rawValue: "sourceKit"),
+            data: createXcodeData()
+        )
+    }
+
+    private func createXcodeData() -> LSPAny {
+        LSPAny.dictionary([
+            "xcode": LSPAny.dictionary([
+                "configurations": createConfigurationsArray(),
+                "destinations": createDestinationsArray()
+            ])
+        ])
+    }
+
+    private func createConfigurationsArray() -> LSPAny {
+        var configArray: [LSPAny] = []
+        for config in buildConfigurations {
+            configArray.append(.string(config))
+        }
+        return .array(configArray)
+    }
+
+    private func createDestinationsArray() -> LSPAny {
+        var destArray: [LSPAny] = []
+        for dest in destinations {
+            destArray.append(createBSPDestination(destination: dest))
+        }
+        return .array(destArray)
+    }
+
+    private func createBSPDestination(destination: XcodeDestination) -> LSPAny {
+        .dictionary([
+            "name": .string(destination.name),
+            "platform": .string(destination.platform.rawValue),
+            "id": .string(destination.id),
+            "version": .string(destination.version ?? ""),
+            "simulator": .bool(destination.type == .simulator),
+            "isAvailable": .bool(destination.isAvailable),
+            "isRunnable": .bool(destination.isRunnable),
+            "arguments": .array([
+                .string("-destination"),
+                .string("id=\(destination.id)")
+            ]),
+        ])
     }
 }
