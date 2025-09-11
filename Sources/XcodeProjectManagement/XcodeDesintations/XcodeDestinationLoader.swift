@@ -31,6 +31,7 @@ final class XcodeDestinationLoader: @unchecked Sendable {
             .anyWatchOSDevice,
             .anyVisionOSSimulator,
             .anyVisionOSDevice,
+            .myMac(),
             .anyMac()
         ]
         macDestinations = self.destinations.filter { $0.platform == .macOS }
@@ -100,19 +101,7 @@ final class XcodeDestinationLoader: @unchecked Sendable {
 
             if isMacDevice {
                 // Mac format: "DeviceName (UUID)"
-                if let openParen = line.lastIndex(of: "("),
-                   let closeParen = line.lastIndex(of: ")") {
-                    let deviceName = String(line[..<openParen]).trimmingCharacters(in: .whitespaces)
-                    let deviceId = String(line[line.index(after: openParen) ..< closeParen])
-
-                    return XcodeDestination(
-                        name: deviceName.isEmpty ? "My Mac" : deviceName,
-                        id: deviceId,
-                        platform: .macOS,
-                        type: .device,
-                        architectures: [.arm64]
-                    )
-                }
+                return nil // Handled separately
             } else {
                 // Real device format: "Device Name (Version) (UDID)"
                 return parseRealDevice(line)

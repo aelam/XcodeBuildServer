@@ -93,7 +93,7 @@ public struct XcodeDestination: Sendable, Codable, Hashable {
         case .simulator:
             "\(name)"
         case .device:
-            platform == .macOS ? "My Mac" : name
+            name
         }
 
         if let paired = pairedDevice {
@@ -111,46 +111,8 @@ public struct XcodeDestination: Sendable, Codable, Hashable {
         return components.joined(separator: " ")
     }
 
-    static func macDestination() -> XcodeDestination? {
-        // Get actual Mac device ID from xctrace
-        let process = Process()
-        process.launchPath = "/usr/bin/xcrun"
-        process.arguments = ["xctrace", "list", "devices"]
-
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.launch()
-        process.waitUntilExit()
-
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        let output = String(data: data, encoding: .utf8) ?? ""
-
-        // Parse the first device line which should be the Mac
-        let lines = output.components(separatedBy: .newlines)
-        for line in lines {
-            let trimmedLine = line.trimmingCharacters(in: .whitespaces)
-            if !trimmedLine.isEmpty,
-               !trimmedLine.starts(with: "=="),
-               trimmedLine.contains("("), trimmedLine.contains(")") {
-                // Parse: "DeviceName (UUID)"
-                if let openParen = trimmedLine.lastIndex(of: "("),
-                   let closeParen = trimmedLine.lastIndex(of: ")") {
-                    let deviceName = String(trimmedLine[..<openParen]).trimmingCharacters(in: .whitespaces)
-                    let deviceId = String(trimmedLine[trimmedLine.index(after: openParen) ..< closeParen])
-
-                    return XcodeDestination(
-                        name: deviceName.isEmpty ? "My Mac" : deviceName,
-                        id: deviceId,
-                        platform: .macOS,
-                        type: .device,
-                        architectures: [.arm64]
-                    )
-                }
-            }
-        }
-
-        // Fallback if parsing fails
-        return XcodeDestination(
+    static func myMac() -> XcodeDestination {
+        XcodeDestination(
             name: "My Mac",
             id: "platform=macOS,arch=arm64",
             platform: .macOS,
