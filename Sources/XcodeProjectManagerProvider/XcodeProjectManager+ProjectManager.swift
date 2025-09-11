@@ -199,6 +199,8 @@ extension XcodeTarget {
 
         let destinationArgument = if destination.id.contains("generic") {
             "platform=\(destination.platform.rawValue)"
+        } else if destination.id.contains("platform=") {
+            destination.id
         } else {
             "id=\(destination.id)"
         }

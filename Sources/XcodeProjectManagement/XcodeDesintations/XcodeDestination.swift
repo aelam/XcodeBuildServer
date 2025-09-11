@@ -152,7 +152,7 @@ public struct XcodeDestination: Sendable, Codable, Hashable {
         // Fallback if parsing fails
         return XcodeDestination(
             name: "My Mac",
-            id: "mac",
+            id: "platform=macOS,arch=arm64",
             platform: .macOS,
             type: .device,
             architectures: [.arm64]
@@ -162,7 +162,7 @@ public struct XcodeDestination: Sendable, Codable, Hashable {
     static func anyMac() -> XcodeDestination {
         XcodeDestination(
             name: "Any Mac",
-            id: "generic/platform=macOS",
+            id: "platform=macOS",
             platform: .macOS,
             type: .device,
             isRunnable: false
