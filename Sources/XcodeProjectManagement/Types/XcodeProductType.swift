@@ -74,7 +74,7 @@ public enum XcodeProductType: String, Codable, Sendable, Hashable {
         }
     }
 
-    var isTestBundle: Bool {
+    public var isTestBundle: Bool {
         switch self {
         case .unitTestBundle, .uiTestBundle, .ocUnitTestBundle:
             true
@@ -83,7 +83,7 @@ public enum XcodeProductType: String, Codable, Sendable, Hashable {
         }
     }
 
-    var isApplication: Bool {
+    public var isApplication: Bool {
         switch self {
         case .application, .watchApp, .watch2App, .watch2AppContainer, .messagesApplication,
              .onDemandInstallCapableApplication:

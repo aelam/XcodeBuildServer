@@ -15,6 +15,8 @@ public struct XcodeTarget: Sendable, Hashable, Codable {
     public let buildForRunning: Bool
     public let xcodeTargetPlatform: Platform
     public let xcodeProductType: XcodeProductType
+    public let buildConfigurations: [String]
+    public let destinations: [XcodeDestination]
 
     public var productNameWithExtension: String? {
         guard
@@ -38,7 +40,9 @@ public struct XcodeTarget: Sendable, Hashable, Codable {
         buildForTesting: Bool = true,
         buildForRunning: Bool = true,
         xcodeTargetPlatform: Platform = .iOS,
-        xcodeProductType: ProductType
+        xcodeProductType: ProductType,
+        buildConfigurations: [String] = ["Debug", "Release"],
+        destinations: [XcodeDestination] = []
     ) {
         self.targetIdentifier = targetIdentifier
         self.name = name
@@ -50,6 +54,8 @@ public struct XcodeTarget: Sendable, Hashable, Codable {
         self.buildForRunning = buildForRunning
         self.xcodeTargetPlatform = xcodeTargetPlatform
         self.xcodeProductType = xcodeProductType
+        self.buildConfigurations = buildConfigurations
+        self.destinations = destinations
     }
 
     public var debugDescription: String {

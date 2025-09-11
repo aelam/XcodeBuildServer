@@ -21,10 +21,12 @@ public struct BuildTargetCompileRequest: ContextualRequestType, Sendable {
         /// The build targets to prepare for background indexing
         public let targets: [BSPBuildTargetIdentifier]
         public let originId: String?
+        public let arguments: [String]?
 
-        public init(targets: [BSPBuildTargetIdentifier], originId: String? = nil) {
+        public init(targets: [BSPBuildTargetIdentifier], originId: String? = nil, arguments: [String]? = nil) {
             self.targets = targets
             self.originId = originId
+            self.arguments = arguments
         }
     }
 
@@ -41,7 +43,11 @@ public struct BuildTargetCompileRequest: ContextualRequestType, Sendable {
 
             do {
                 // 直接使用 BSPServerService.compileTargets，它会自动处理任务进度
-                let status = try await context.compileTargets(params.targets, originId: params.originId)
+                let status = try await context.compileTargets(
+                    params.targets,
+                    originId: params.originId,
+                    arguments: params.arguments
+                )
 
                 return BuildTargetCompileResponse(
                     jsonrpc: jsonrpc,

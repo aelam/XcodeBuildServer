@@ -22,7 +22,7 @@ public protocol ProjectManager: AnyObject, Sendable {
     func getTargetList(
         resolveSourceFiles: Bool,
         resolveDependencies: Bool
-    ) async -> [ProjectTarget]
+    ) async -> [BSPBuildTarget]
 
     // buildTarget/sources
     func getSourceFileList(targetIdentifiers: [BSPBuildTargetIdentifier]) async throws
@@ -40,6 +40,7 @@ public protocol ProjectManager: AnyObject, Sendable {
     /// Start build with progress callback support
     func startBuild(
         targetIdentifiers: [BSPBuildTargetIdentifier],
+        arguments: [String]?,
         progress: (@Sendable (String, Double?) -> Void)?
     ) async throws -> StatusCode
 }

@@ -7,7 +7,8 @@ import os
 extension BSPServerService {
     func compileTargets(
         _ targetIdentifiers: [BSPBuildTargetIdentifier],
-        originId: String? = nil
+        originId: String? = nil,
+        arguments: [String]? = nil
     ) async throws -> StatusCode {
         guard let projectManager else {
             logger.error("Project not initialized")
@@ -19,10 +20,11 @@ extension BSPServerService {
 
         // 将长时间运行的任务移到非隔离上下文
         return try await Task.detached {
-            try await taskManager.executeBuildWithProgress(
+            try await taskManager.executeCompileWithProgress(
                 using: projectManager,
                 targets: targetIdentifiers,
-                originId: originId
+                originId: originId,
+                arguments: arguments
             )
         }.value
     }

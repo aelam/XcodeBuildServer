@@ -67,6 +67,28 @@ public struct BSPBuildTarget: Codable, Hashable, Sendable {
     /// Language-specific metadata about this target.
     /// See ScalaBuildTarget as an example.
     public var data: LSPAny?
+
+    public init(
+        id: BSPBuildTargetIdentifier,
+        displayName: String? = nil,
+        baseDirectory: URI? = nil,
+        tags: [BuildTargetTag] = [],
+        languageIds: [Language] = [],
+        dependencies: [BSPBuildTargetIdentifier] = [],
+        capabilities: BuildTargetCapabilities,
+        dataKind: BuildTargetDataKind? = nil,
+        data: LSPAny? = nil
+    ) {
+        self.id = id
+        self.displayName = displayName
+        self.baseDirectory = baseDirectory
+        self.tags = tags
+        self.languageIds = languageIds
+        self.dependencies = dependencies
+        self.capabilities = capabilities
+        self.dataKind = dataKind
+        self.data = data
+    }
 }
 
 /// A unique identifier for a target, can use any URI-compatible encoding as long as it is unique within the workspace.
@@ -143,6 +165,18 @@ public struct BuildTargetCapabilities: Codable, Hashable, Sendable {
 
     /// This target can be debugged by the BSP server.
     public let canDebug: Bool?
+
+    public init(
+        canCompile: Bool? = nil,
+        canTest: Bool? = nil,
+        canRun: Bool? = nil,
+        canDebug: Bool? = nil
+    ) {
+        self.canCompile = canCompile
+        self.canTest = canTest
+        self.canRun = canRun
+        self.canDebug = canDebug
+    }
 }
 
 public struct BuildTargetDataKind: RawRepresentable, Codable, Hashable, Sendable {

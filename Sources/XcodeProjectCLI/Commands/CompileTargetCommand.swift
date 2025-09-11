@@ -67,7 +67,10 @@ struct CompileTargetCommand: AsyncParsableCommand {
 
         print("Compiling: \(workspaceFolder)")
 
-        let result = try await projectManager.compileTarget(targetIdentifier: target.targetIdentifier)
+        let result = try await projectManager.compileTarget(
+            targetIdentifier: target.targetIdentifier,
+            configuration: "Debug"
+        )
         print(result)
 
         let endTimestamp = Date()

@@ -77,6 +77,7 @@ public actor XcodeProjectManager {
     let toolchain: XcodeToolchain
     let settingsLoader: XcodeSettingsLoader
     let schemeLoader: XCSchemeLoader
+    let destinationLoader = XcodeDestinationLoader()
 
     private let xcodeProjectReference: XcodeProjectReference?
     public private(set) var xcodeProjectBaseInfo: XcodeProjectBaseInfo?
@@ -124,6 +125,8 @@ public actor XcodeProjectManager {
         // Get project-level buildSettings without `xcodebuild`
         let derivedDataPath = PathHash.derivedDataFullPath(for: projectLocation.workspaceOrProjectFileURL.path)
         let xcodeGlobalSettings = XcodeGlobalSettings(derivedDataPath: derivedDataPath)
+
+        try await destinationLoader.loadDestinations(reload: true)
 
         // Load containers for workspace projects to get actual targets
         let actualTargets = try await loadActualTargets(

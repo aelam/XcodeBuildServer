@@ -10,24 +10,25 @@ import Foundation
 public extension BSPTaskManager {
     /// Execute build with progress parsed from xcodebuild output
     /// 避免在 Actor 上下文中长时间等待，使用 Task.detached 在独立上下文中执行构建
-    func executeBuildWithProgress(
+    func executeCompileWithProgress(
         using projectManager: any ProjectManager,
         targets: [BSPBuildTargetIdentifier],
-        originId: String? = nil
+        originId: String? = nil,
+        arguments: [String]? = nil
     ) async throws -> StatusCode {
         let targetNames = targets.map(\.uri.stringValue).joined(separator: ", ")
 
         let task = try await startTask(
             originId: originId,
-            message: "Building targets: \(targetNames)",
-            targets: targets
+            message: "compile targets: \(targetNames)"
         )
 
         let taskId = task.taskId
 
         do {
             let status = try await projectManager.startBuild(
-                targetIdentifiers: targets
+                targetIdentifiers: targets,
+                arguments: arguments
             ) { message, progress in
                 Task {
                     do {

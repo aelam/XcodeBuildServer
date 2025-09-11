@@ -74,12 +74,16 @@ extension XcodeProjectManager {
         }
         var targets = [XcodeTarget]()
         for target in project.pbxproj.nativeTargets {
-            let buildSettings = target.buildConfigurationList?.buildConfigurations.first?.buildSettings
+            let buildConfigurations = target.buildConfigurationList?.buildConfigurations
+            let buildSettings = buildConfigurations?.first?.buildSettings
             let SDKROOT: String = buildSettings?["SDKROOT"] as? String ?? "iphonesimulator"
             let platform = Platform(rawValue: SDKROOT) ?? .iOS
             let pbxProductType = target.productType ?? .none
             let productType = XcodeProductType(rawValue: pbxProductType.rawValue) ?? .none
             let targetIdentifier = XcodeTargetIdentifier(projectFilePath: projectURL.path, targetName: target.name)
+            let configurationNames = target.buildConfigurationList?.buildConfigurations
+                .map(\.name) ?? []
+
             targets.append(
                 XcodeTarget(
                     targetIdentifier: targetIdentifier,
@@ -88,10 +92,27 @@ extension XcodeProjectManager {
                     productName: target.productName,
                     isFromWorkspace: isFromWorkspace,
                     xcodeTargetPlatform: platform,
-                    xcodeProductType: productType
+                    xcodeProductType: productType,
+                    buildConfigurations: configurationNames,
+                    destinations: loadDestinations(for: platform),
                 )
             )
         }
         return targets
+    }
+
+    private func loadDestinations(for platform: Platform) -> [XcodeDestination] {
+        switch platform {
+        case .iOS, .iOSSimulator:
+            destinationLoader.iosDestinations
+        case .tvOS, .tvSimulator:
+            destinationLoader.tvosDestinations
+        case .watchOS, .watchSimulator:
+            destinationLoader.watchosDestinations
+        case .visionOS, .visionSimulator:
+            destinationLoader.visionosDestinations
+        case .macOS:
+            destinationLoader.macDestinations
+        }
     }
 }

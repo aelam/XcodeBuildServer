@@ -35,15 +35,13 @@ public final class BSPTaskManager: @unchecked Sendable {
     /// Start a new task
     public func startTask(
         originId: String? = nil,
-        message: String,
-        targets: [BSPBuildTargetIdentifier] = []
+        message: String
     ) async throws -> BSPTask {
         let taskId = generateTaskId()
         let task = BSPTask(
             taskId: taskId,
             originId: originId,
-            message: message,
-            targets: targets
+            message: message
         )
 
         taskState.withLock { state in
@@ -145,8 +143,7 @@ public final class BSPTaskManager: @unchecked Sendable {
             taskId: task.taskId,
             originId: task.originId,
             eventTime: task.startTime.timeIntervalSince1970,
-            message: task.currentMessage ?? "",
-            targets: task.targets
+            message: task.currentMessage ?? ""
         )
     }
 
@@ -176,8 +173,7 @@ public final class BSPTaskManager: @unchecked Sendable {
         taskId: String,
         originId: String?,
         eventTime: TimeInterval? = nil,
-        message: String,
-        targets: [BSPBuildTargetIdentifier]
+        message: String
     ) async throws {
         let params = TaskStartParams(
             taskId: taskId,

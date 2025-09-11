@@ -12,7 +12,6 @@ public final class BSPTask: @unchecked Sendable {
     public let taskId: String
     public let originId: String?
     public let startTime: Date
-    public let targets: [BSPBuildTargetIdentifier]
 
     public private(set) var currentMessage: String?
     public private(set) var progress: Double = 0.0
@@ -23,12 +22,10 @@ public final class BSPTask: @unchecked Sendable {
         taskId: String,
         originId: String?,
         message: String?,
-        targets: [BSPBuildTargetIdentifier]
     ) {
         self.taskId = taskId
         self.originId = originId
         self.currentMessage = message
-        self.targets = targets
         self.startTime = Date()
     }
 
