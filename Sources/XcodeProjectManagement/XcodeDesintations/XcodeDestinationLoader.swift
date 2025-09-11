@@ -14,6 +14,12 @@ final class XcodeDestinationLoader: @unchecked Sendable {
         case noDestinationsFound
     }
 
+    private struct ParseResult {
+        let name: String?
+        let version: String?
+        let udid: String?
+    }
+
     init() {}
 
     func loadDestinations(reload: Bool = false) async throws {
@@ -290,7 +296,7 @@ final class XcodeDestinationLoader: @unchecked Sendable {
         return .iOS
     }
 
-    private func parseDeviceLine(_ line: String) -> (name: String?, version: String?, udid: String?) {
+    private func parseDeviceLine(_ line: String) -> ParseResult {
         // Parse format: "Device Name (Version) (UDID)"
 
         // Find all parentheses positions
@@ -298,7 +304,7 @@ final class XcodeDestinationLoader: @unchecked Sendable {
         let closeParens = line.enumerated().compactMap { $0.element == ")" ? $0.offset : nil }
 
         guard openParens.count >= 2, closeParens.count >= 2 else {
-            return (name: nil, version: nil, udid: nil)
+            return ParseResult(name: nil, version: nil, udid: nil)
         }
 
         // Get the UDID (between last pair of parentheses - this is most reliable)
@@ -333,7 +339,7 @@ final class XcodeDestinationLoader: @unchecked Sendable {
             }
         }
 
-        return (
+        return ParseResult(
             name: name?.isEmpty == false ? name : nil,
             version: version?.isEmpty == false ? version : nil,
             udid: udid.isEmpty ? nil : udid
