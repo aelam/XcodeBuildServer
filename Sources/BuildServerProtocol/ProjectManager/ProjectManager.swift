@@ -43,6 +43,13 @@ public protocol ProjectManager: AnyObject, Sendable {
         arguments: [String]?,
         progress: (@Sendable (String, Double?) -> Void)?
     ) async throws -> StatusCode
+
+    func run(
+        targetIdentifier: BSPBuildTargetIdentifier,
+        arguments: [String]?,
+        environmentVariables: [String: String]?,
+        workingDirectory: URI?
+    ) async throws -> StatusCode
 }
 
 public struct ProjectInfo: Sendable {
