@@ -9,8 +9,6 @@ on:
 env:
   SWIFT_VERSION: 6.1
   XCODE_VERSION: 16.2
-  SWIFTLINT_VERSION: 0.60.0
-  SWIFTFORMAT_VERSION: 0.57.2
 
 jobs:
   build-and-test:
@@ -31,7 +29,7 @@ jobs:
       with:
         swift-version: ${{ env.SWIFT_VERSION }}
     
-    - name: Cache Swift Package Manager
+    - name: Cache SwiftPM (main)
       uses: actions/cache@v4
       with:
         path: |
@@ -40,7 +38,7 @@ jobs:
         key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
         restore-keys: |
           ${{ runner.os }}-spm-
-    
+
     - name: Resolve Dependencies
       run: swift package resolve
 
@@ -104,22 +102,25 @@ jobs:
       with:
         xcode-version: ${{ env.XCODE_VERSION }}
         
+    - name: Cache SwiftPM (tools)
+      uses: actions/cache@v4
+      with:
+        path: Tools/.build
+        key: ${{ runner.os }}-tools-${{ hashFiles('Tools/Package.resolved') }}
+        restore-keys: ${{ runner.os }}-tools-
+
     - name: Setup Swift
       uses: swift-actions/setup-swift@v2
       with:
         swift-version: ${{ env.SWIFT_VERSION }}
-      
-    - name: Install Mint
-      run: |
-        brew install mint
 
     - name: Run SwiftLint
       run: |
-        mint run realm/SwiftLint@${{ env.SWIFTLINT_VERSION }} --strict --reporter github-actions-logging
+        swift run --package-path Tools swiftlint lint --strict --reporter github-actions-logging
 
     - name: Check Swift Format
       run: |
-        mint run nicklockwood/SwiftFormat@${{ env.SWIFTFORMAT_VERSION }} . --lint-only
+        swift run --package-path Tools swiftformat .
 
   security-scan:
     name: Security Scan
