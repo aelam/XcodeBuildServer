@@ -42,12 +42,28 @@ public struct BuildTargetRunRequest: ContextualRequestType, Sendable {
         contextualHandler: Handler,
         id: RequestID
     ) async -> ResponseType? where Handler.Context == BSPServerService {
-        await contextualHandler.withContext { _ in
+        await contextualHandler.withContext { context in
             logger.debug("run target: \(params.target)")
-            return BuildTargetRunResponse(
-                id: id,
-                result: .init(originId: nil, statusCode: .error)
-            )
+
+            do {
+                let statusCode = try await context.run(
+                    targetIdentifier: params.target,
+                    arguments: params.arguments,
+                    environmentVariables: params.environmentVariables,
+                    workingDirectory: params.workingDirectory
+                )
+
+                return BuildTargetRunResponse(
+                    id: id,
+                    result: .init(originId: nil, statusCode: statusCode)
+                )
+            } catch {
+                logger.error("Failed to run target: \(params.target), error: \(error)")
+                return BuildTargetRunResponse(
+                    id: id,
+                    result: .init(originId: nil, statusCode: .error)
+                )
+            }
         }
     }
 }

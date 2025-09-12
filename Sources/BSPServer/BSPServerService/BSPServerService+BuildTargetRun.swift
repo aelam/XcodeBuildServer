@@ -3,19 +3,21 @@ import BuildServerProtocol
 import Foundation
 
 extension BSPServerService {
-    //
-
-    private func run(
+    func run(
         targetIdentifier: BSPBuildTargetIdentifier,
-        install: Bool
+        arguments: [String]?, // e.g. ["-configuration", "Debug", "-destination", "id=XXXX"]
+        environmentVariables: [String: String]?,
+        workingDirectory: URI?,
     ) async throws -> StatusCode {
-        // not implemented yet
-        .error
-    }
+        guard let projectManager else {
+            throw BuildServerError.invalidConfiguration("Project not initialized")
+        }
 
-    private func install(
-        targetIdentifier: BSPBuildTargetIdentifier
-    ) async throws -> StatusCode {
-        try await run(targetIdentifier: targetIdentifier, install: true)
+        return try await projectManager.run(
+            targetIdentifier: targetIdentifier,
+            arguments: arguments,
+            environmentVariables: environmentVariables,
+            workingDirectory: workingDirectory
+        )
     }
 }
