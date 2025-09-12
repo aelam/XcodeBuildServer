@@ -14,7 +14,12 @@ enum XcodeRunError: Error {
 }
 
 public struct XcodeRunResult {
-    public let status: Int
+    public enum StatusCode: Int {
+        case success = 0
+        case error = 1
+    }
+
+    public let statusCode: StatusCode
     public let message: String?
 }
 
@@ -45,7 +50,8 @@ extension XcodeProjectManager {
 
         guard
             let platformName = buildSettings["PLATFORM_NAME"],
-            let sdk = XcodeSDK(rawValue: platformName)
+            let sdk = XcodeSDK(rawValue: platformName),
+            let appIdentifier = buildSettings["APP_IDENTIFIER"]
         else {
             throw XcodeRunError.failedToLaunchApp("PLATFORM_NAME not found in build settings")
         }
@@ -63,7 +69,7 @@ extension XcodeProjectManager {
             logger.info("Running on macOS")
             let result = try await runOnMac(binaryPath: binaryPath)
             return XcodeRunResult(
-                status: Int(result.exitCode),
+                statusCode: .init(rawValue: Int(result.exitCode)) ?? .error,
                 message: result.output
             )
         }
@@ -76,15 +82,24 @@ extension XcodeProjectManager {
         if sdk == .iOS || sdk == .tvOS || sdk == .watchOS {
             // real device
             try await installOnNonMac(isSimulator: false, outputPath: binaryPath, deviceID: destinationID)
-            try await runOnDevice(deviceID: destinationID)
-            throw XcodeRunError.failedToLaunchApp("Testing on real device")
+            try await launchAppOnNonMac(isSimulator: false, deviceID: destinationID, appIdentifier: appIdentifier)
+            return XcodeRunResult(
+                statusCode: .success,
+                message: "App launched on device \(destinationID)"
+            )
         } else if sdk == .iOSSimulator || sdk == .tvSimulator || sdk == .watchSimulator {
             // simulator
             try await installOnNonMac(isSimulator: true, outputPath: binaryPath, deviceID: destinationID)
-            try await runOnSimulator(simulatorID: destinationID)
-            throw XcodeRunError.failedToLaunchApp("Testing on simulator")
+            try await launchAppOnNonMac(isSimulator: true, deviceID: destinationID, appIdentifier: appIdentifier)
+            return XcodeRunResult(
+                statusCode: .success,
+                message: "App launched on simulator \(destinationID)"
+            )
         } else {
-            throw XcodeRunError.failedToLaunchApp("Unsupported SDK: \(platformName)")
+            return XcodeRunResult(
+                statusCode: .error,
+                message: "error: Unsupported SDK \(sdk.rawValue) for running apps"
+            )
         }
     }
 
@@ -172,11 +187,11 @@ extension XcodeProjectManager {
         )
     }
 
-    private func runOnSimulator(simulatorID: String?) async throws {
-        // TODO: implement running on simulator
-    }
-
-    private func runOnDevice(deviceID: String?) async throws {
-        // TODO: implement running on device
+    private func launchAppOnNonMac(isSimulator: Bool, deviceID: String, appIdentifier: String) async throws {
+        let launcher: AppLauncher = isSimulator ? SimulatorLauncher() : DeviceLauncher()
+        _ = try await launcher.launchApp(
+            deviceID: deviceID,
+            appIdentifier: appIdentifier
+        )
     }
 }

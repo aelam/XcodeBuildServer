@@ -21,6 +21,13 @@ public extension XcodeProjectManager {
             workingDirectory: workingDirectory?.fileURL
         )
 
-        return StatusCode(rawValue: result.status) ?? .error
+        let statuCode: StatusCode = switch result.statusCode {
+        case .success:
+            .ok
+        case .error:
+            .error
+        }
+
+        return statuCode
     }
 }
