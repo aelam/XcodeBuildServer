@@ -17,42 +17,64 @@ public struct BuildTargetTestRequest: ContextualRequestType, Sendable {
         "buildTarget/test"
     }
 
-    public struct Params: Codable, Sendable {
-        /// The build targets to prepare for background indexing
+    public struct TestParams: Codable, Sendable {
         public let targets: [BSPBuildTargetIdentifier]
         public let originId: String?
+        public let arguments: [String]?
+        public let environmentVariables: [String: String]?
+        public let workingDirectory: URI?
+        public let dataKind: TestParamsDataKind?
+        public let data: TestParamsData?
 
-        public init(targets: [BSPBuildTargetIdentifier], originId: String? = nil) {
+        public init(
+            targets: [BSPBuildTargetIdentifier],
+            originId: String? = nil,
+            arguments: [String]? = nil,
+            environmentVariables: [String: String]? = nil,
+            workingDirectory: URI? = nil,
+            dataKind: TestParamsDataKind? = nil,
+            data: TestParamsData? = nil
+        ) {
             self.targets = targets
             self.originId = originId
+            self.arguments = arguments
+            self.environmentVariables = environmentVariables
+            self.workingDirectory = workingDirectory
+            self.dataKind = dataKind
+            self.data = data
         }
     }
 
     public let id: JSONRPCID
     public let jsonrpc: String
-    public let params: Params
+    public let params: TestParams
 
     public func handle<Handler: ContextualMessageHandler>(
         contextualHandler: Handler,
         id: RequestID
     ) async -> ResponseType? where Handler.Context == BSPServerService {
         await contextualHandler.withContext { context in
-            logger.debug("Compile targets: \(params.targets)")
+            logger.debug("Test targets: \(params.targets)")
 
             do {
-                let status = try await context.compileTargets(params.targets)
-                return BuildTargetCompileResponse(
+                let statusCode = try await context.test(
+                    targetIdentifiers: params.targets,
+                    arguments: params.arguments,
+                    environmentVariables: params.environmentVariables,
+                    workingDirectory: params.workingDirectory
+                )
+                return BuildTargetTestResponse(
                     jsonrpc: jsonrpc,
                     id: id,
-                    result: BuildTargetCompileResult(originId: params.originId, statusCode: status)
+                    result: BuildTargetTestResult(originId: params.originId, statusCode: statusCode)
                 )
 
             } catch {
-                logger.error("Failed to compile targets: \(error)")
-                return BuildTargetCompileResponse(
+                logger.error("Failed to test targets: \(error)")
+                return BuildTargetTestResponse(
                     jsonrpc: jsonrpc,
                     id: id,
-                    result: BuildTargetCompileResult(originId: params.originId, statusCode: .error)
+                    result: BuildTargetTestResult(originId: params.originId, statusCode: .error)
                 )
             }
         }
@@ -77,8 +99,29 @@ public struct BuildTargetTestResult: Codable, Hashable, Sendable {
     /** A status code for the execution. */
     public let statusCode: StatusCode?
 
-    public init(originId: String? = nil, statusCode: StatusCode? = nil) {
+    public let dataKind: TestParamsDataKind?
+    public let data: TestResultData?
+
+    public init(
+        originId: String? = nil,
+        statusCode: StatusCode? = nil,
+        dataKind: TestParamsDataKind? = nil,
+        data: TestResultData? = nil
+    ) {
         self.originId = originId
         self.statusCode = statusCode
+        self.dataKind = dataKind
+        self.data = data
     }
 }
+
+public typealias TestParamsDataKind = String
+
+public extension TestParamsDataKind {
+    static let sourceKit: TestParamsDataKind = "sourceKit"
+}
+
+public typealias TestParamsData = LSPAny
+
+public typealias TestResultDataKind = String
+public typealias TestResultData = LSPAny
