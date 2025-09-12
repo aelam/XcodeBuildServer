@@ -50,6 +50,13 @@ public protocol ProjectManager: AnyObject, Sendable {
         environmentVariables: [String: String]?,
         workingDirectory: URI?
     ) async throws -> StatusCode
+
+    func test(
+        targetIdentifiers: [BSPBuildTargetIdentifier],
+        arguments: [String]?,
+        environmentVariables: [String: String]?,
+        workingDirectory: URI?
+    ) async throws -> StatusCode
 }
 
 public struct ProjectInfo: Sendable {
