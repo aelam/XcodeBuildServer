@@ -105,7 +105,11 @@ jobs:
     - name: Cache SwiftPM (tools)
       uses: actions/cache@v4
       with:
-        path: Tools/.build
+        path: |
+          Tools/.build
+          Tools/.swiftpm
+          ~/.swiftpm
+          ~/.cache/org.swift.swiftpm
         key: ${{ runner.os }}-tools-${{ hashFiles('Tools/Package.resolved') }}
         restore-keys: ${{ runner.os }}-tools-
 
