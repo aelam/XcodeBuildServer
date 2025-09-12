@@ -114,9 +114,11 @@ jobs:
       with:
         swift-version: ${{ env.SWIFT_VERSION }}
 
+    - name: Build SwiftLint
+      run: swift build --package-path Tools --product swiftlint -c release
+
     - name: Run SwiftLint
-      run: |
-        swift run --package-path Tools swiftlint lint --strict --reporter github-actions-logging
+      run: swift run --package-path Tools -c release swiftlint lint --strict --reporter github-actions-logging
 
     - name: Check Swift Format
       run: |
