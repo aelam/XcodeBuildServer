@@ -24,6 +24,7 @@ public struct XcodeRunResult {
 }
 
 extension XcodeProjectManager {
+    // swiftlint:disable:next cyclomatic_complexity
     public func run(
         xcodeTargetIdentifier: XcodeTargetIdentifier,
         arguments: [String]?, // e.g. ["-configuration", "Debug"]

@@ -82,7 +82,7 @@ struct SimulatorLauncher: AppLauncher {
         if !isLaunched {
             throw XcodeRunError.failedToLaunchApp("Failed to launch app \(appIdentifier) on simulator \(deviceID)")
         } else {
-            return ProcessExecutionResult(output: "App launched", error: "", exitCode: 0,)
+            return ProcessExecutionResult(output: "App launched", error: nil, exitCode: 0)
         }
     }
 }
