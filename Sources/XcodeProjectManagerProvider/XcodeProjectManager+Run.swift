@@ -11,10 +11,10 @@ public extension XcodeProjectManager {
         arguments: [String]?, // e.g. ["-configuration", "Debug"]
         environmentVariables: [String: String]?,
         workingDirectory: URI?
-    ) async throws -> StatusCode {
+    ) async -> StatusCode {
         let xcodeTargetIdentifier = XcodeTargetIdentifier(rawValue: targetIdentifier.uri.stringValue)
 
-        let result = try await run(
+        let result = await run(
             xcodeTargetIdentifier: xcodeTargetIdentifier,
             arguments: arguments,
             environmentVariables: environmentVariables,

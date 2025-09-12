@@ -29,31 +29,42 @@ extension XcodeProjectManager {
         arguments: [String]?, // e.g. ["-configuration", "Debug"]
         environmentVariables: [String: String]?,
         workingDirectory: URL?
-    ) async throws -> XcodeRunResult {
+    ) async -> XcodeRunResult {
         guard
             let xcodeProjectBaseInfo,
             let target = xcodeProjectBaseInfo.xcodeTargets
             .first(where: { $0.targetIdentifier == xcodeTargetIdentifier }),
             let xcodeProj = loadXcodeProjCache(projectURL: URL(fileURLWithPath: xcodeTargetIdentifier.projectFilePath))
         else {
-            throw XcodeRunError.projectNotLoaded
+            return XcodeRunResult(statusCode: .error, message: "Project not loaded")
         }
         let configuration = getConfiguration(from: arguments)
 
-        let buildSettings = try BuildSettingResolver(
-            xcodeInstallation: xcodeProjectBaseInfo.xcodeInstallation,
-            xcodeGlobalSettings: xcodeProjectBaseInfo.xcodeGlobalSettings,
-            xcodeProj: xcodeProj,
-            target: xcodeTargetIdentifier.targetName,
-            configuration: configuration
-        ).resolvedBuildSettings
+        let buildSettings: [String: String]
+        do {
+            buildSettings = try BuildSettingResolver(
+                xcodeInstallation: xcodeProjectBaseInfo.xcodeInstallation,
+                xcodeGlobalSettings: xcodeProjectBaseInfo.xcodeGlobalSettings,
+                xcodeProj: xcodeProj,
+                target: xcodeTargetIdentifier.targetName,
+                configuration: configuration
+            ).resolvedBuildSettings
+        } catch {
+            return XcodeRunResult(
+                statusCode: .error,
+                message: "Failed to resolve build settings: \(error.localizedDescription)"
+            )
+        }
 
         guard
             let platformName = buildSettings["PLATFORM_NAME"],
-            let sdk = XcodeSDK(rawValue: platformName),
-            let appIdentifier = buildSettings["APP_IDENTIFIER"]
+            let sdk = XcodeSDK(rawValue: platformName)
         else {
-            throw XcodeRunError.failedToLaunchApp("PLATFORM_NAME not found in build settings")
+            return XcodeRunResult(statusCode: .error, message: "PLATFORM_NAME not found in build settings")
+        }
+
+        guard let appIdentifier = buildSettings["PRODUCT_BUNDLE_IDENTIFIER"] ?? buildSettings["APP_IDENTIFIER"] else {
+            return XcodeRunResult(statusCode: .error, message: "Bundle identifier not found in build settings")
         }
 
         logger.info("Build settings loaded., \(buildSettings)")
@@ -62,39 +73,65 @@ extension XcodeProjectManager {
             productType: target.xcodeProductType,
             isMacApp: sdk == .macOS
         ) else {
-            throw XcodeRunError.appNotFound("App binary not found for target \(xcodeTargetIdentifier.rawValue)")
+            return XcodeRunResult(
+                statusCode: .error,
+                message: "App binary not found for target \(xcodeTargetIdentifier.rawValue)"
+            )
         }
         logger.info("Binary path: \(binaryPath)")
         if sdk == .macOS {
             logger.info("Running on macOS")
-            let result = try await runOnMac(binaryPath: binaryPath)
-            return XcodeRunResult(
-                statusCode: .init(rawValue: Int(result.exitCode)) ?? .error,
-                message: result.output
-            )
+            do {
+                let result = try await runOnMac(binaryPath: binaryPath)
+                return XcodeRunResult(
+                    statusCode: .init(rawValue: Int(result.exitCode)) ?? .error,
+                    message: result.output
+                )
+            } catch {
+                return XcodeRunResult(
+                    statusCode: .error,
+                    message: "Failed to run on macOS: \(error.localizedDescription)"
+                )
+            }
         }
 
         guard let destinationID = getDestination(from: arguments) else {
-            throw XcodeRunError
-                .failedToLaunchApp("Destination ID not found. Please specify -destination id=XXXX in arguments")
+            return XcodeRunResult(
+                statusCode: .error,
+                message: "Destination ID not found. Please specify -destination id=XXXX in arguments"
+            )
         }
 
         if sdk == .iOS || sdk == .tvOS || sdk == .watchOS {
             // real device
-            try await installOnNonMac(isSimulator: false, outputPath: binaryPath, deviceID: destinationID)
-            try await launchAppOnNonMac(isSimulator: false, deviceID: destinationID, appIdentifier: appIdentifier)
-            return XcodeRunResult(
-                statusCode: .success,
-                message: "App launched on device \(destinationID)"
-            )
+            do {
+                try await installOnNonMac(isSimulator: false, outputPath: binaryPath, deviceID: destinationID)
+                try await launchAppOnNonMac(isSimulator: false, deviceID: destinationID, appIdentifier: appIdentifier)
+                return XcodeRunResult(
+                    statusCode: .success,
+                    message: "App launched on device \(destinationID)"
+                )
+            } catch {
+                return XcodeRunResult(
+                    statusCode: .error,
+                    message: "Failed to launch on device: \(error.localizedDescription)"
+                )
+            }
         } else if sdk == .iOSSimulator || sdk == .tvSimulator || sdk == .watchSimulator {
             // simulator
-            try await installOnNonMac(isSimulator: true, outputPath: binaryPath, deviceID: destinationID)
-            try await launchAppOnNonMac(isSimulator: true, deviceID: destinationID, appIdentifier: appIdentifier)
-            return XcodeRunResult(
-                statusCode: .success,
-                message: "App launched on simulator \(destinationID)"
-            )
+            do {
+                try await installOnNonMac(isSimulator: true, outputPath: binaryPath, deviceID: destinationID)
+                try await launchAppOnNonMac(isSimulator: true, deviceID: destinationID, appIdentifier: appIdentifier)
+                return XcodeRunResult(
+                    statusCode: .success,
+                    message: "App launched on simulator \(destinationID)"
+                )
+            } catch {
+                return XcodeRunResult(
+                    statusCode: .error,
+                    message: "Failed to launch on simulator: \(error.localizedDescription)"
+                )
+            }
         } else {
             return XcodeRunResult(
                 statusCode: .error,
