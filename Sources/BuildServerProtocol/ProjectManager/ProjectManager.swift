@@ -37,11 +37,9 @@ public protocol ProjectManager: AnyObject, Sendable {
 
     func buildIndex(for targetIdentifiers: [BSPBuildTargetIdentifier]) async
 
-    /// Start build with progress callback support
     func startBuild(
         targetIdentifiers: [BSPBuildTargetIdentifier],
-        arguments: [String]?,
-        progress: (@Sendable (String, Double?) -> Void)?
+        arguments: [String]?
     ) async throws -> StatusCode
 
     func run(

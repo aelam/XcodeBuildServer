@@ -29,21 +29,7 @@ public extension BSPTaskManager {
             let status = try await projectManager.startBuild(
                 targetIdentifiers: targets,
                 arguments: arguments
-            ) { message, progress in
-                Task {
-                    do {
-                        let clampedProgress = min(max(progress ?? 0.0, 0.0), 1.0)
-                        try await self.sendTaskProgressNotification(
-                            taskId: taskId,
-                            progress: clampedProgress,
-                            message: message
-                        )
-                    } catch {
-                        // 忽略进度通知错误，避免中断构建
-                    }
-                }
-            }
-
+            )
             try await finishTask(
                 taskId: taskId,
                 status: status,

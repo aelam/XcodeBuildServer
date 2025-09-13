@@ -4,6 +4,36 @@ import Support
 // MARK: - Xcode related
 
 extension ProcessExecutor {
+    public static func createXcodeBuildProcess(
+        arguments: [String],
+        workingDirectory: URL? = nil,
+        xcodeInstallationPath: URL,
+        xcodeBuildEnvironments: [String: String] = [:],
+    ) -> Process {
+        // Use the system xcodebuild (which might be managed by xcenv)
+        // instead of forcing a specific path
+        let xcodebuildPath = "/usr/bin/xcrun"
+        let xcrunArgs = ["xcodebuild"] + arguments
+
+        // Set up Xcode environment - but keep it minimal to avoid conflicts
+        var environmentOverrides: [String: String] = [:]
+
+        // Only set DEVELOPER_DIR if it's not already set in the environment
+        // This allows xcenv and other tools to work properly
+        if ProcessInfo.processInfo.environment["DEVELOPER_DIR"] == nil {
+            environmentOverrides["DEVELOPER_DIR"] = xcodeInstallationPath
+                .appendingPathComponent("Contents/Developer").path
+        }
+        environmentOverrides.merge(xcodeBuildEnvironments) { current, _ in current }
+
+        return createProcess(
+            executable: xcodebuildPath,
+            arguments: xcrunArgs,
+            workingDirectory: workingDirectory,
+            environment: environmentOverrides
+        )
+    }
+
     /// Execute xcodebuild with the given arguments
     /// environments: will set to both Process and xcodebuild
     func executeXcodeBuild(
@@ -12,7 +42,6 @@ extension ProcessExecutor {
         xcodeInstallationPath: URL,
         xcodeBuildEnvironments: [String: String] = [:],
         timeout: TimeInterval? = nil,
-        progress: ProcessProgress? = nil
     ) async throws -> ProcessExecutionResult {
         // Use the system xcodebuild (which might be managed by xcenv)
         // instead of forcing a specific path
