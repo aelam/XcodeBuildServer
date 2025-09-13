@@ -2,48 +2,6 @@ import Foundation
 import Logger
 import Support
 
-// MARK: - Process Output Handler Protocol
-
-public protocol ProcessOutputHandler: Sendable {
-    func handleProcess(output: FileHandle, error: FileHandle) async
-    func handleCompletion(_ exitCode: Int32) async
-}
-
-// MARK: - Default Output Handler
-
-private struct DefaultOutputHandler: ProcessOutputHandler {
-    func handleProcess(output: FileHandle, error: FileHandle) async {
-        // 并发读取两个管道并写入日志，防止管道阻塞
-        await withTaskGroup(of: Void.self) { group in
-            group.addTask {
-                do {
-                    let outputData = try output.readToEnd() ?? Data()
-                    if !outputData.isEmpty, let outputString = String(data: outputData, encoding: .utf8) {
-                        logger.info("Build output: \(outputString)")
-                    }
-                } catch {
-                    logger.error("Failed to read output: \(error)")
-                }
-            }
-
-            group.addTask {
-                do {
-                    let errorData = try error.readToEnd() ?? Data()
-                    if !errorData.isEmpty, let errorString = String(data: errorData, encoding: .utf8) {
-                        logger.error("Build error: \(errorString)")
-                    }
-                } catch {
-                    logger.error("Failed to read error: \(error)")
-                }
-            }
-        }
-    }
-
-    func handleCompletion(_ exitCode: Int32) async {
-        logger.info("Process completed with exit code: \(exitCode)")
-    }
-}
-
 public enum BuildError: Error, Sendable {
     case buildFailed(exitCode: Int32, output: String)
 }
@@ -72,16 +30,22 @@ public extension XcodeProjectManager {
 
         let effectiveHandler = outputHandler ?? DefaultOutputHandler()
 
-        async let handlerTask: Void = effectiveHandler.handleProcess(
-            output: outputPipe.fileHandleForReading,
-            error: errorPipe.fileHandleForReading
-        )
+        await withTaskGroup(of: Void.self) { group in
+            // 启动管道读取任务
+            group.addTask {
+                await effectiveHandler.handleProcess(
+                    output: outputPipe.fileHandleForReading,
+                    error: errorPipe.fileHandleForReading
+                )
+            }
 
-        await Task {
-            process.waitUntilExit()
-        }.value
-
-        await handlerTask
+            // 启动进程等待任务
+            group.addTask {
+                await Task {
+                    process.waitUntilExit()
+                }.value
+            }
+        }
 
         await effectiveHandler.handleCompletion(process.terminationStatus)
 

@@ -24,12 +24,12 @@ public struct ProcessExecutionResult: Sendable {
 }
 
 /// Progress callback for real-time process output
-typealias ProcessProgressCallback = @Sendable (ProcessProgressEvent) -> Void
+typealias ProcessProgress = @Sendable (ProcessProgressEvent) -> Void
 
 /// Events that can be reported during process execution
 enum ProcessProgressEvent: Sendable {
-    case outputLine(String) // 按行返回的输出（包含换行符）
-    case errorLine(String) // 按行返回的错误（包含换行符）
+    case outputLine(String)
+    case errorLine(String)
 }
 
 public enum ProcessExecutorError: Error, LocalizedError, Equatable {
@@ -43,7 +43,7 @@ public enum ProcessExecutorError: Error, LocalizedError, Equatable {
 }
 
 /// Helper actor to accumulate results in thread-safe manner
-private actor ActorResult {
+private actor ProcessOutputAccumulator {
     private var outputBuffer = ""
     private var errorBuffer = ""
 
@@ -56,7 +56,7 @@ private actor ActorResult {
         }
     }
 
-    func buildResult(exitCode: Int32) -> ProcessExecutionResult {
+    func getResult(exitCode: Int32) -> ProcessExecutionResult {
         ProcessExecutionResult(
             output: outputBuffer,
             error: errorBuffer.isEmpty ? nil : errorBuffer,
@@ -110,7 +110,7 @@ public actor ProcessExecutor {
         environment: [String: String] = [:],
         timeout: TimeInterval? = nil
     ) async throws -> ProcessExecutionResult {
-        let result = ActorResult()
+        let result = ProcessOutputAccumulator()
 
         let exitCode = try await executeWithProgressInternal(
             executable: executable,
@@ -124,7 +124,7 @@ public actor ProcessExecutor {
             }
         }
 
-        return await result.buildResult(exitCode: exitCode)
+        return await result.getResult(exitCode: exitCode)
     }
 
     /// Internal method that returns raw exit code
@@ -134,7 +134,7 @@ public actor ProcessExecutor {
         workingDirectory: URL? = nil,
         environment: [String: String] = [:],
         timeout: TimeInterval? = nil,
-        progressCallback: ProcessProgressCallback? = nil
+        progress: ProcessProgress? = nil
     ) async throws -> Int32 {
         logger.debug("\(executable) \(arguments.joined(separator: " "))")
 
@@ -160,13 +160,13 @@ public actor ProcessExecutor {
             try await withTimeout(timeout) {
                 try await self.streamProcessOutput(
                     process: process,
-                    progressCallback: progressCallback
+                    progress: progress
                 )
             }
         } else {
             try await streamProcessOutput(
                 process: process,
-                progressCallback: progressCallback
+                progress: progress
             )
         }
 
@@ -183,7 +183,7 @@ public actor ProcessExecutor {
 
     private func streamProcessOutput(
         process: Process,
-        progressCallback: ProcessProgressCallback?
+        progress: ProcessProgress?
     ) async throws -> Int32 {
         guard
             let outputPipe = process.standardOutput as? Pipe,
@@ -198,7 +198,7 @@ public actor ProcessExecutor {
                 await self.streamPipeAsync(
                     outputPipe.fileHandleForReading,
                     isError: false,
-                    progressCallback: progressCallback
+                    progress: progress
                 )
             }
 
@@ -207,12 +207,11 @@ public actor ProcessExecutor {
                 await self.streamPipeAsync(
                     errorPipe.fileHandleForReading,
                     isError: true,
-                    progressCallback: progressCallback
+                    progress: progress
                 )
             }
         }
 
-        // 等待进程完成
         await Task {
             process.waitUntilExit()
         }.value
@@ -223,80 +222,15 @@ public actor ProcessExecutor {
     private func streamPipeAsync(
         _ fileHandle: FileHandle,
         isError: Bool,
-        progressCallback: ProcessProgressCallback?
+        progress: ProcessProgress?
     ) async {
-        var lineBuffer = Data()
-        let bufferSize = 8192
-
         logger.debug("Starting to read from \(isError ? "error" : "output") pipe")
 
-        do {
-            // 使用 AsyncThrowingStream 来创建异步数据流
-            let dataStream = AsyncThrowingStream<Data, Error> { continuation in
-                let source = DispatchSource.makeReadSource(fileDescriptor: fileHandle.fileDescriptor)
-
-                source.setEventHandler {
-                    do {
-                        let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: bufferSize)
-                        defer { buffer.deallocate() }
-
-                        let bytesRead = read(fileHandle.fileDescriptor, buffer, bufferSize)
-                        if bytesRead > 0 {
-                            let data = Data(bytes: buffer, count: bytesRead)
-                            continuation.yield(data)
-                        } else if bytesRead == 0 {
-                            // EOF
-                            continuation.finish()
-                        } else {
-                            // Error
-                            continuation.finish(throwing: POSIXError(.EIO))
-                        }
-                    }
-                }
-
-                source.setCancelHandler {
-                    continuation.finish()
-                }
-
-                continuation.onTermination = { _ in
-                    source.cancel()
-                }
-
-                source.resume()
-            }
-
-            // 处理数据流
-            for try await data in dataStream {
-                lineBuffer.append(data)
-
-                // 处理完整的行
-                while let newlineIndex = lineBuffer.firstIndex(of: 0x0A) {
-                    let lineData = lineBuffer.prefix(through: newlineIndex)
-                    lineBuffer.removeFirst(lineData.count)
-
-                    if let string = String(data: lineData, encoding: .utf8) {
-                        let event: ProcessProgressEvent = isError ?
-                            .errorLine(string) : .outputLine(string)
-                        progressCallback?(event)
-                    }
-                }
-            }
-
-            // 发送任何剩余数据
-            if !lineBuffer.isEmpty, let string = String(data: lineBuffer, encoding: .utf8) {
-                let finalString = string.hasSuffix("\n") ? string : string + "\n"
-                let event: ProcessProgressEvent = isError ?
-                    .errorLine(finalString) : .outputLine(finalString)
-                progressCallback?(event)
-            }
-
-        } catch {
-            if !Task.isCancelled {
-                logger.error("Error reading from \(isError ? "error" : "output") pipe: \(error)")
-            }
+        await StreamingFileHandleReader.streamPipe(fileHandle) { line in
+            let event: ProcessProgressEvent = isError ? .errorLine(line + "\n") : .outputLine(line + "\n")
+            progress?(event)
+            logger.debug("Finished reading from \(isError ? "error" : "output") pipe")
         }
-
-        logger.debug("Finished reading from \(isError ? "error" : "output") pipe")
     }
 
     private func withTimeout<T: Sendable>(
