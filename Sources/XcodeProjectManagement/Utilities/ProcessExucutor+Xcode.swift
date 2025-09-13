@@ -35,8 +35,7 @@ extension ProcessExecutor {
             arguments: xcrunArgs,
             workingDirectory: workingDirectory,
             environment: environmentOverrides,
-            timeout: timeout,
-            progress: progress
+            timeout: timeout
         )
     }
 

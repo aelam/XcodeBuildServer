@@ -60,8 +60,7 @@ public extension XcodeProjectManager {
         let result = try await toolchain.executeXcodeBuild(
             arguments: command,
             workingDirectory: rootURL,
-            xcodeBuildEnvironments: [:],
-            progress: progress
+            xcodeBuildEnvironments: [:]
         )
         return result
     }

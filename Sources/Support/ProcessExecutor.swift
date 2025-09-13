@@ -35,7 +35,6 @@ public enum ProcessProgressEvent: Sendable {
 
 public enum ProcessExecutorError: Error, LocalizedError, Equatable {
     case processStartFailed(String) // System error message
-    case invalidWorkingDirectory(String)
     case timeout(TimeInterval)
 
     public var isTimeout: Bool {
@@ -52,8 +51,7 @@ public actor ProcessExecutor {
         arguments: [String] = [],
         workingDirectory: URL? = nil,
         environment: [String: String] = [:],
-        timeout: TimeInterval? = nil,
-        progress: ProcessProgress? = nil
+        timeout: TimeInterval? = nil
     ) async throws -> ProcessExecutionResult {
         logger.debug("\(executable) \(arguments.joined(separator: " "))")
 
@@ -95,16 +93,14 @@ public actor ProcessExecutor {
                 try await self.readProcessOutput(
                     process: process,
                     outputPipe: outputPipe,
-                    errorPipe: errorPipe,
-                    progress: progress
+                    errorPipe: errorPipe
                 )
             }
         } else {
             try await readProcessOutput(
                 process: process,
                 outputPipe: outputPipe,
-                errorPipe: errorPipe,
-                progress: progress
+                errorPipe: errorPipe
             )
         }
 
@@ -134,8 +130,7 @@ public actor ProcessExecutor {
     private func readProcessOutput(
         process: Process,
         outputPipe: Pipe,
-        errorPipe: Pipe,
-        progress: ProcessProgress? = nil
+        errorPipe: Pipe
     ) async throws -> ProcessExecutionResult {
         try await withThrowingTaskGroup(of: ProcessOutputChunk.self) { group in
             var outputData = Data()
@@ -144,12 +139,12 @@ public actor ProcessExecutor {
 
             // Read stdout incrementally
             group.addTask {
-                await self.readOutputPipe(outputPipe, process: process, progress: progress)
+                await self.readOutputPipe(outputPipe, process: process)
             }
 
             // Read stderr incrementally
             group.addTask {
-                await self.readErrorPipe(errorPipe, process: process, progress: progress)
+                await self.readErrorPipe(errorPipe, process: process)
             }
 
             // Collect all chunks
@@ -159,9 +154,6 @@ public actor ProcessExecutor {
                     outputData.append(data)
                     if let string = String(data: data, encoding: .utf8) {
                         outputBuffer += string
-                        if let progressInt = parseXcodeBuildProgress(from: outputBuffer) {
-                            progress?(.progressUpdate(progress: progressInt, message: nil))
-                        }
                     }
                 case let .error(data):
                     errorData.append(data)
@@ -189,8 +181,7 @@ public actor ProcessExecutor {
 
     private func readOutputPipe(
         _ pipe: Pipe,
-        process: Process,
-        progress: ProcessProgress?
+        process: Process
     ) async -> ProcessOutputChunk {
         let handle = pipe.fileHandleForReading
         var allData = Data()
@@ -203,17 +194,11 @@ public actor ProcessExecutor {
             }
 
             allData.append(chunk)
-            if let string = String(data: chunk, encoding: .utf8) {
-                progress?(.outputData(string))
-            }
         }
 
         // Read any remaining data
         if let remainingData = try? handle.readToEnd() {
             allData.append(remainingData)
-            if let string = String(data: remainingData, encoding: .utf8) {
-                progress?(.outputData(string))
-            }
         }
 
         return .output(allData)
@@ -221,8 +206,7 @@ public actor ProcessExecutor {
 
     private func readErrorPipe(
         _ pipe: Pipe,
-        process: Process,
-        progress: ProcessProgress?
+        process: Process
     ) async -> ProcessOutputChunk {
         let handle = pipe.fileHandleForReading
         var allData = Data()
@@ -235,39 +219,14 @@ public actor ProcessExecutor {
             }
 
             allData.append(chunk)
-            if let string = String(data: chunk, encoding: .utf8) {
-                progress?(.errorData(string))
-            }
         }
 
         // Read any remaining data
         if let remainingData = try? handle.readToEnd() {
             allData.append(remainingData)
-            if let string = String(data: remainingData, encoding: .utf8) {
-                progress?(.errorData(string))
-            }
         }
 
         return .error(allData)
-    }
-
-    /// Parse Xcode build progress from output
-    private func parseXcodeBuildProgress(from output: String) -> Double? {
-        // Simple pattern matching for Xcode build progress
-        // This can be enhanced to parse more sophisticated progress indicators
-        let lines = output.components(separatedBy: .newlines)
-        for line in lines.suffix(5) { // Check last 5 lines
-            // Look for patterns like "** BUILD SUCCEEDED **" or percentage indicators
-            if line.contains("BUILD SUCCEEDED") {
-                return 1.0
-            } else if line.contains("BUILD FAILED") {
-                return 1.0
-            } else if line.contains("Building") || line.contains("Compiling") {
-                // Estimate progress based on activity
-                return 0.5
-            }
-        }
-        return nil
     }
 
     private func withTimeout<T: Sendable>(

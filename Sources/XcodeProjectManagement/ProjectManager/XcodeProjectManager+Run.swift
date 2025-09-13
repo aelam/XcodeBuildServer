@@ -210,8 +210,7 @@ extension XcodeProjectManager {
             executable: binaryPath,
             arguments: [],
             workingDirectory: nil,
-            environment: [:],
-            progress: nil
+            environment: [:]
         )
     }
 
