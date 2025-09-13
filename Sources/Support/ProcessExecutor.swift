@@ -183,22 +183,14 @@ public actor ProcessExecutor {
         _ pipe: Pipe,
         process: Process
     ) async -> ProcessOutputChunk {
-        let handle = pipe.fileHandleForReading
         var allData = Data()
 
-        while process.isRunning {
-            let chunk = handle.availableData
-            if chunk.isEmpty {
-                try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
-                continue
+        do {
+            for try await byte in pipe.fileHandleForReading.bytes {
+                allData.append(byte)
             }
-
-            allData.append(chunk)
-        }
-
-        // Read any remaining data
-        if let remainingData = try? handle.readToEnd() {
-            allData.append(remainingData)
+        } catch {
+            // Handle read errors gracefully
         }
 
         return .output(allData)
@@ -208,22 +200,14 @@ public actor ProcessExecutor {
         _ pipe: Pipe,
         process: Process
     ) async -> ProcessOutputChunk {
-        let handle = pipe.fileHandleForReading
         var allData = Data()
 
-        while process.isRunning {
-            let chunk = handle.availableData
-            if chunk.isEmpty {
-                try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
-                continue
+        do {
+            for try await byte in pipe.fileHandleForReading.bytes {
+                allData.append(byte)
             }
-
-            allData.append(chunk)
-        }
-
-        // Read any remaining data
-        if let remainingData = try? handle.readToEnd() {
-            allData.append(remainingData)
+        } catch {
+            // Handle read errors gracefully
         }
 
         return .error(allData)
