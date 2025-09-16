@@ -6,14 +6,14 @@
 
 import Foundation
 import JSONRPCConnection
-import os
+import Support
 
 /// BSP 消息处理器 - 专注于 BSP 协议实现
 public final class BSPMessageHandler: ContextualMessageHandler, Sendable {
     public typealias Context = BSPServerService
 
-    /// BSP 服务引用 - 使用 OSAllocatedUnfairLock 来保证线程安全
-    private let bspServerServiceLock = OSAllocatedUnfairLock(initialState: nil as BSPServerService?)
+    /// BSP 服务引用 - 使用跨平台的线程安全锁
+    private let bspServerServiceLock = CrossPlatformLock<BSPServerService?>(initialState: nil as BSPServerService?)
 
     /// BSP 服务引用
     public private(set) var bspServerService: BSPServerService? {

@@ -8,11 +8,11 @@ import BuildServerProtocol
 import Foundation
 import JSONRPCConnection
 import Logger
-import os.lock
+import Support
 
 /// Manages BSP task lifecycle including taskStart, taskProgress, and taskFinish notifications
 public final class BSPTaskManager: @unchecked Sendable {
-    private let taskState = OSAllocatedUnfairLock(initialState: TaskState())
+    private let taskState = CrossPlatformLock(initialState: TaskState())
     private weak var notificationService: BSPNotificationService?
 
     private struct TaskState {

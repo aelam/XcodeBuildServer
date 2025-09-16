@@ -1,4 +1,4 @@
-name: CI
+name: macOS CI
 
 on:
   push:
@@ -9,12 +9,10 @@ on:
 env:
   SWIFT_VERSION: 6.1
   XCODE_VERSION: 16.2
-  SWIFTLINT_VERSION: 0.60.0
-  SWIFTFORMAT_VERSION: 0.57.2
 
 jobs:
-  build-and-test:
-    name: Build and Test
+  macos-build-and-test:
+    name: macOS Build and Test
     runs-on: macos-latest
     
     steps:
@@ -51,10 +49,11 @@ jobs:
       run: |
         echo "CI environment variable: $CI"
         xcodebuild -version
-        echo "Running tests in CI mode..."
+        echo "Running tests in macOS CI mode..."
         swift test --enable-code-coverage
       env:
         CI: true
+        MACOS_CI: true
 
     - name: Install LLVM
       run: brew install llvm
@@ -109,17 +108,29 @@ jobs:
       with:
         swift-version: ${{ env.SWIFT_VERSION }}
       
+    - name: Cache Mint packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.mint
+        key: ${{ runner.os }}-mint-${{ hashFiles('Mintfile') }}
+        restore-keys: |
+          ${{ runner.os }}-mint-
+
     - name: Install Mint
       run: |
         brew install mint
 
+    - name: Install tools via Mintfile
+      run: |
+        mint bootstrap
+
     - name: Run SwiftLint
       run: |
-        mint run realm/SwiftLint@${{ env.SWIFTLINT_VERSION }} --strict --reporter github-actions-logging
+        mint run swiftlint --strict --reporter github-actions-logging
 
     - name: Check Swift Format
       run: |
-        mint run nicklockwood/SwiftFormat@${{ env.SWIFTFORMAT_VERSION }} . --lint-only
+        mint run swiftformat . --lint-only
 
   security-scan:
     name: Security Scan

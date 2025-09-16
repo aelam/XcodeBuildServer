@@ -8,7 +8,6 @@ import BuildServerProtocol
 import Foundation
 import JSONRPCConnection
 import Logger
-import os
 
 extension BSPServerService {
     func getWorkingDirectory() async throws -> String? {

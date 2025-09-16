@@ -5,7 +5,6 @@
 //
 
 import Foundation
-import XcodeProjectManagement
 
 /// BSP Configuration for Xcode projects
 ///
