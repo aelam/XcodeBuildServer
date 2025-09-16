@@ -9,7 +9,6 @@ import Foundation
 import JSONRPCConnection
 import Logger
 import os
-import XcodeProjectManagement
 
 /// BSP 服务层 - 连接 BSP 协议和项目管理
 /// 这是整个系统的核心服务，负责协调各个层次
