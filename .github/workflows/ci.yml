@@ -9,8 +9,6 @@ on:
 env:
   SWIFT_VERSION: 6.1
   XCODE_VERSION: 16.2
-  SWIFTLINT_VERSION: 0.60.0
-  SWIFTFORMAT_VERSION: 0.57.2
 
 jobs:
   macos-build-and-test:
@@ -114,7 +112,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.mint
-        key: ${{ runner.os }}-mint-${{ env.SWIFTLINT_VERSION }}-${{ env.SWIFTFORMAT_VERSION }}
+        key: ${{ runner.os }}-mint-${{ hashFiles('Mintfile') }}
         restore-keys: |
           ${{ runner.os }}-mint-
 
@@ -122,13 +120,17 @@ jobs:
       run: |
         brew install mint
 
+    - name: Install tools via Mintfile
+      run: |
+        mint bootstrap
+
     - name: Run SwiftLint
       run: |
-        mint run realm/SwiftLint@${{ env.SWIFTLINT_VERSION }} --strict --reporter github-actions-logging
+        mint run swiftlint --strict --reporter github-actions-logging
 
     - name: Check Swift Format
       run: |
-        mint run nicklockwood/SwiftFormat@${{ env.SWIFTFORMAT_VERSION }} . --lint-only
+        mint run swiftformat . --lint-only
 
   security-scan:
     name: Security Scan
