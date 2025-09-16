@@ -110,6 +110,14 @@ jobs:
       with:
         swift-version: ${{ env.SWIFT_VERSION }}
       
+    - name: Cache Mint packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.mint
+        key: ${{ runner.os }}-mint-${{ env.SWIFTLINT_VERSION }}-${{ env.SWIFTFORMAT_VERSION }}
+        restore-keys: |
+          ${{ runner.os }}-mint-
+
     - name: Install Mint
       run: |
         brew install mint
