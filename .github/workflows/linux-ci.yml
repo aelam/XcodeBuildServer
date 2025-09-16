@@ -1,0 +1,50 @@
+name: Linux CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-linux:
+    name: Test (Linux, Swift ${{ matrix.swift }})
+    runs-on: ubuntu-latest
+    container:
+      image: swift:${{ matrix.swift }}
+    strategy:
+      fail-fast: false
+      matrix:
+        swift: [ "6.1" ]
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Print Swift version
+      run: swift --version
+    
+    - name: Cache Swift Package Manager
+      uses: actions/cache@v4
+      with:
+        path: .build
+        key: ${{ runner.os }}-spm-${{ matrix.swift }}-${{ hashFiles('**/Package.resolved') }}
+        restore-keys: |
+          ${{ runner.os }}-spm-${{ matrix.swift }}-
+          ${{ runner.os }}-spm-
+    
+    - name: Build
+      run: |
+        echo "Building on Linux with Swift ${{ matrix.swift }}"
+        swift build --verbose
+      env:
+        CI: true
+        LINUX_CI: true
+    
+    - name: Run Tests
+      run: |
+        echo "Running tests on Linux with Swift ${{ matrix.swift }}"
+        swift test --verbose
+      env:
+        CI: true
+        LINUX_CI: true

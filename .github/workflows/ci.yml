@@ -1,4 +1,4 @@
-name: CI
+name: macOS CI
 
 on:
   push:
@@ -13,8 +13,8 @@ env:
   SWIFTFORMAT_VERSION: 0.57.2
 
 jobs:
-  build-and-test:
-    name: Build and Test
+  macos-build-and-test:
+    name: macOS Build and Test
     runs-on: macos-latest
     
     steps:
@@ -51,10 +51,11 @@ jobs:
       run: |
         echo "CI environment variable: $CI"
         xcodebuild -version
-        echo "Running tests in CI mode..."
+        echo "Running tests in macOS CI mode..."
         swift test --enable-code-coverage
       env:
         CI: true
+        MACOS_CI: true
 
     - name: Install LLVM
       run: brew install llvm
