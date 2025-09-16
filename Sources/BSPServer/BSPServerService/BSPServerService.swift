@@ -8,7 +8,6 @@ import BuildServerProtocol
 import Foundation
 import JSONRPCConnection
 import Logger
-import os
 
 /// BSP 服务层 - 连接 BSP 协议和项目管理
 /// 这是整个系统的核心服务，负责协调各个层次
@@ -28,7 +27,6 @@ public actor BSPServerService: ProjectStateObserver, BSPNotificationService {
     }
 
     private var serviceState: ServiceState = .stopped
-    private let logger = Logger(subsystem: "BSPServerService", category: "BSPServer")
 
     public init(
         projectManagerProvider: ProjectManagerFactory,
