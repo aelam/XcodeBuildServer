@@ -98,6 +98,7 @@ let macOnlyTargets: [Target] = [
                 package: "XcodeProj"
             ),
         ],
+        path: "Sources-MacOS/XcodeProjectManagement",
         resources: [
             .copy("README.md"),
         ],
@@ -111,6 +112,7 @@ let macOnlyTargets: [Target] = [
             "XcodeProjectManagement",
             "BuildServerProtocol"
         ],
+        path: "Sources-MacOS/XcodeProjectManagerProvider",
         swiftSettings: [
             .define("MACOS_ONLY", .when(platforms: [.macOS]))
         ]
@@ -122,6 +124,7 @@ let macOnlyTargets: [Target] = [
             .product(name: "ArgumentParser", package: "swift-argument-parser"),
             "XcodeProjectManagerProvider",
         ],
+        path: "Sources-MacOS/XcodeProjectCLI",
         swiftSettings: [
             .define("MACOS_ONLY", .when(platforms: [.macOS]))
         ]
@@ -131,6 +134,7 @@ let macOnlyTargets: [Target] = [
         dependencies: [
             "XcodeProjectManagement"
         ],
+        path: "Tests-MacOS/XcodeProjectManagementTests",
         resources: [
             .copy("README.md"),
             .copy("Resources")
@@ -140,7 +144,8 @@ let macOnlyTargets: [Target] = [
         name: "XcodeProjectManagerProviderTests",
         dependencies: [
             "XcodeProjectManagerProvider"
-        ]
+        ],
+        path: "Tests-MacOS/XcodeProjectManagerProviderTests",
     ),
 ]
 
