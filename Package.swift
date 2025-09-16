@@ -67,6 +67,7 @@ let bspServerTarget: Target = .target(
         "JSONRPCConnection",
         "SwiftPMProjectManagerProvider",
         "BuildServerProtocol",
+        "Support",
         "XcodeProjectManagerProvider",
     ]
 )
@@ -78,6 +79,7 @@ let bspServerTarget: Target = .target(
         "JSONRPCConnection",
         "SwiftPMProjectManagerProvider",
         "BuildServerProtocol",
+        "Support",
     ]
 )
 #endif
