@@ -5,10 +5,7 @@
 //
 
 import Foundation
-@preconcurrency import OSLog
 import SwiftyBeaver
-
-nonisolated(unsafe) let privacy: OSLogPrivacy = .public
 
 public final class SwiftyBeaverLogger: @unchecked Sendable {
     private let log = SwiftyBeaver.self
