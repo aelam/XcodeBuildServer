@@ -4,3 +4,5 @@ coverage:
     - "DemoProjects/**/*"
     - "Tests/"
     - "Tests/**/*"
+    - "Tests-MacOS/"
+    - "Tests-MacOS/**/*"
