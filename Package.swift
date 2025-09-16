@@ -47,7 +47,10 @@ let package = Package(
             url: "https://github.com/apple/swift-argument-parser",
             from: "1.6.1"
         ),
-
+        .package(
+            url: "https://github.com/apple/swift-crypto.git",
+            from: "3.0.0"
+        )
     ],
     targets: [
         .target(
@@ -67,7 +70,8 @@ let package = Package(
         .target(
             name: "Support",
             dependencies: [
-                "Logger"
+                "Logger",
+                .product(name: "Crypto", package: "swift-crypto"),
             ]
         ),
 
