@@ -122,9 +122,7 @@ extension XcodeProjectManager {
             workingDirectory: workingDirectory,
             environment: environmentVariables ?? [:],
             timeout: nil
-        ) { _ in
-            // Handle process progress events
-        }
+        )
 
         return result?.exitCode == 0
             ? XcodeRunResult(statusCode: .success, message: "Test run successful")

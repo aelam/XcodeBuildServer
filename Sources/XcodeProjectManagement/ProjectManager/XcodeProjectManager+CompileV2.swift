@@ -1,4 +1,5 @@
 import Foundation
+import Logger
 import Support
 
 public enum BuildError: Error, Sendable {
@@ -6,19 +7,66 @@ public enum BuildError: Error, Sendable {
 }
 
 public extension XcodeProjectManager {
+    // MARK: - Generic Xcode Process Execution
+
+    private func executeXcodeProcess(
+        command: [String],
+        outputHandler: ProcessOutputHandler? = nil
+    ) async throws -> XcodeBuildExitCode {
+        let process = try await toolchain.createXcodeBuildProcess(
+            arguments: command,
+            workingDirectory: rootURL,
+            xcodeBuildEnvironments: [:]
+        )
+
+        process.standardInput = FileHandle.nullDevice
+        // Setup pipes
+        let outputPipe = Pipe()
+        let errorPipe = Pipe()
+        process.standardOutput = outputPipe
+        process.standardError = errorPipe
+
+        process.launch()
+
+        let effectiveHandler = outputHandler ?? DefaultOutputHandler()
+
+        await withTaskGroup(of: Void.self) { group in
+            // 启动管道读取任务
+            group.addTask {
+                await effectiveHandler.handleProcess(
+                    output: outputPipe.fileHandleForReading,
+                    error: errorPipe.fileHandleForReading
+                )
+            }
+
+            // 启动进程等待任务
+            group.addTask {
+                await Task {
+                    process.waitUntilExit()
+                }.value
+            }
+        }
+
+        await effectiveHandler.handleCompletion(process.terminationStatus)
+
+        return process.terminationStatus
+    }
+
+    // MARK: - Compile Target
+
     func compileTarget(
         targetIdentifier: XcodeTargetIdentifier,
         configuration: String?,
         arguments: [String]? = nil,
-        progress: ProcessProgress? = nil
-    ) async throws -> XcodeBuildResult {
+        outputHandler: ProcessOutputHandler? = nil
+    ) async throws -> XcodeBuildExitCode {
         guard let xcodeProjectBaseInfo else {
-            return XcodeBuildResult(output: "", error: "No Xcode project found", exitCode: 1)
+            return 1
         }
 
         guard let xcodeTarget = xcodeProjectBaseInfo.xcodeTargets
             .first(where: { $0.targetIdentifier == targetIdentifier }) else {
-            return XcodeBuildResult(output: "", error: "No Xcode target found", exitCode: 1)
+            return 1
         }
 
         let scheme = findOrCreateScheme(for: xcodeTarget, in: xcodeProjectBaseInfo.schemes)
@@ -57,12 +105,9 @@ public extension XcodeProjectManager {
             options: options
         )
 
-        let result = try await toolchain.executeXcodeBuild(
-            arguments: command,
-            workingDirectory: rootURL,
-            xcodeBuildEnvironments: [:],
-            progress: progress
+        return try await executeXcodeProcess(
+            command: command,
+            outputHandler: outputHandler
         )
-        return result
     }
 }

@@ -10,7 +10,6 @@ let package = Package(
     products: [
         // Suppot
         .library(name: "Support", targets: ["Logger"]),
-        // .library(name: "Core", targets: ["Core"]),
         .library(name: "JSONRPCConnection", targets: ["JSONRPCConnection"]),
         .library(name: "Logger", targets: ["Logger"]),
         .library(name: "BuildServerProtocol", targets: ["BuildServerProtocol"]),
@@ -93,7 +92,6 @@ let package = Package(
         .target(
             name: "XcodeProjectManagement",
             dependencies: [
-                // "Core",
                 "Logger",
                 "BuildServerProtocol",
                 "Support",
@@ -157,10 +155,6 @@ let package = Package(
 
         // MARK: - Tests
 
-        // .testTarget(
-        //     name: "CoreTests",
-        //     dependencies: ["Core"]
-        // ),
         .testTarget(
             name: "SwiftPMProjectManagerProviderTests",
             dependencies: [

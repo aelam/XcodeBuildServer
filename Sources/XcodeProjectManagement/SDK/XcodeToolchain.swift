@@ -106,8 +106,10 @@ public extension XcodeInstallation {
 public struct XcodeBuildResult: Sendable {
     public let output: String
     public let error: String?
-    public let exitCode: Int32
+    public let exitCode: XcodeBuildExitCode
 }
+
+public typealias XcodeBuildExitCode = Int32
 
 public actor XcodeToolchain {
     private var selectedInstallation: XcodeInstallation?
@@ -146,11 +148,27 @@ public actor XcodeToolchain {
         selectedInstallation
     }
 
+    public func createXcodeBuildProcess(
+        arguments: [String],
+        workingDirectory: URL? = nil,
+        xcodeBuildEnvironments: [String: String] = [:]
+    ) throws -> Process {
+        guard let installation = selectedInstallation else {
+            throw XcodeToolchainError.xcodeNotFound
+        }
+
+        return ProcessExecutor.createXcodeBuildProcess(
+            arguments: arguments,
+            workingDirectory: workingDirectory,
+            xcodeInstallationPath: installation.path,
+            xcodeBuildEnvironments: xcodeBuildEnvironments
+        )
+    }
+
     public func executeXcodeBuild(
         arguments: [String],
         workingDirectory: URL? = nil,
-        xcodeBuildEnvironments: [String: String] = [:],
-        progress: ProcessProgress? = nil
+        xcodeBuildEnvironments: [String: String] = [:]
     ) async throws -> XcodeBuildResult {
         guard let installation = selectedInstallation else {
             throw XcodeToolchainError.xcodeNotFound
@@ -160,8 +178,7 @@ public actor XcodeToolchain {
             arguments: arguments,
             workingDirectory: workingDirectory,
             xcodeInstallationPath: installation.path,
-            xcodeBuildEnvironments: xcodeBuildEnvironments,
-            progress: progress
+            xcodeBuildEnvironments: xcodeBuildEnvironments
         )
 
         return XcodeBuildResult(
