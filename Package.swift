@@ -146,7 +146,7 @@ let macOnlyTargets: [Target] = [
             "XcodeProjectManagerProvider"
         ],
         path: "Tests-MacOS/XcodeProjectManagerProviderTests",
-    ),
+    )
 ]
 
 let macOnlyProducts: [Product] = [
