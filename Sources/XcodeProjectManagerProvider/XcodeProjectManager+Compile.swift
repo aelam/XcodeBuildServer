@@ -13,7 +13,7 @@ public extension XcodeProjectManager {
         logger.info("Starting build for targets: \(targetIdentifiers) with arguments: \(arguments ?? [])")
         var results: [XcodeBuildExitCode] = []
 
-        for (_, identifier) in targetIdentifiers.enumerated() {
+        for identifier in targetIdentifiers {
             let xcodeTargetIdentifier = XcodeTargetIdentifier(rawValue: identifier.uri.stringValue)
 
             let xcodeBuildResult = try await compileTarget(

@@ -1,6 +1,6 @@
 // MARK: - Stream Utility
 
-import Foundation
+@preconcurrency import Foundation
 import Logger
 
 public enum StreamingFileHandleReader {
