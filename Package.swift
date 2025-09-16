@@ -38,16 +38,6 @@ let multiPlatformTargets: [Target] = [
             "BuildServerProtocol",
         ]
     ),
-    .target(
-        name: "BSPServer",
-        dependencies: [
-            "Logger",
-            "JSONRPCConnection",
-            "SwiftPMProjectManagerProvider",
-            "BuildServerProtocol",
-            .target(name: "XcodeProjectManagerProvider", condition: .when(platforms: [.macOS]))
-        ]
-    ),
     .executableTarget(
         name: "XcodeBuildServerCLI",
         dependencies: [
@@ -68,6 +58,29 @@ let multiPlatformTargets: [Target] = [
         ]
     ),
 ]
+
+#if os(macOS)
+let bspServerTarget: Target = .target(
+    name: "BSPServer",
+    dependencies: [
+        "Logger",
+        "JSONRPCConnection",
+        "SwiftPMProjectManagerProvider",
+        "BuildServerProtocol",
+        "XcodeProjectManagerProvider",
+    ]
+)
+#else
+let bspServerTarget: Target = .target(
+    name: "BSPServer",
+    dependencies: [
+        "Logger",
+        "JSONRPCConnection",
+        "SwiftPMProjectManagerProvider",
+        "BuildServerProtocol",
+    ]
+)
+#endif
 
 let multiPlatformProducts: [Product] = [
     .library(name: "Support", targets: ["Logger"]),
@@ -168,9 +181,9 @@ let macOnlyProducts: [Product] = [
 
 let targets: [Target] = {
     #if os(macOS)
-    return multiPlatformTargets + macOnlyTargets
+    return multiPlatformTargets + [bspServerTarget] + macOnlyTargets
     #else
-    return multiPlatformTargets
+    return multiPlatformTargets + [bspServerTarget]
     #endif
 }()
 
