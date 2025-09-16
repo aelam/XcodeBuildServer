@@ -2,6 +2,9 @@
 
 # XcodeBuildServer Dev Container Setup Script
 
+SWIFTLINT_VERSION="0.60.0"
+SWIFTFORMAT_VERSION="0.57.2"
+
 set -e
 
 echo "🚀 Setting up XcodeBuildServer development environment..."
@@ -33,7 +36,6 @@ sudo apt-get install -y \
 
 # Install SwiftLint
 echo "🧹 Installing SwiftLint..."
-SWIFTLINT_VERSION="0.54.0"
 curl -L "https://github.com/realm/SwiftLint/releases/download/${SWIFTLINT_VERSION}/swiftlint_linux.zip" -o /tmp/swiftlint.zip
 unzip /tmp/swiftlint.zip -d /tmp
 sudo cp /tmp/swiftlint /usr/local/bin/
@@ -42,7 +44,6 @@ rm -f /tmp/swiftlint.zip /tmp/swiftlint
 
 # Install SwiftFormat
 echo "🎨 Installing SwiftFormat..."
-SWIFTFORMAT_VERSION="0.52.11"
 curl -L "https://github.com/nicklockwood/SwiftFormat/releases/download/${SWIFTFORMAT_VERSION}/swiftformat_linux.zip" -o /tmp/swiftformat.zip
 unzip /tmp/swiftformat.zip -d /tmp
 sudo cp /tmp/swiftformat /usr/local/bin/

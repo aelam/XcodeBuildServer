@@ -13,10 +13,6 @@
     "ghcr.io/devcontainers/features/git:1": {
       "ppa": true,
       "version": "latest"
-    },
-    "ghcr.io/devcontainers/features/node:1": {
-      "version": "lts",
-      "nodeGypDependencies": true
     }
   },
   "customizations": {
@@ -24,7 +20,7 @@
       "settings": {
         "terminal.integrated.defaultProfile.linux": "zsh",
         "swift.path": "/usr/bin/swift",
-        "swift.buildPath": "/usr/bin/swift",
+        "swift.buildPath": ".build",
         "swift.runtimePath": "/usr/lib/swift",
         "files.watcherExclude": {
           "**/.build/**": true,
