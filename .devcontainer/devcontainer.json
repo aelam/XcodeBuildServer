@@ -19,16 +19,19 @@
     "vscode": {
       "settings": {
         "terminal.integrated.defaultProfile.linux": "zsh",
-        "swift.path": "/usr/bin/swift",
+        "swift.path": "/usr/bin",
         "swift.buildPath": ".build",
         "swift.runtimePath": "/usr/lib/swift",
         "files.watcherExclude": {
           "**/.build/**": true,
           "**/Package.resolved": true
         },
-        "lldb.executable": "/usr/bin/lldb-18",
-        "lldb.serverExecutable": "/usr/bin/lldb-server-18",
-        "lldb.library": "/usr/lib/aarch64-linux-gnu/liblldb-18.so"
+        "lldb.executable": "/usr/bin/lldb",
+        "lldb.serverExecutable": "/usr/bin/lldb-server",
+        "lldb.library": "/usr/lib/aarch64-linux-gnu/liblldb-18.so",
+        "lldb.adapterEnv": {
+          "LLDB_DEBUGSERVER_PATH": "/usr/bin/lldb-server"
+        }
       },
       "extensions": [
         "sswg.swift-lang",
