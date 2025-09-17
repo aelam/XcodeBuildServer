@@ -30,7 +30,7 @@ See sourcekit-bsp in action with seamless code navigation and jump-to-definition
 1. Download the latest release from [GitHub Releases](https://github.com/wang.lun/sourcekit-bsp/releases)
 2. Extract and move to your PATH:
    ```bash
-   tar -xzf xcode-build-server-macos-universal.tar.gz
+   tar -xzf sourcekit-bsp-macos-universal.tar.gz
    sudo mv release/sourcekit-bsp /usr/local/bin/
    chmod +x /usr/local/bin/sourcekit-bsp
    ```
@@ -213,7 +213,7 @@ swift test
 
 ### Logging
 
-Logs are written to `/tmp/xcode-build-server.log`
+Logs are written to `/tmp/sourcekit-bsp.log`
 
 ### Verify if sourcekit-bsp can resolve your project
 

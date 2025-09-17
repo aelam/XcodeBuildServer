@@ -46,22 +46,22 @@ jobs:
         chmod +x release/XcodeProjectCLI
 
         # Create tar.gz
-        tar -czf xcode-build-server-macos-universal.tar.gz -C release sourcekit-bsp XcodeProjectCLI
+        tar -czf sourcekit-bsp-macos-universal.tar.gz -C release sourcekit-bsp XcodeProjectCLI
 
         # Create zip
-        cd release && zip ../xcode-build-server-macos-universal.zip sourcekit-bsp XcodeProjectCLI && cd ..
+        cd release && zip ../sourcekit-bsp-macos-universal.zip sourcekit-bsp XcodeProjectCLI && cd ..
 
     - name: Generate Checksums
       run: |
-        shasum -a 256 xcode-build-server-macos-universal.tar.gz > checksums.txt
-        shasum -a 256 xcode-build-server-macos-universal.zip >> checksums.txt
+        shasum -a 256 sourcekit-bsp-macos-universal.tar.gz > checksums.txt
+        shasum -a 256 sourcekit-bsp-macos-universal.zip >> checksums.txt
         
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          xcode-build-server-macos-universal.tar.gz
-          xcode-build-server-macos-universal.zip
+          sourcekit-bsp-macos-universal.tar.gz
+          sourcekit-bsp-macos-universal.zip
           checksums.txt
         generate_release_notes: true
         prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
@@ -78,7 +78,7 @@ jobs:
           
           #### Manual Installation
           1. Download the appropriate archive for your platform
-          2. Extract the binary: `tar -xzf xcode-build-server-macos-universal.tar.gz`
+          2. Extract the binary: `tar -xzf sourcekit-bsp-macos-universal.tar.gz`
           3. Move to PATH: `mv sourcekit-bsp /usr/local/bin/`
           4. Make executable: `chmod +x /usr/local/bin/sourcekit-bsp`
           
