@@ -1,4 +1,4 @@
-# BSP服务器实现指南 - XcodeBuildServer
+# BSP服务器实现指南 - sourcekit-bsp
 
 基于 [SourceKit-LSP官方BSP服务器实现指南](https://github.com/swiftlang/sourcekit-lsp/blob/56a91e90212400f20bb9d3f2e563ea8cda7634f6/Contributor%20Documentation/Implementing%20a%20BSP%20server.md) 的完整实现文档。
 
@@ -15,7 +15,7 @@ SourceKit-LSP可以通过[Build Server Protocol (BSP)](https://build-server-prot
 - **必需响应字段**：
   ```json
   {
-    "displayName": "XcodeBuildServer",
+    "displayName": "sourcekit-bsp",
     "version": "1.0.0",
     "bspVersion": "2.2.0",
     "capabilities": {
@@ -248,7 +248,7 @@ public struct Result: Codable, Hashable, Sendable {
 - **用途**：处理SourceKit-LSP发送的用户消息
 - **实现状态**：✅ 已实现
 
-## XcodeBuildServer特有实现
+## sourcekit-bsp特有实现
 
 ### 项目发现和解析
 ```swift
@@ -286,11 +286,11 @@ let toolchainURI = URI(string: "file://\(toolchainPath)")
 
 ```json
 {
-  "name": "XcodeBuildServer",
+  "name": "sourcekit-bsp",
   "version": "1.0.0",
   "bspVersion": "2.2.0",
   "languages": ["swift", "objective-c", "objective-cpp", "c", "cpp"],
-  "argv": ["/path/to/XcodeBuildServerCLI"],
+  "argv": ["/path/to/sourcekit-bsp"],
   "rootUri": "file:///path/to/project"
 }
 ```

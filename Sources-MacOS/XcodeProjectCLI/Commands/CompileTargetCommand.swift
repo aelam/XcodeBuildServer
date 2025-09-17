@@ -1,6 +1,6 @@
 //
 //  CompileTargetCommand.swift
-//  XcodeBuildServer
+//  sourcekit-bsp
 //
 //  Created by wang.lun on 2025/09/07.
 //
@@ -34,7 +34,7 @@ struct CompileTargetCommand: AsyncParsableCommand {
         let workspaceFolder = workspaceFolder.absolutePath
         let rootURL = URL(fileURLWithPath: workspaceFolder)
 
-        let preferredProjectInfoURL = rootURL.appendingPathComponent(".XcodeBuildServer/project.json")
+        let preferredProjectInfoURL = rootURL.appendingPathComponent(".sourcekit-bsp/project.json")
         let xcodeProjectReference: XcodeProjectReference? =
             try? JSONDecoder().decode(
                 XcodeProjectReference.self,

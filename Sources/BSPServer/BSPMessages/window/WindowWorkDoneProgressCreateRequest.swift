@@ -1,6 +1,6 @@
 //
 //  WindowWorkDoneProgressCreateRequest.swift
-//  XcodeBuildServer
+//  sourcekit-bsp
 //
 //  Created by ST22956 on 2024/11/23.
 //

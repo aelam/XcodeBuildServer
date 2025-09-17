@@ -2,7 +2,7 @@
 
 ## 概览
 
-本文档描述了XcodeBuildServer如何扫描和解析工作目录，获取BSP目标和构建设置索引（编译参数）以供LSP使用。
+本文档描述了sourcekit-bsp如何扫描和解析工作目录，获取BSP目标和构建设置索引（编译参数）以供LSP使用。
 
 ## 目录结构支持的情况
 
@@ -26,7 +26,7 @@
 ## 配置文件
 
 ### 配置路径
-`.XcodeBuildServer/project.json`
+`.sourcekit-bsp/project.json`
 
 ### 配置格式
 ```json

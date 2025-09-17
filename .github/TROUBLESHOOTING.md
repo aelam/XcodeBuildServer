@@ -1,6 +1,6 @@
 # GitHub Actions Troubleshooting Guide
 
-This guide helps you resolve common issues with the GitHub Actions workflows in XcodeBuildServer.
+This guide helps you resolve common issues with the GitHub Actions workflows in sourcekit-bsp.
 
 ## Common Issues and Solutions
 
@@ -98,7 +98,7 @@ This guide helps you resolve common issues with the GitHub Actions workflows in 
      uses: actions/upload-artifact@v4
      with:
        name: xcode-build-server
-       path: .build/release/XcodeBuildServerCLI
+       path: .build/release/sourcekit-bsp
    ```
 
 ### 6. Cache Issues

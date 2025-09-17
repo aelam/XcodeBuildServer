@@ -1,6 +1,6 @@
-# Contributing to XcodeBuildServer
+# Contributing to sourcekit-bsp
 
-Thank you for your interest in contributing to XcodeBuildServer! This document provides guidelines and information for contributors.
+Thank you for your interest in contributing to sourcekit-bsp! This document provides guidelines and information for contributors.
 
 ## Code of Conduct
 
@@ -38,8 +38,8 @@ This project adheres to a [Code of Conduct](CODE_OF_CONDUCT.md). By participatin
 
 1. **Fork and clone** the repository:
    ```bash
-   git clone https://github.com/yourusername/XcodeBuildServer.git
-   cd XcodeBuildServer
+   git clone https://github.com/yourusername/sourcekit-bsp.git
+   cd sourcekit-bsp
    ```
 
 2. **Install dependencies**:
@@ -257,4 +257,4 @@ Contributors are recognized in:
 - Release notes
 - GitHub contributors page
 
-Thank you for contributing to XcodeBuildServer!
+Thank you for contributing to sourcekit-bsp!

@@ -1,6 +1,6 @@
 # GitHub Actions Workflows
 
-This directory contains all the GitHub Actions workflows for XcodeBuildServer. Each workflow serves a specific purpose in our CI/CD pipeline.
+This directory contains all the GitHub Actions workflows for sourcekit-bsp. Each workflow serves a specific purpose in our CI/CD pipeline.
 
 ## Workflows Overview
 
@@ -94,10 +94,10 @@ This directory contains all the GitHub Actions workflows for XcodeBuildServer. E
 The following badges are available for the README:
 
 ```markdown
-[![CI](https://github.com/wang.lun/XcodeBuildServer/workflows/CI/badge.svg)](https://github.com/wang.lun/XcodeBuildServer/actions/workflows/ci.yml)
-[![Release](https://github.com/wang.lun/XcodeBuildServer/workflows/Release/badge.svg)](https://github.com/wang.lun/XcodeBuildServer/actions/workflows/release.yml)
-[![Code Quality](https://github.com/wang.lun/XcodeBuildServer/workflows/Code%20Quality/badge.svg)](https://github.com/wang.lun/XcodeBuildServer/actions/workflows/code-quality.yml)
-[![Security](https://github.com/wang.lun/XcodeBuildServer/workflows/Security/badge.svg)](https://github.com/wang.lun/XcodeBuildServer/actions/workflows/security.yml)
+[![CI](https://github.com/wang.lun/sourcekit-bsp/workflows/CI/badge.svg)](https://github.com/wang.lun/sourcekit-bsp/actions/workflows/ci.yml)
+[![Release](https://github.com/wang.lun/sourcekit-bsp/workflows/Release/badge.svg)](https://github.com/wang.lun/sourcekit-bsp/actions/workflows/release.yml)
+[![Code Quality](https://github.com/wang.lun/sourcekit-bsp/workflows/Code%20Quality/badge.svg)](https://github.com/wang.lun/sourcekit-bsp/actions/workflows/code-quality.yml)
+[![Security](https://github.com/wang.lun/sourcekit-bsp/workflows/Security/badge.svg)](https://github.com/wang.lun/sourcekit-bsp/actions/workflows/security.yml)
 ```
 
 ## Workflow Dependencies

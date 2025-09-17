@@ -8,7 +8,7 @@ import Foundation
 import JSONRPCConnection
 import Logger
 
-/// Languages supported by XcodeBuildServer for Xcode projects
+/// Languages supported by sourcekit-bsp for Xcode projects
 public let buildServerSupportedLanguages: Set<Language> = [.swift, .objective_c, .objective_cpp, .c, .cpp]
 
 public struct BuildInitializeRequest: ContextualRequestType, Sendable {
@@ -134,7 +134,7 @@ public struct BuildInitializeRequest: ContextualRequestType, Sendable {
                 rootUri: self.params.rootUri,
                 bspVersion: "2.2.0",
                 version: "1.0",
-                displayName: "XcodeBuildServerCLI"
+                displayName: "sourcekit-bsp"
             )
         )
         return response

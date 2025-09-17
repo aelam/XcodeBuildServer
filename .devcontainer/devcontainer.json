@@ -1,5 +1,5 @@
 {
-  "name": "XcodeBuildServer Swift Development",
+  "name": "sourcekit-bsp Swift Development",
   "image": "swift:6.1-noble",
   "features": {
     "ghcr.io/devcontainers/features/common-utils:2": {
