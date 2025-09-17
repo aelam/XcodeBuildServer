@@ -5,34 +5,38 @@
 //
 
 import Foundation
-#if canImport(os)
+#if canImport(os) && os(macOS)
 import os
-#endif
 
 /// A cross-platform thread-safe lock wrapper
 public final class CrossPlatformLock<State: Sendable>: @unchecked Sendable {
-    #if canImport(os) && os(macOS)
     private let lock: OSAllocatedUnfairLock<State>
-    #else
-    private let nsLock = NSLock()
-    private var state: State
-    #endif
 
     public init(initialState: State) {
-        #if canImport(os) && os(macOS)
         self.lock = OSAllocatedUnfairLock(initialState: initialState)
-        #else
-        self.state = initialState
-        #endif
     }
 
     public func withLock<T: Sendable>(_ operation: @Sendable (inout State) -> T) -> T {
-        #if canImport(os) && os(macOS)
-        return lock.withLock(operation)
-        #else
+        lock.withLock(operation)
+    }
+}
+
+#else
+
+/// A cross-platform thread-safe lock wrapper
+public final class CrossPlatformLock<State: Sendable>: @unchecked Sendable {
+    private let nsLock = NSLock()
+    private var state: State
+
+    public init(initialState: State) {
+        self.state = initialState
+    }
+
+    public func withLock<T: Sendable>(_ operation: @Sendable (inout State) -> T) -> T {
         nsLock.lock()
         defer { nsLock.unlock() }
         return operation(&state)
-        #endif
     }
 }
+
+#endif
