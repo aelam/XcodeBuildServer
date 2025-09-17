@@ -41,7 +41,7 @@ struct CompileTargetCommand: AsyncParsableCommand {
                 from: Data(contentsOf: preferredProjectInfoURL)
             )
 
-        let toolchain = XcodeToolchain()
+        let toolchain = XcodeToolchain(workingDirectory: rootURL)
         let projectManager = XcodeProjectManager(
             rootURL: rootURL,
             xcodeProjectReference: xcodeProjectReference,
