@@ -33,7 +33,7 @@ public struct XcodeProjectManagerProvider: ProjectManagerProvider {
         config: ProjectConfiguration?
     ) async throws -> any ProjectManager {
         let toolchain: XcodeToolchain = try await Task.detached {
-            let toolchain = XcodeToolchain()
+            let toolchain = XcodeToolchain(workingDirectory: rootURL)
             logger.debug("toolchain is initializing")
             try await toolchain.initialize()
             logger.debug("toolchain is initialized successfully")

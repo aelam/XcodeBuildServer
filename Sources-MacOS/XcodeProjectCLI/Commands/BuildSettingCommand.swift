@@ -21,7 +21,7 @@ struct BuildSettingsCommand: AsyncParsableCommand {
         let xcodeGlobalSettings =
             XcodeGlobalSettings(derivedDataPath: targetInfo.derivedDataPath)
 
-        let xcodeToolchain = XcodeToolchain()
+        let xcodeToolchain = XcodeToolchain(workingDirectory: targetInfo.projectFolder)
         try await xcodeToolchain.initialize()
         guard let xcodeInstallation = await xcodeToolchain
             .getSelectedInstallation() else {

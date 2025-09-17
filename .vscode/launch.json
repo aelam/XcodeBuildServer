@@ -4,6 +4,24 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "Build Debug XcodeProjectCLI (MacOS)",
+            "program": "${workspaceFolder}/.build/debug/XcodeProjectCLI",
+            "preLaunchTask": "swift: Build Debug XcodeProjectCLI",
+            "args": [
+                "buildSettings",
+                "--workspace-folder",
+                "/Users/wang.lun/Work/line-stickers-ios",
+                "--xcodeproj",
+                "UserStickers/UserStickers.xcodeproj",
+                "--target",
+                "UserStickers",
+                "--configuration",
+                "Debug",
+            ]
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Build Debug sourcekit-bsp",
             "program": "${workspaceFolder}/.build/debug/sourcekit-bsp",
             "preLaunchTask": "swift: Build Debug sourcekit-bsp"

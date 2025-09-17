@@ -37,7 +37,9 @@ public struct XcodeInstallation: Sendable, Codable {
     public let path: URL
     public let version: String
     public let buildVersion: String
-    public let isDeveloperDirSet: Bool
+    public let isXcodeVersionFileVersion: Bool // .xcode-version
+    public let isDeveloperDirVersion: Bool // DEVELOPER_DIR
+    public let isXcodeSelectedVersion: Bool // xcode-select --print-path
 
     public var developerDir: URL {
         path.appendingPathComponent("Contents/Developer")
@@ -114,8 +116,8 @@ public typealias XcodeBuildExitCode = Int32
 public actor XcodeToolchain {
     private var selectedInstallation: XcodeInstallation?
     private var availableInstallations: [XcodeInstallation] = []
-    private let preferredVersion: String?
     private let customDeveloperDir: String?
+    private let workingDirectory: URL?
     private let processExecutor = ProcessExecutor()
     private let commonXcodePaths = [
         "/Applications/Xcode.app",
@@ -123,11 +125,11 @@ public actor XcodeToolchain {
     ]
 
     public init(
-        preferredVersion: String? = nil,
-        customDeveloperDir: String? = nil
+        customDeveloperDir: String? = nil,
+        workingDirectory: URL? = nil
     ) {
-        self.preferredVersion = preferredVersion
         self.customDeveloperDir = customDeveloperDir
+        self.workingDirectory = workingDirectory
     }
 
     deinit {
@@ -216,7 +218,6 @@ public actor XcodeToolchain {
         var installations: [XcodeInstallation] = []
 
         installations += await findDeveloperDirInstallations()
-        installations += await findActiveXcodeInstallations()
         installations += await findCommonPathInstallations()
         installations += await findAdditionalXcodeVersions()
 
@@ -228,20 +229,30 @@ public actor XcodeToolchain {
             throw XcodeToolchainError.xcodeNotFound
         }
 
-        // 1. Prefer DEVELOPER_DIR set installation
+        // 1. .xcode-version file
+        if let workingDirectory {
+            let xcodeVersionFileURL = workingDirectory.appendingPathComponent(".xcode-version")
+            if let versionString = try? String(contentsOf: xcodeVersionFileURL)
+                .trimmingCharacters(in: .whitespacesAndNewlines),
+                !versionString.isEmpty,
+                let fileVersionInstallation = availableInstallations
+                .first(where: { $0.version.contains(versionString) }) {
+                selectedInstallation = fileVersionInstallation
+                return
+            }
+        }
+
+        // 2. Prefer DEVELOPER_DIR set installation
         if let developerDirInstallation = availableInstallations
-            .first(where: { $0.isDeveloperDirSet }) {
+            .first(where: { $0.isDeveloperDirVersion }) {
             selectedInstallation = developerDirInstallation
             return
         }
 
-        // 2. Prefer specific version if requested
-        if let preferredVersion {
-            if let preferredInstallation = availableInstallations
-                .first(where: { $0.version.contains(preferredVersion) }) {
-                selectedInstallation = preferredInstallation
-                return
-            }
+        // 3. Prefer the active Xcode installation
+        if let activeInstallation = availableInstallations.first {
+            selectedInstallation = activeInstallation
+            return
         }
 
         // 3. Use the latest available version
@@ -250,11 +261,15 @@ public actor XcodeToolchain {
 
     private func createInstallation(
         from xcodeURL: URL,
-        isDeveloperDirSet: Bool
+        isXcodeVersionFileVersion: Bool = false,
+        isDeveloperDirVersion: Bool = false,
+        isXcodeSelectedVersion: Bool = false
     ) async throws -> XcodeInstallation {
         try XcodeInstallationFactory.createInstallation(
             from: xcodeURL,
-            isDeveloperDirSet: isDeveloperDirSet
+            isXcodeVersionFileVersion: isXcodeVersionFileVersion,
+            isDeveloperDirVersion: isDeveloperDirVersion,
+            isXcodeSelectedVersion: isXcodeSelectedVersion
         )
     }
 
@@ -274,7 +289,7 @@ public actor XcodeToolchain {
 
             if let installation = try? await createInstallation(
                 from: xcodeURL,
-                isDeveloperDirSet: true
+                isDeveloperDirVersion: true
             ) {
                 installations.append(installation)
             }
@@ -291,23 +306,7 @@ public actor XcodeToolchain {
                 .contains { $0.path.path == xcodeURL.path }
             if !alreadyFound, let installation = try? await createInstallation(
                 from: xcodeURL,
-                isDeveloperDirSet: false
-            ) {
-                installations.append(installation)
-            }
-        }
-
-        return installations
-    }
-
-    private func findActiveXcodeInstallations() async -> [XcodeInstallation] {
-        var installations: [XcodeInstallation] = []
-
-        if let activeXcode = try? await findActiveXcodePath() {
-            let xcodeURL = URL(fileURLWithPath: activeXcode)
-            if let installation = try? await createInstallation(
-                from: xcodeURL,
-                isDeveloperDirSet: false
+                isDeveloperDirVersion: false
             ) {
                 installations.append(installation)
             }
@@ -323,7 +322,9 @@ public actor XcodeToolchain {
             if FileManager.default.fileExists(atPath: xcodeURL.path),
                let installation = try? await createInstallation(
                    from: xcodeURL,
-                   isDeveloperDirSet: false
+                   isXcodeVersionFileVersion: false,
+                   isDeveloperDirVersion: false,
+                   isXcodeSelectedVersion: false
                ) {
                 installations.append(installation)
             }
@@ -342,8 +343,7 @@ public actor XcodeToolchain {
                    !commonXcodePaths.contains("/Applications/\(item)") {
                     let xcodeURL = URL(fileURLWithPath: "/Applications/\(item)")
                     if let installation = try? await createInstallation(
-                        from: xcodeURL,
-                        isDeveloperDirSet: false
+                        from: xcodeURL
                     ) {
                         installations.append(installation)
                     }
@@ -361,25 +361,13 @@ public actor XcodeToolchain {
                 let path = installation.path.path
                 if let existing = dict[path] {
                     dict[path] = installation
-                        .isDeveloperDirSet ? installation : existing
+                        .isDeveloperDirVersion ? installation : existing
                 } else {
                     dict[path] = installation
                 }
             }.values
 
-        return Array(uniqueInstallations).sorted { $0.version > $1.version }
-    }
-}
-
-// MARK: - Utility Functions
-
-public func isXcodeBuildAvailable() async -> Bool {
-    let toolchain = XcodeToolchain()
-    do {
-        try await toolchain.initialize()
-        return await toolchain.isXcodeBuildAvailable()
-    } catch {
-        return false
+        return Array(uniqueInstallations)
     }
 }
 
@@ -388,7 +376,9 @@ public func isXcodeBuildAvailable() async -> Bool {
 private enum XcodeInstallationFactory {
     static func createInstallation(
         from xcodeURL: URL,
-        isDeveloperDirSet: Bool
+        isXcodeVersionFileVersion: Bool = false,
+        isDeveloperDirVersion: Bool = false,
+        isXcodeSelectedVersion: Bool = false
     ) throws -> XcodeInstallation {
         let infoPlistURL = xcodeURL
             .appendingPathComponent("Contents/Info.plist")
@@ -406,7 +396,9 @@ private enum XcodeInstallationFactory {
             path: xcodeURL,
             version: version,
             buildVersion: buildVersion,
-            isDeveloperDirSet: isDeveloperDirSet
+            isXcodeVersionFileVersion: isXcodeVersionFileVersion,
+            isDeveloperDirVersion: isDeveloperDirVersion,
+            isXcodeSelectedVersion: isXcodeSelectedVersion
         )
     }
 }

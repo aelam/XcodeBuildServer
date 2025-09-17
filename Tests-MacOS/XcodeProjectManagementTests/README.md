@@ -30,17 +30,6 @@ The tests are designed to be robust across different environments, including:
 
 The tests use intelligent detection to handle environments without Xcode:
 
-```swift
-private func isXcodeBuildAvailable() -> Bool {
-    // Check if we're in CI environment
-    if ProcessInfo.processInfo.environment["CI"] != nil {
-        return false
-    }
-    
-    // Verify xcodebuild exists and can run
-    // ...
-}
-```
 
 ### Behavior in CI:
 - **Project loading tests**: Skip scheme resolution expectations
