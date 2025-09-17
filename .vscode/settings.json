@@ -1,5 +1,4 @@
 {
-    "editor.defaultFormatter": "vknabel.vscode-swiftformat",
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
         "source.fixAll": "always",
@@ -17,13 +16,11 @@
         "DerivedData": true
     },
     "explorer.excludeGitIgnore": true,
-    "swiftformat.enable": true,
-    "swiftlint.enable": true,
     "[swift]": {
         "editor.defaultFormatter": "vknabel.vscode-swiftformat",
         "editor.formatOnSave": true,
         "editor.codeActionsOnSave": {
             "source.fixAll.swiftlint": "always"
         }
-    }
+    },
 }
