@@ -32,21 +32,23 @@ sudo apt-get install -y \
     xz-utils \
     tk-dev \
     libffi-dev \
-    liblzma-dev
+    liblzma-dev \
+    lldb \
+    lldb-18
 
 # Install SwiftLint
 echo "🧹 Installing SwiftLint..."
-curl -L "https://github.com/realm/SwiftLint/releases/download/${SWIFTLINT_VERSION}/swiftlint_linux.zip" -o /tmp/swiftlint.zip
-unzip /tmp/swiftlint.zip -d /tmp
-sudo cp /tmp/swiftlint /usr/local/bin/
-sudo chmod +x /usr/local/bin/swiftlint
-rm -f /tmp/swiftlint.zip /tmp/swiftlint
+curl -L "https://github.com/realm/SwiftLint/releases/download/${SWIFTLINT_VERSION}/SwiftLintBinary.artifactbundle.zip" -o /tmp/SwiftLintBinary.artifactbundle.zip
+cd /tmp
+unzip SwiftLintBinary.artifactbundle.zip
+sudo cp SwiftLintBinary.artifactbundle/swiftlint-${SWIFTLINT_VERSION}-linux-gnu/bin/swiftlint_arm64 /usr/local/bin/swiftlint
+rm -rf /tmp/SwiftLintBinary.artifactbundle.zip /tmp/SwiftLintBinary.artifactbundle
 
 # Install SwiftFormat
 echo "🎨 Installing SwiftFormat..."
 curl -L "https://github.com/nicklockwood/SwiftFormat/releases/download/${SWIFTFORMAT_VERSION}/swiftformat_linux.zip" -o /tmp/swiftformat.zip
 unzip /tmp/swiftformat.zip -d /tmp
-sudo cp /tmp/swiftformat /usr/local/bin/
+sudo cp /tmp/swiftformat_linux /usr/local/bin/swiftformat
 sudo chmod +x /usr/local/bin/swiftformat
 rm -f /tmp/swiftformat.zip /tmp/swiftformat
 

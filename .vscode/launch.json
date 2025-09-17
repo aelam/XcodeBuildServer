@@ -4,19 +4,8 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Build Debug XcodeProjectCLI",
-            "program": "${workspaceFolder:XcodeBuildServer}/.build/debug/XcodeProjectCLI",
-            "args": [
-                "/Users/wang.lun/Desktop/HelloWorkspace"
-                // "/Users/wang.lun/Work/line-stickers-ios/"
-            ],
-            "preLaunchTask": "swift: Build Debug XcodeBuildServerCLI"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
             "name": "Build Debug XcodeBuildServerCLI",
-            "program": "${workspaceFolder:XcodeBuildServer}/.build/debug/XcodeBuildServerCLI",
+            "program": "${workspaceFolder}/.build/debug/XcodeBuildServerCLI",
             "preLaunchTask": "swift: Build Debug XcodeBuildServerCLI"
         },
         {
@@ -24,31 +13,31 @@
             "request": "attach",
             "waitFor": true,
             "name": "Wait and attach XcodeBuildServerCLI",
-            "program": "${workspaceFolder:XcodeBuildServer}/.build/debug/XcodeBuildServerCLI"
+            "program": "${workspaceFolder}/.build/debug/XcodeBuildServerCLI"
         },
         {
             "type": "swift",
             "request": "launch",
             "args": [],
-            "cwd": "${workspaceFolder:XcodeBuildServer}",
+            "cwd": "${workspaceFolder}",
             "name": "Release XcodeBuildServerCLI",
-            "program": "${workspaceFolder:XcodeBuildServer}/.build/release/XcodeBuildServerCLI",
+            "program": "${workspaceFolder}/.build/release/XcodeBuildServerCLI",
             "preLaunchTask": "swift: Build Release XcodeBuildServerCLI"
         },
         {
             "type": "swift",
             "request": "launch",
             "args": [],
-            "cwd": "${workspaceFolder:XcodeBuildServer}",
+            "cwd": "${workspaceFolder}",
             "name": "Debug XcodeBuildServerCLI",
-            "program": "${workspaceFolder:XcodeBuildServer}/.build/debug/XcodeBuildServerCLI",
+            "program": "${workspaceFolder}/.build/debug/XcodeBuildServerCLI",
             "preLaunchTask": "swift: Build Debug XcodeBuildServerCLI"
         },
         {
             "type": "lldb",
             "request": "attach",
             "name": "Attach to XcodeBuildServerCLI",
-            "program": "${workspaceFolder:XcodeBuildServer}/.build/debug/XcodeBuildServerCLI",
+            "program": "${workspaceFolder}/.build/debug/XcodeBuildServerCLI",
             "waitFor": true,
             "preLaunchTask": ""
         },
@@ -56,18 +45,18 @@
             "type": "swift",
             "request": "launch",
             "args": [],
-            "cwd": "${workspaceFolder:XcodeBuildServer}",
+            "cwd": "${workspaceFolder}",
             "name": "Debug XcodeProjectCLI",
-            "program": "${workspaceFolder:XcodeBuildServer}/.build/debug/XcodeProjectCLI",
+            "program": "${workspaceFolder}/.build/debug/XcodeProjectCLI",
             "preLaunchTask": "swift: Build Debug XcodeProjectCLI"
         },
         {
             "type": "swift",
             "request": "launch",
             "args": [],
-            "cwd": "${workspaceFolder:XcodeBuildServer}",
+            "cwd": "${workspaceFolder}",
             "name": "Release XcodeProjectCLI",
-            "program": "${workspaceFolder:XcodeBuildServer}/.build/release/XcodeProjectCLI",
+            "program": "${workspaceFolder}/.build/release/XcodeProjectCLI",
             "preLaunchTask": "swift: Build Release XcodeProjectCLI"
         }
     ]
