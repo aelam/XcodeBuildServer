@@ -6,7 +6,7 @@
 
 import XCTest
 @testable import JSONRPCConnection
-@testable import XcodeBuildServer
+@testable import SourceKitBSP
 
 final class BSPMessageTests: XCTestCase {
     func testBuildInitialize() throws {

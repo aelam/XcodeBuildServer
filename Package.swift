@@ -39,7 +39,7 @@ let multiPlatformTargets: [Target] = [
         ]
     ),
     .executableTarget(
-        name: "XcodeBuildServerCLI",
+        name: "sourcekit-bsp",
         dependencies: [
             "BSPServer",
             "Logger",
@@ -95,8 +95,8 @@ let multiPlatformProducts: [Product] = [
     ),
     .library(name: "BSPServer", targets: ["BSPServer"]),
     .executable(
-        name: "XcodeBuildServerCLI",
-        targets: ["XcodeBuildServerCLI"]
+        name: "sourcekit-bsp",
+        targets: ["sourcekit-bsp"]
     ),
 ]
 
@@ -217,7 +217,7 @@ let dependencies: [PackageDescription.Package.Dependency] = [
 ]
 
 let package = Package(
-    name: "XcodeBuildServer",
+    name: "sourcekit-bsp",
     platforms: [.macOS(.v13)],
     products: products,
     dependencies: dependencies,

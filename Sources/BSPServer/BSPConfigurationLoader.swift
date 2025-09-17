@@ -17,7 +17,7 @@ import Foundation
 /// When schemes are specified, only those schemes and their targets will be loaded,
 /// significantly reducing initialization time for large projects.
 ///
-/// Example .XcodeBuildServer/project.json:
+/// Example .sourcekit-bsp/project.json:
 /// ```json
 /// {
 ///   "workspace": "MyApp.xcworkspace",
@@ -57,7 +57,7 @@ public final class BSPServerConfigurationLoader: Sendable {
     public func findConfiguration() -> URL? {
         let configSearchPaths = [
             // Standard BSP config location for xcode.json
-            rootURL.appendingPathComponent(".XcodeBuildServer/project.json"),
+            rootURL.appendingPathComponent(".sourcekit-bsp/project.json"),
         ]
 
         // First try specific xcode.json path
@@ -65,8 +65,8 @@ public final class BSPServerConfigurationLoader: Sendable {
             return configSearchPaths[0]
         }
 
-        // Check .XcodeBuildServer directory for any JSON files
-        let bspDir = rootURL.appendingPathComponent(".XcodeBuildServer")
+        // Check .sourcekit-bsp directory for any JSON files
+        let bspDir = rootURL.appendingPathComponent(".sourcekit-bsp")
         if FileManager.default.fileExists(atPath: bspDir.path) {
             do {
                 let jsonFiles = try FileManager.default
@@ -93,7 +93,7 @@ public final class BSPServerConfigurationLoader: Sendable {
     public func loadConfiguration() throws -> XcodeBSPConfiguration? {
         let configFileURL: URL
 
-        if configurationPath == ".XcodeBuildServer/project.json" {
+        if configurationPath == ".sourcekit-bsp/project.json" {
             // Use findConfiguration for default path
             guard let foundURL = findConfiguration() else {
                 return nil

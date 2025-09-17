@@ -1,6 +1,5 @@
 //
 //  SwiftPMProjectManagerProvider.swift
-//  SwiftPMProjectManagerProvider Module
 //
 //  Copyright © 2024 Wang Lun.
 //

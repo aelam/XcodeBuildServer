@@ -21,7 +21,7 @@ public final class SwiftyBeaverLogger: @unchecked Sendable {
         // log.addDestination(console)
 
         let file = FileDestination()
-        file.logFileURL = URL(fileURLWithPath: "/tmp/xcode-build-server.log")
+        file.logFileURL = URL(fileURLWithPath: "/tmp/sourcekit-bsp.log")
         file.format = "$Dyyyy-MM-dd HH:mm:ss.SSS$d $L $N.$F:$l $M"
         log.addDestination(file)
     }

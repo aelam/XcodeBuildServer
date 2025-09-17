@@ -1,5 +1,5 @@
 //
-//  XcodeBuildServerCLI.swift
+//  SourceKitBSP.swift
 //
 //  Copyright © 2024 Wang Lun.
 
@@ -15,7 +15,7 @@ import XcodeProjectManagerProvider
 import SwiftPMProjectManagerProvider
 
 @main
-struct XcodeBuildServerCLI {
+struct SourceKitBSP {
     static func main() async {
         // 获取环境信息
         let processID = ProcessInfo.processInfo.processIdentifier
@@ -23,7 +23,7 @@ struct XcodeBuildServerCLI {
 
         // Log startup message
         logger.info(
-            "XcodeBuildServer started successfully - PID: \(processID) - Environment: \(environment)"
+            "sourcekit-bsp started successfully - PID: \(processID) - Environment: \(environment)"
         )
 
         let arguments = CommandLine.arguments
@@ -73,10 +73,10 @@ struct XcodeBuildServerCLI {
     }
 
     private static func printUsage() {
-        print("Usage: XcodeBuildServerCLI")
+        print("Usage: sourcekit-bsp")
         print("")
         print("Description:")
-        print("  Starts an XcodeBuildServerCLI Protocol (BSP) server that communicates")
+        print("  Starts an sourcekit-bsp Protocol (BSP) server that communicates")
         print("  via JSON-RPC over stdin/stdout. The server waits for BSP requests")
         print("  from compatible IDEs or tools.")
         print("")
@@ -91,8 +91,8 @@ struct XcodeBuildServerCLI {
         print("  See: https://build-server-protocol.github.io/")
         print("")
         print("Examples:")
-        print("  XcodeBuildServerCLI                    # Start BSP server")
-        print("  echo '{\"id\":1,\"method\":\"build/initialize\"...}' | XcodeBuildServerCLI")
+        print("  sourcekit-bsp                    # Start BSP server")
+        print("  echo '{\"id\":1,\"method\":\"build/initialize\"...}' | sourcekit-bsp")
     }
 
     private static func killSelfIfParentIsNull() {

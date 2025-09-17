@@ -138,4 +138,4 @@ The module provides comprehensive error handling through `XcodeProjectError`:
 
 ## Integration
 
-This module integrates seamlessly with the main XcodeBuildServer for BSP support, but can also be used independently for general Xcode project management tasks.
+This module integrates seamlessly with the main sourcekit-bsp for BSP support, but can also be used independently for general Xcode project management tasks.

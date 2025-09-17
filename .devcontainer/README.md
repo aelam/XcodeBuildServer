@@ -1,6 +1,6 @@
-# XcodeBuildServer Dev Container
+# sourcekit-bsp Dev Container
 
-This Dev Container configuration allows you to develop XcodeBuildServer without needing an Xcode environment, while running code quality tools like SwiftLint and SwiftFormat.
+This Dev Container configuration allows you to develop sourcekit-bsp without needing an Xcode environment, while running code quality tools like SwiftLint and SwiftFormat.
 
 ## Features
 
@@ -31,7 +31,7 @@ swift build
 swift test
 
 # Run specific target
-swift run XcodeBuildServerCLI
+swift run sourcekit-bsp
 
 # Clean build
 swift package clean
@@ -60,7 +60,7 @@ bsp-build          # swift build + success message
 bsp-test          # swift test --parallel
 
 # Debug
-bsp-debug         # BSP_DEBUG=1 swift run XcodeBuildServerCLI
+bsp-debug         # BSP_DEBUG=1 swift run sourcekit-bsp
 
 # Code quality
 lint              # swiftlint && swiftformat --lint .
@@ -76,7 +76,7 @@ format            # swiftformat . && swiftlint --fix
 
 ```bash
 # Start debug mode
-BSP_DEBUG=1 swift run XcodeBuildServerCLI
+BSP_DEBUG=1 swift run sourcekit-bsp
 
 # Or use alias
 bsp-debug

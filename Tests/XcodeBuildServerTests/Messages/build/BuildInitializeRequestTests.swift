@@ -1,13 +1,13 @@
 //
 //  BuildInitializeRequestTests.swift
-//  XcodeBuildServer
+//  sourcekit-bsp
 //
 //  Copyright © 2024 Wang Lun.
 //
 
 import Foundation
 import Testing
-@testable import XcodeBuildServer
+@testable import sourcekit - bsp
 
 struct BuildInitializeRequestTests {
     @Test
@@ -199,7 +199,7 @@ struct BuildInitializeRequestTests {
 
         #expect(decoded.jsonrpc == "2.0")
         #expect(decoded.id == .int(1))
-        #expect(decoded.result.displayName == "XcodeBuildServerCLI")
+        #expect(decoded.result.displayName == "sourcekit-bsp")
         #expect(decoded.result.bspVersion == "2.2.0")
         #expect(decoded.result.capabilities.compileProvider?.languageIds.contains(.swift) == true)
     }
@@ -239,7 +239,7 @@ extension BuildInitializeRequestTests {
             rootUri: "file:///Users/test/project/",
             bspVersion: "2.2.0",
             version: "0.1",
-            displayName: "XcodeBuildServerCLI"
+            displayName: "sourcekit-bsp"
         )
 
         return BuildInitializeResponse(

@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# XcodeBuildServer Dev Container Setup Script
+# sourcekit-bsp Dev Container Setup Script
 
 SWIFTLINT_VERSION="0.60.0"
 SWIFTFORMAT_VERSION="0.57.2"
 
 set -e
 
-echo "🚀 Setting up XcodeBuildServer development environment..."
+echo "🚀 Setting up sourcekit-bsp development environment..."
 
 # Update package lists
 echo "📦 Updating package lists..."
@@ -84,7 +84,7 @@ swift package resolve
 echo "🔧 Setting up aliases..."
 cat >> ~/.zshrc << 'EOF'
 
-# XcodeBuildServer Development Aliases
+# sourcekit-bsp Development Aliases
 alias swiftbuild='swift build'
 alias swifttest='swift test'
 alias swiftrun='swift run'
@@ -97,7 +97,7 @@ alias lint='swiftlint && swiftformat --lint .'
 alias format='swiftformat . && swiftlint --fix'
 
 # BSP Development
-alias bsp-debug='BSP_DEBUG=1 swift run XcodeBuildServerCLI'
+alias bsp-debug='BSP_DEBUG=1 swift run sourcekit-bsp'
 alias bsp-build='swift build && echo "✅ Build complete!"'
 alias bsp-test='swift test --parallel'
 

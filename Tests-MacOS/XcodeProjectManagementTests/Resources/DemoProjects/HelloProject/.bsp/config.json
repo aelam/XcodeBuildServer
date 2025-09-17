@@ -1,5 +1,5 @@
 {
-    "name": "XcodeBuildServerCLI",
+    "name": "sourcekit-bsp",
     "version": "0.2",
     "bspVersion": "2.2.0",
     "languages": [
@@ -10,7 +10,7 @@
         "swift"
     ],
     "argv": [
-        "../../../../.build/debug/XcodeBuildServerCLI"
+        "../../../../.build/debug/sourcekit-bsp"
     ],
     "kind": "xcode",
     "env": {

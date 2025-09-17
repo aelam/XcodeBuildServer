@@ -6,7 +6,7 @@
 
 import Foundation
 import Testing
-@testable import XcodeBuildServer
+@testable import sourcekit - bsp
 
 struct WorkspaceBuildTargetsRequestTests {
     @Test

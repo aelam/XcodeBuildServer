@@ -4,40 +4,40 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Build Debug XcodeBuildServerCLI",
-            "program": "${workspaceFolder}/.build/debug/XcodeBuildServerCLI",
-            "preLaunchTask": "swift: Build Debug XcodeBuildServerCLI"
+            "name": "Build Debug sourcekit-bsp",
+            "program": "${workspaceFolder}/.build/debug/sourcekit-bsp",
+            "preLaunchTask": "swift: Build Debug sourcekit-bsp"
         },
         {
             "type": "lldb",
             "request": "attach",
             "waitFor": true,
-            "name": "Wait and attach XcodeBuildServerCLI",
-            "program": "${workspaceFolder}/.build/debug/XcodeBuildServerCLI"
+            "name": "Wait and attach sourcekit-bsp",
+            "program": "${workspaceFolder}/.build/debug/sourcekit-bsp"
         },
         {
             "type": "swift",
             "request": "launch",
             "args": [],
             "cwd": "${workspaceFolder}",
-            "name": "Release XcodeBuildServerCLI",
-            "program": "${workspaceFolder}/.build/release/XcodeBuildServerCLI",
-            "preLaunchTask": "swift: Build Release XcodeBuildServerCLI"
+            "name": "Release sourcekit-bsp",
+            "program": "${workspaceFolder}/.build/release/sourcekit-bsp",
+            "preLaunchTask": "swift: Build Release sourcekit-bsp"
         },
         {
             "type": "swift",
             "request": "launch",
             "args": [],
             "cwd": "${workspaceFolder}",
-            "name": "Debug XcodeBuildServerCLI",
-            "program": "${workspaceFolder}/.build/debug/XcodeBuildServerCLI",
-            "preLaunchTask": "swift: Build Debug XcodeBuildServerCLI"
+            "name": "Debug sourcekit-bsp",
+            "program": "${workspaceFolder}/.build/debug/sourcekit-bsp",
+            "preLaunchTask": "swift: Build Debug sourcekit-bsp"
         },
         {
             "type": "lldb",
             "request": "attach",
-            "name": "Attach to XcodeBuildServerCLI",
-            "program": "${workspaceFolder}/.build/debug/XcodeBuildServerCLI",
+            "name": "Attach to sourcekit-bsp",
+            "program": "${workspaceFolder}/.build/debug/sourcekit-bsp",
             "waitFor": true,
             "preLaunchTask": ""
         },

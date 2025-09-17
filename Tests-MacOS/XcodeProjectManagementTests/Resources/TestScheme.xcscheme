@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "E2B4C7A92A8F123456789ABC"
-               BuildableName = "XcodeBuildServer"
-               BlueprintName = "XcodeBuildServer"
-               ReferencedContainer = "container:XcodeBuildServer.xcodeproj">
+               BuildableName = "sourcekit-bsp"
+               BlueprintName = "sourcekit-bsp"
+               ReferencedContainer = "container:sourcekit-bsp.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
          <BuildActionEntry
@@ -29,9 +29,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "F3C5D8B43B9F234567890DEF"
-               BuildableName = "XcodeBuildServerTests.xctest"
-               BlueprintName = "XcodeBuildServerTests"
-               ReferencedContainer = "container:XcodeBuildServer.xcodeproj">
+               BuildableName = "sourcekit-bspTests.xctest"
+               BlueprintName = "sourcekit-bspTests"
+               ReferencedContainer = "container:sourcekit-bsp.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -47,9 +47,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "F3C5D8B43B9F234567890DEF"
-               BuildableName = "XcodeBuildServerTests.xctest"
-               BlueprintName = "XcodeBuildServerTests"
-               ReferencedContainer = "container:XcodeBuildServer.xcodeproj">
+               BuildableName = "sourcekit-bspTests.xctest"
+               BlueprintName = "sourcekit-bspTests"
+               ReferencedContainer = "container:sourcekit-bsp.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -69,9 +69,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "E2B4C7A92A8F123456789ABC"
-            BuildableName = "XcodeBuildServer"
-            BlueprintName = "XcodeBuildServer"
-            ReferencedContainer = "container:XcodeBuildServer.xcodeproj">
+            BuildableName = "sourcekit-bsp"
+            BlueprintName = "sourcekit-bsp"
+            ReferencedContainer = "container:sourcekit-bsp.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -86,9 +86,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "E2B4C7A92A8F123456789ABC"
-            BuildableName = "XcodeBuildServer"
-            BlueprintName = "XcodeBuildServer"
-            ReferencedContainer = "container:XcodeBuildServer.xcodeproj">
+            BuildableName = "sourcekit-bsp"
+            BlueprintName = "sourcekit-bsp"
+            ReferencedContainer = "container:sourcekit-bsp.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
