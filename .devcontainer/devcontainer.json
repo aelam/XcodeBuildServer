@@ -50,6 +50,8 @@
   "runArgs": [
     "--cap-add=SYS_PTRACE",
     "--security-opt",
-    "seccomp=unconfined"
+    "seccomp=unconfined",
+    "--memory=2g",
+    "--cpus=2"
   ]
 }
